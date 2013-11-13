@@ -4,19 +4,21 @@
 * Date       : 11/11/2013
 * Description: A Motorola MC68000 Microprocessor Disassembler 
 *----------------------------------------------------------------------------
-CR      EQU     $0D             ASCII: carriage return
-LF      EQU     $0A             ASCII: line feed
-TB      EQU     $09             ASCII: horizontal tab
-OADDR   EQU     $1000           Org address
-MNADDR  EQU     $7000           Min address
-MXADDR  EQU     $8000           Max address
-BYTES   EQU     10000           Number of bytes to read from file
-SLOC    DS.B    4               Starting location storage
-ELOC    DS.B    4               Ending location storage
-EA_REG  DS.B    2               ;Storage for EA-Reg
-EA_MODE DS.B    2               ;Storage for EA-Mode
-OP_MODE DS.B    2               ;Storage for OP-Mode
-INS_REG DS.B    2               ;Storage for Regiser Number
+CR      EQU     $0D     ASCII: carriage return
+LF      EQU     $0A     ASCII: line feed
+TB      EQU     $09     ASCII: horizontal tab
+OADDR   EQU     $1000   Org address
+MNADDR  EQU     $7000   Min address
+MXADDR  EQU     $8000   Max address
+BYTES   EQU     10000   Number of bytes to read from file
+SLOC    DS.B    4       Starting location storage
+ELOC    DS.B    4       Ending location storage
+BITS_0_1_2   DS.B    2  Storage for bits 0,1,2
+BITS_3_4_5   DS.B    2  Storage for bits 3,4,5
+BITS_5       DS.B    2  Storage for bit 5
+BITS_6_7_8   DS.B    2  Storage for bits 6,7,8
+BITS_9_10_11 DS.B    2  Storage for bits 9,10,11
+BITS_12_13    DS.B   2  Storage for bits 12,13
 
 *----MASKS(SHOW)-------
 BIT_34  EQU     %0000000000011000 ;used to show bits 3,4
@@ -27,7 +29,11 @@ BIT_012 EQU     %0000000000000111 ;used to show bits 0,1,2
 BIT_345 EQU     %0000000000111000 ;used to show bits 3,4,5
 BIT_678 EQU     %0000000111000000 ;used to show bits 8,7,6
 BIT_91011 EQU   %0000111000000000 ;used to show bits 9,10,11
+BIT_1213 EQU    %0011000000000000 ;used to show bits 12, 13
 BIT_12131415 EQU %1111000000000000 ;used to show bits 12,13,14,15
+
+*----Words--------------
+_RTS     DC.B    'RTS', CR, LF,0
 
 *----MASKS(DONTSHOW)------
 *USE NOT on the bits above
@@ -157,7 +163,7 @@ MASK    MOVE.L  D1,-(SP)        Push D1 on stack
         BEQ     FLAGST          If it is 0, the input matched the mask; set the flag and return to the caller
         BRA     FLAGCL          If it is not 0, the input did not match the mask; clear the flag and return to the caller
         
-*
+       
 * Extract: Test an input to a subsequent mask, and return the masked value in LSB format
 * Input value from D0, input mask from D2, output value in D2
 *
@@ -620,50 +626,60 @@ BRADDA	BRA		INCREM
 BRASL	BRA		INCREM
 BRLSR	BRA		INCREM
         
-*--------------------
-*   EA
-*--------------------
-
 
 *--------------------------
 *  Instruction Subroutines
 *--------------------------
 BRRTS 
-*       LEA     _RTS, A1        ;load 'RTS' to be printed
-*       MOVE    _RTS_len, D1    ;load the length of message
-*       JSR     printONE        ;send to 1st print function
+        LEA     _RTS, A1        ;load 'RTS' to be printed
+        MOVE.B    #0, D0    ;load the length of message
+        TRAP    #15
+*       BSR     printONE        ;send to 1st print function
         RTS                     ;Return to subroutine
 
-
 *----------------------------------------------
-*   Get OP_Mode, EA_Mode, EA_Register, Register
+*   User Functions
 *----------------------------------------------
-GET_OP_MODE
-*       MOVE.L  Dn, Dn          ;copy bits
-*       AND.L   #BIT_678, Dn    ;show only 6,7,8
-*       LSR.L   #6, Dn          ;shift the bits over
-*       MOVE.B  Dn, OP_MODE     ;Copy into OP_MODE Variable
-        RTS                     ;Return back to return to subroutine
-
-GET_EA_REG
-*       MOVE.L  Dn, Dn          ;copy bits
-*       AND.L   #BIT_012, Dn    ;show only 0,1,2
-*       MOVE.B  Dn, EA_REG      ;Copy into REGISTER Variable
+GET_BITS_6_7_8
+        MOVE.L  (A0),D0      Raw Data 
+        MOVE.L  #BIT_678,D2  Mask
+        BSR    EXT     
+        MOVE.B  D1, BITS_6_7_8
+        RTS
+        
+GET_BITS_12_13
+        MOVE.L  (A0),D0
+        MOVE.L  #BIT_1213, D2
+        BSR    EXT
+        MOVE.B  D3, BITS_12_13
+        RTS
+        
+GET_BITS_5
+        MOVE.L  (A0),D0
+        MOVE.L   #BIT_5, D2
+        BSR    EXT      
+        MOVE.B  D3, BITS_5  
+        RTS
+        
+GET_BITS_0_1_2
+        MOVE.L  (A0),D0         
+        MOVE.L  #BIT_012, D2
+        BSR    EXT   
+        MOVE.B  D3, BITS_0_1_2 
         RTS                     ;Return back to return to subroutine
         
-GET_EA_MODE
-*       MOVE.L  Dn, Dn          ;copy bits
-*       AND.L   #BIT_345, Dn    ;show only 3,4,5
-*       LSR.L   #3, Dn          ;shift the bits over
-*       MOVE.B  Dn, EA_MODE     ;Copy into EA_MODE Variable
+GET_BITS_3_4_5
+        MOVE.L  (A0),D0
+        MOVE.L   #BIT_345, D2    
+        BSR    EXT
+        MOVE.B  D3, BITS_3_4_5     
         RTS                     ;Return back to return to subroutine
         
-GET_REGISTER
-*       MOVE.L  Dn, Dn          ;copy bits
-*       AND.L   #BIT_91011, Dn  ;show only 9,10,11
-*       LSR.L   #5, Dn          ;shift the bits over
-*       LSR.L   #4, Dn          ;shift again
-*       MOVE.B  Dn, INS_REG     ;Copy into REGISTER Variable
+GET_BITS_9_10_11
+        MOVE.L  (A0),D0
+        MOVE.L  #BIT_91011, D2  
+        BSR    EXT
+        MOVE.B  D3, BITS_9_10_11
         RTS                     ;Return back to return to subroutine
 
 goToD0 
@@ -760,6 +776,7 @@ OP_TBL      JMP     goToOP_Mode0000 ;0000
         BRA     DONE
         
         END     START
+
 
 
 
