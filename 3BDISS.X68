@@ -9,7 +9,7 @@ LF      EQU     $0A     ASCII: line feed
 TB      EQU     $09     ASCII: horizontal tab
 OADDR   EQU     $1000   Org address
 MNADDR  EQU     $7000   Min address
-MXADDR  EQU     $8000   Max address
+MXADDR  EQU     $FFFFF0 Max address
 BYTES   EQU     10000   Number of bytes to read from file
 SLOC    DS.B    4       Starting location storage
 ELOC    DS.B    4       Ending location storage
@@ -152,16 +152,21 @@ A2H16   MOVE.B  #$F,D1
 
 *
 * Mask: Test an input to a mask.
-* Input value from D0, input mask from D2, and output clear/set flag in D1.B as #$11/#$FF
-*
+* Input value from D0, input mask from D2, and modify z-flag
 
 MASK    MOVE.L  D1,-(SP)        Push D1 on stack
         MOVE.L  D0,D1           Move the input to D1
         AND.L   D2,D1           Perform AND on input with the mask
         SUB.L   D2,D1           Mask - masked input
-        TST     D1              Test the difference for 0
-        BEQ     FLAGST          If it is 0, the input matched the mask; set the flag and return to the caller
-        BRA     FLAGCL          If it is not 0, the input did not match the mask; clear the flag and return to the caller
+        CMP.L   #0,D1           Test the difference for 0
+        BEQ     FLAGST          If it is 0, the input matched the mask; set the z-flag and return to the caller
+        * If it is not 0, the input did not match the mask; clear the z-flag and return to the caller
+FLAGCL  MOVE.L  (SP)+,D1        Restore D1
+        MOVE    #0,CCR          Set the z-flag
+        RTS
+FLAGST  MOVE.L  (SP)+,D1        Restore D1
+        MOVE    #4,CCR          Set the z-flag
+        RTS
         
        
 * Extract: Test an input to a subsequent mask, and return the masked value in LSB format
@@ -223,15 +228,15 @@ PRMPT1  LEA     MSSG1,A1        Starting location request message
         BSR     ASCII2HEX       Convert D0 to HEX
         
         CLR.L   (A1)            Clear SLOC storage
-        MOVE    D1,(A1)         Set first byte of SLOC to HEX value
+        MOVE.L  D1,(A1)         Set SLOC to HEX value
                         
-        CMP.W   #0,D1           Compare starting location to 0
+        CMP.L   #0,D1           Compare starting location to 0
         BEQ     DONE            End program if 0
         
-        CMP.W   #MNADDR,D1      Compare starting location to min
+        CMP.L   #MNADDR,D1      Compare starting location to min
         BLO     ILL0            Branch to ILL0 if < min
         
-        CMP.W   #MXADDR,D1      Compare ending location to max
+        CMP.L   #MXADDR,D1      Compare ending location to max
         BHS     ILL1            Branch to ILL1 if >= max
                 
         BRA     PRMPT2
@@ -258,19 +263,19 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         BSR     ASCII2HEX       Convert D0 to HEX and continue
         
         CLR.L   (A1)            Clear ELOC storage
-        MOVE    D1,(A1)         Set first byte of ELOC to HEX value
+        MOVE.L  D1,(A1)         Set ELOC to HEX value
 
-        CMP.W   #0,D1           Compare ending location to 0
+        CMP.L   #0,D1           Compare ending location to 0
         BEQ     DONE            End program if 0
         
-        CMP.W   #MNADDR,D1      Compare min ending location to min
+        CMP.L   #MNADDR,D1      Compare min ending location to min
         BLS     ILL2            Branch to ILL2 if <= min
         
-        CMP.W   #MXADDR,D1      Compare ending location to max
+        CMP.L   #MXADDR,D1      Compare ending location to max
         BHI     ILL3            Branch to ILL3 if > max
         
-        MOVE.B  (SLOC),D0       Move starting location data to D0
-        CMP.W   D0,D1           Compare ending location to starting location
+        MOVE.L  (SLOC),D0       Move starting location data to D0
+        CMP.L   D0,D1           Compare ending location to starting location
         BLS     ILL2            Branch to ILL3 if <= starting location
         
         BRA     OP
@@ -282,314 +287,254 @@ DONE    MOVE.B  #9,D0
 *   OP
 *--------------------
 
-OP      MOVEA.W SLOC,A0         Load address register
+OP      MOVEA.L SLOC,A0         Load address register
         MOVE.L  (A0),D0         Transfer data to memory
         BSR     ASCII2HEX
         MOVE.L  D1,D0           Replace value with HEX value
 
-LOOP1   CMP.W   ELOC,A0         Compare ending location to location
+LOOP1   CMP.L   ELOC,A0         Compare ending location to location
         BGE     DONE            Branch to DONE if <= to location
         
         * Mask bits to determine OP-code and branch correspondingly-- high order bits are checked first
         
 		MOVE.L	#%1110000010001000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRLSR
 
 		MOVE.L	#%1110000001001000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRLSR
 
 		MOVE.L	#%1110000000001000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRLSR
 
 		MOVE.L	#%1110000010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRASL
 
 		MOVE.L	#%1110000001000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRASL
 
 		MOVE.L	#%1110000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRASL
 
 		MOVE.L	#%1101000111000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADDA
 
 		MOVE.L	#%1101000011000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADDA
 
 		MOVE.L	#%1101000110000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADD
 
 		MOVE.L	#%1101000101000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADD
 
 		MOVE.L	#%1101000100000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADD
 
 		MOVE.L	#%1101000010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADD
 
 		MOVE.L	#%1101000001000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADD
 
 		MOVE.L	#%1101000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADD
 
 		MOVE.L	#%1100000110000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRAND
 
 		MOVE.L	#%1100000101000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRAND
 
 		MOVE.L	#%1100000100000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRAND
 
 		MOVE.L	#%1100000010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRAND
 
 		MOVE.L	#%1100000001000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRAND
 
 		MOVE.L	#%1100000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRAND
 
 		MOVE.L	#%1100000011000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMULU
 
 		MOVE.L	#%1011000111000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRCMPA
 
 		MOVE.L	#%1011000011000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRCMPA
 
 		MOVE.L	#%1011000010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRCMP
 
 		MOVE.L	#%1011000001000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRCMP
 
 		MOVE.L	#%1011000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRCMP
 
 		MOVE.L	#%1011000110000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BREOR
 
 		MOVE.L	#%1011000101000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BREOR
 
 		MOVE.L	#%1011000100000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BREOR
 
 		MOVE.L	#%1001000111000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUBA
 
 		MOVE.L	#%1001000011000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUBA
 
 		MOVE.L	#%1001000110000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000101000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000100000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000001000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUB
 
 		MOVE.L	#%1000000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRDIVS
 
 		MOVE.L	#%0110000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRBCC
 
 		MOVE.L	#%0101000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRADDQ
 
 		MOVE.L	#%0100111001000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRRTS
 
 		MOVE.L	#%0100111010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRJSR
 
 		MOVE.L	#%0100110100000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRNOT
 
 		MOVE.L	#%0100110010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRNOT
 
 		MOVE.L	#%0100110000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRNOT
 
 		MOVE.L	#%0100000111000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRLEA
 
 		MOVE.L	#%0100110011000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0100110010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0100100011000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0100100010000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0011000001000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVEA
 
 		MOVE.L	#%0011000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVE
 
 		MOVE.L	#%0010000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVE
 
 		MOVE.L	#%0010000000010000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVEA
 
 		MOVE.L	#%0001000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRMOVE
 
 		MOVE.L	#%0000110000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRCMPI
 
 		MOVE.L	#%0000000100000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRBTST
 
 		MOVE.L	#%0000101000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BREORI
 
 		MOVE.L	#%0000000000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRORI
 
 		MOVE.L	#%0000010000000000,D2
 		BSR		MASK
-		CMP.B	#$11,D1
 		BEQ		BRSUBI
 		
 		BRA     BAD                 No mask matched, branch to BAD
@@ -597,7 +542,7 @@ LOOP1   CMP.W   ELOC,A0         Compare ending location to location
 INCREM  MOVE.L  (A0)+,D0            Post-Increment location to memory
         BSR     ASCII2HEX
         MOVE.L  D1,D0               Replace value with HEX value
-        BRA     LOOP1               Loop back until ending location is reach
+        BRA     LOOP1               Loop back until ending location is reached
         
 BAD     BRA     INCREM
 BRSUBI	BRA		INCREM
