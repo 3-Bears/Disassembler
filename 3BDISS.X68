@@ -16,6 +16,7 @@ ELOC    DS.B    4       Ending location storage
 MSK_012 DS.B    1       Storage for bits 0,1,2
 MSK_345 DS.B    1       Storage for bits 3,4,5
 MSK_5   DS.B    1       Storage for bit 5
+MSK_67  DS.B    1       Storage for bits 6,7
 MSK_678 DS.B    1       Storage for bits 6,7,8
 MSK_9AB DS.B    1       Storage for bits 9,10,11
 MSK_CD  DS.B    1       Storage for bits 12,13
@@ -564,6 +565,7 @@ BRLSR   BRA     INCREM
 *--------------------------
 *  Instruction Subroutines
 *--------------------------
+
 BRAND   
         BSR     EXTMSK_9AB
         BSR     EXTMSK_678
@@ -664,7 +666,16 @@ EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_678              Store masked bits
         RTS                             Return to caller
-        
+
+EXTMSK_67      * 15 14 13 12 11 10 09 08 [07 06]05 04 03 02 01 00
+        MOVE.L  (A0),D0                 Transfer data to memory
+        BSR     ASCII2HEX               Convert data to HEX
+        MOVE.L  D1,D0                   Input
+        MOVE.L  #%0000000011000000,D2   Mask
+        BSR     EXTMSK                  Extract masked bits
+        MOVE.B  D1,MSK_67               Store masked bits
+        RTS                             Return to caller
+
 EXTMSK_CD       * 15 14[13 12]11 10 09 08 07 06 05 04 03 02 01 00
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
