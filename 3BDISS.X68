@@ -71,19 +71,6 @@ START
 *-----------------------------------
 
 *
-* Flag clear / set: Assumes original value in D1 was stored as a long.
-* Restores the value and clears / sets the flag in D1.B, then returns to the caller
-*
-
-FLAGCL  MOVE.L  (SP)+,D1        Restore D1
-        MOVE.B  #$FF,D1         Clear the flag
-        RTS                     Return to caller
-        
-FLAGST  MOVE.L  (SP)+,D1        Restore D1
-        MOVE.B  #$11,D1         Set the flag
-        RTS                     Return to caller
-
-*
 * ASCII2HEX: Convert ASCII into HEX.
 * Input ASCII from D0 output HEX to D1
 *
@@ -721,9 +708,3 @@ OP_TBL      JMP     goToOP_Mode0000 ;0000
         BRA     DONE
         
         END     START
-
-
-
-
-
-
