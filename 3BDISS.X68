@@ -51,6 +51,8 @@ MSSG3   DC.B    'Enter the name of the file you wish to disassemble:',0
 HEADR   DC.B    'Address    Code        Line',CR,LF,0
 ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
+ERR3    DC.B    'That file does not exist. Please make sure it is located in the same directory,',CR,LF
+        DC.B    'and try again.',CR,LF,0
 FILE    DC.B    'test.s68',0
 
         ORG     OADDR
