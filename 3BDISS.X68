@@ -573,7 +573,8 @@ BRRTS
 *   User Functions
 *----------------------------------------------
 GET_BITS_6_7_8
-        MOVE.L  (A0),D0      Raw Data 
+        MOVE.L  (A0),D0         Transfer data to memory
+        BSR     ASCII2HEX 
         MOVE.L  #BIT_678,D2  Mask
         BSR    EXT     
         MOVE.B  D1, BITS_6_7_8
@@ -581,6 +582,7 @@ GET_BITS_6_7_8
         
 GET_BITS_12_13
         MOVE.L  (A0),D0
+        BSR     ASCII2HEX
         MOVE.L  #BIT_1213, D2
         BSR    EXT
         MOVE.B  D3, BITS_12_13
@@ -588,13 +590,15 @@ GET_BITS_12_13
         
 GET_BITS_5
         MOVE.L  (A0),D0
+        BSR     ASCII2HEX
         MOVE.L   #BIT_5, D2
         BSR    EXT      
         MOVE.B  D3, BITS_5  
         RTS
         
 GET_BITS_0_1_2
-        MOVE.L  (A0),D0         
+        MOVE.L  (A0),D0  
+        BSR     ASCII2HEX
         MOVE.L  #BIT_012, D2
         BSR    EXT   
         MOVE.B  D3, BITS_0_1_2 
@@ -602,6 +606,7 @@ GET_BITS_0_1_2
         
 GET_BITS_3_4_5
         MOVE.L  (A0),D0
+        BSR     ASCII2HEX
         MOVE.L   #BIT_345, D2    
         BSR    EXT
         MOVE.B  D3, BITS_3_4_5     
@@ -609,6 +614,7 @@ GET_BITS_3_4_5
         
 GET_BITS_9_10_11
         MOVE.L  (A0),D0
+        BSR     ASCII2HEX
         MOVE.L  #BIT_91011, D2  
         BSR    EXT
         MOVE.B  D3, BITS_9_10_11
