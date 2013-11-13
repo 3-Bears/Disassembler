@@ -157,6 +157,23 @@ MASK    MOVE.L  D1,-(SP)        Push D1 on stack
         BEQ     FLAGST          If it is 0, the input matched the mask; set the flag and return to the caller
         BRA     FLAGCL          If it is not 0, the input did not match the mask; clear the flag and return to the caller
         
+*
+* Extract: Test an input to a subsequent mask, and return the masked value in LSB format
+* Input value from D0, input mask from D2, output value in D2
+*
+
+EXT     MOVE.L  D2,-(SP)    Push D2 on stack
+        MOVE.L  D0,D1       Move the input to D1
+        AND.L   D2,D1       Perform AND on input with the mask
+EXTLP   BTST.L  #0,D2       Test the LSB of the mask for 0
+        BEQ     EXTADV      If it is 0, rotate the mask until it is 1
+        MOVE.L  (SP)+,D2    Restore the mask
+        RTS                 Return to caller
+        
+EXTADV  LSR.L   #1,D2       Rotate mask right by 1 bit
+        ROR.L   #1,D1       Rotate output in sync with mask
+        BRA     EXTLP       Return to loop
+        
 *--------------------
 *   I/O
 *--------------------
