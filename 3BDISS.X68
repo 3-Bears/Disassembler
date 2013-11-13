@@ -541,7 +541,7 @@ BREORI  BRA     INCREM
 BRBTST  BRA     INCREM
 BRCMPI  BRA     INCREM
 *BRMOVE  BRA     INCREM
-BRMOVEA BRA     INCREM
+*BRMOVEA BRA     INCREM
 BRMOVEM BRA     INCREM
 BRLEA   BRA     INCREM
 BRNOT   BRA     INCREM
@@ -555,7 +555,7 @@ BREOR   BRA     INCREM
 BRCMP   BRA     INCREM
 BRCMPA  BRA     INCREM
 BRMULU  BRA     INCREM
-BRAND   BRA     INCREM
+*BRAND   BRA     INCREM
 BRADD   BRA     INCREM
 BRADDA  BRA     INCREM
 BRASL   BRA     INCREM
@@ -564,6 +564,40 @@ BRLSR   BRA     INCREM
 *--------------------------
 *  Instruction Subroutines
 *--------------------------
+BRAND   
+        BSR     EXTMSK_9AB
+        BSR     EXTMSK_678
+        BSR     EXTMSK_345
+        BSR     EXTMSK_012
+        MOVE.B  EXTMSK_678, D5
+        CMP.B   #$4, D5
+        BLT     ADDMODE1
+        LEA     MODE_TBL,A6
+        MOVE.B  EXTMSK_9AB,D3
+        MOVE.B  EXTMSK_9AB,D3
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        *Call function to print a COMMA ','
+        LEA     MODE_TBL,A6
+        MOVE.B  EXTMSK_345,D3
+        MOVE.B  EXTMSK_012,MODE
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        BRA     INCREM
+ADDMODE1
+        LEA     MODE_TBL,A6
+        MOVE.B  EXTMSK_345,D3
+        MOVE.B  EXTMSK_012,MODE
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        *Call function to print a COMMA ','
+        LEA     MODE_TBL,A6
+        MOVE.B  EXTMSK_9AB,D3
+        MOVE.B  EXTMSK_9AB,MODE
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        BRA     INCREM
+
 BRRTS 
         * Call Print TAB function '      '
         *LEA     _RTS, A1       Load 'RTS' to be printed
@@ -594,6 +628,29 @@ BRMOVE
         MULU    #4, D3
         JSR     00(A6,D3)
         
+        BRA     INCREM
+
+BRMOVEA 
+        BSR     EXTMSK_CD       Get the size of MOVE instruction
+        BSR     EXTMSK_9AB      Get the register
+        BSR     EXTMSK_345      Get the EA mode
+        BSR     EXTMSK_012      Get the EA Register
+        *Call Print 'MOVEA' function
+        *Call Print DOT '.' function
+        *Call function that prints the size (B/W/L)
+        *Call Print TAB '   ' function
+        LEA     MODE_TBL,A6
+        MOVE.B  MSK_345,D3
+        MOVE.B  MSK_012,MODE
+        MULU    #4,D3
+        JSR     00(A6,D3)
+
+        *Call print COMMA function ','
+        LEA     AN_TBL,A6
+        MOVE.B  EXTMSK_9AB,D3
+        MOVE.B  EXTMSK_9AB,MODE
+        MULU    #4,D3
+        JSR     00(A6,D3)
         BRA     INCREM
 
 *----------------------------------------------
