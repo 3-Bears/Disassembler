@@ -13,12 +13,12 @@ MXADDR  EQU     $FFFFF0 Max address
 BYTES   EQU     10000   Number of bytes to read from file
 SLOC    DS.B    4       Starting location storage
 ELOC    DS.B    4       Ending location storage
-BITS_012   DS.B    2  Storage for bits 0,1,2
-BITS_345   DS.B    2  Storage for bits 3,4,5
-BITS_5       DS.B    2  Storage for bit 5
-BITS_678   DS.B    2  Storage for bits 6,7,8
-BITS_9AB DS.B    2  Storage for bits 9,10,11
-BITS_CD    DS.B   2  Storage for bits 12,13
+BITS_012   DS.B    1  Storage for bits 0,1,2
+BITS_345   DS.B    1  Storage for bits 3,4,5
+BITS_5     DS.B    1  Storage for bit 5
+BITS_678   DS.B    1  Storage for bits 6,7,8
+BITS_9AB   DS.B    1  Storage for bits 9,10,11
+BITS_CD    DS.B    1  Storage for bits 12,13
 
 *----MASKS(SHOW)-------
 BIT_34   EQU     %0000000000011000 ;used to show bits 3,4
@@ -34,6 +34,7 @@ BIT_CDEF EQU %1111000000000000 ;used to show bits 12,13,14,15
 
 *----Words--------------
 _RTS     DC.B    'RTS', CR, LF,0
+_MODE111 DC.B    'Print# and data',CR,LF,0
 
 *----MASKS(DONTSHOW)------
 *USE NOT on the bits above
@@ -537,7 +538,7 @@ BRORI   BRA		INCREM
 BREORI	BRA		INCREM
 BRBTST	BRA		INCREM
 BRCMPI	BRA		INCREM
-BRMOVE	BRA		INCREM
+*BRMOVE	BRA		INCREM
 BRMOVEA	BRA		INCREM
 BRMOVEM	BRA		INCREM
 BRLEA	BRA		INCREM
@@ -563,16 +564,42 @@ BRLSR	BRA		INCREM
 *  Instruction Subroutines
 *--------------------------
 BRRTS 
-        LEA     _RTS, A1        ;load 'RTS' to be printed
+        *Call Print TAB function '      '
+        *LEA     _RTS, A1        ;load 'RTS' to be printed
         MOVE.B    #0, D0    ;load the length of message
-        TRAP    #15
-*       BSR     printONE        ;send to 1st print function
-        RTS                     ;Return to subroutine
+        
+        BRA     INCREM           ;Return to subroutine
+
+BRMOVE
+        BSR     GET_BITS_CD   Get the size of MOVE instruction
+        BSR     GET_BITS_9AB  Get the register
+        BSR     GET_BITS_678  Get the OPmode
+        BSR     GET_BITS_345  Get the EA mode
+        BSR     GET_BITS_012  Get the EA Register
+        *Call Print 'MOVE' function
+        *Call Print Dot '.' function
+        *Call Function that prints the Size (B/W/L)
+        *Call Print TAB '   ' function
+        LEA     EA_TBL,A6     Load the EA_Table
+        MOVE.B  BITS_345,D3   Load the EA MODE
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        
+        *Call Print COMMA function ','
+        
+        LEA     OP_TBL,A6
+        MOVE.B  BITS_678,D3 Load the OpMode
+        MULU    #4, D3
+        JSR     00(A6,D3)
+        
+        
+
+        BRA     INCREM      
 
 *----------------------------------------------
 *   User Functions
 *----------------------------------------------
-GET_BITS_6_7_8
+GET_BITS_678
         MOVE.L  (A0),D0         Transfer data to memory
         BSR     ASCII2HEX 
         MOVE.L  D1,D0
@@ -581,13 +608,13 @@ GET_BITS_6_7_8
         MOVE.B  D1, BITS_678
         RTS
         
-GET_BITS_12_13
+GET_BITS_CD
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
         MOVE.L  D1,D0
         MOVE.L  #BIT_CD, D2
         BSR    EXT
-        MOVE.B  D3, BITS_CD
+        MOVE.B  D1, BITS_CD
         RTS
         
 GET_BITS_5
@@ -596,65 +623,103 @@ GET_BITS_5
         MOVE.L  D1,D0
         MOVE.L   #BIT_5, D2
         BSR    EXT      
-        MOVE.B  D3, BITS_5  
+        MOVE.B  D1, BITS_5  
         RTS
         
-GET_BITS_0_1_2
+GET_BITS_012
         MOVE.L  (A0),D0  
         BSR     ASCII2HEX
         MOVE.L  D1,D0
         MOVE.L  #BIT_012, D2
         BSR    EXT   
-        MOVE.B  D3, BITS_012 
+        MOVE.B  D1, BITS_012 
         RTS                     ;Return back to return to subroutine
         
-GET_BITS_3_4_5
+GET_BITS_345
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
         MOVE.L  D1,D0
         MOVE.L   #BIT_345, D2    
         BSR    EXT
-        MOVE.B  D3, BITS_345     
+        MOVE.B  D1, BITS_345     
         RTS                     ;Return back to return to subroutine
         
-GET_BITS_9_10_11
+GET_BITS_9AB
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
         MOVE.L  D1,D0
         MOVE.L  #BIT_9AB, D2  
         BSR    EXT
-        MOVE.B  D3, BITS_9AB
+        MOVE.B  D1, BITS_9AB
         RTS                     ;Return back to return to subroutine
 
 
 
 goToD0 
+            RTS
 goToD1 
+            RTS
 goToD2 
+            RTS
 goToD3 
+            RTS
 goToD4 
+            RTS
 goToD5
+            RTS
 goToD6 
+            RTS
 goToD7 
+            RTS
 goToA0 
+            RTS
 goToA1 
+            RTS
 goToA2 
+            RTS
 goToA3 
+            RTS
 goToA4 
+
+            RTS
 goToA5
+            RTS
 goToA6 
+            RTS
 goToA7 
+            RTS
   
 
-goToEA_Mode0000 
+goToEA_Mode0000
+            *Need to print a Data Register
+            *Call function to go to the data register to be printed
+            *Need to use reg table
+            LEA     REG_TBL,A6 
+            MOVE.B  BITS_012,D3 Load the mode
+            MULU    #4,D3
+            JSR     00(A6,D3)
+            RTS 
 goToEA_Mode0001 
+            *Need to print a Address Register
+            *Call function to go to the address register to be printed
+            LEA     REG_TBL,A6
+            MOVE.B  BITS_012,D3 Load the mode
+            MULU    #8,D3
+            JSR     00(A6,D3)
+            RTS
 goToEA_Mode0010 
 goToEA_Mode0011 
 goToEA_Mode0100 
 goToEA_Mode0101 
 goToEA_Mode0110 
 goToEA_Mode0111 
-
+            *Call Print Pound Sign function
+            *Retrieve value from Memory
+            *Print value
+            LEA     _MODE111,A1
+            MOVE.B  #14, D0
+            TRAP    #15
+            RTS
 
 goToOP_Mode0000 
 goToOP_Mode0001 
@@ -719,6 +784,8 @@ OP_TBL      JMP     goToOP_Mode0000 ;0000
             JMP     goToOP_Mode0101 ;0101
             JMP     goToOP_Mode0110 ;0110
             JMP     goToOP_Mode0111 ;0111
+
         BRA     DONE
         
         END     START
+
