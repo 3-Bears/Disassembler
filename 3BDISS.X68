@@ -10,7 +10,7 @@ TB      EQU     $09     ASCII: horizontal tab
 OADDR   EQU     $1000   Org address
 MNADDR  EQU     $7000   Min address
 MXADDR  EQU     $FFFFF0 Max address
-BYTES   EQU     10000   Number of bytes to read from file
+BYTES   EQU     $8FFF   Number of bytes to read from file (max address - min address)
 SLOC    DS.B    4       Starting location storage
 ELOC    DS.B    4       Ending location storage
 MSK_012 DS.B    1       Storage for bits 0,1,2
@@ -51,20 +51,65 @@ MSSG3   DC.B    'Enter the name of the file you wish to disassemble:',0
 HEADR   DC.B    'Address    Code        Line',CR,LF,0
 ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
+FILE    DC.B    'test.s68',0
 
         ORG     OADDR
 
 START
+        JMP     DEBUG           Debug shortcut for dev team
         LEA     MSSG0,A1        Welcome message
         MOVE.B  #14,D0
         TRAP    #15
         
         BRA     PRMPT0
         
+DEBUG   MOVE.L  #$7000,(SLOC)   Store starting location
+        MOVE.L  #$701F,(ELOC)   Store ending location
+        LEA     FILE,A1         Set file
+        MOVE    #51,D0          Open file
+        TRAP    #15
+        
+        LEA     MNADDR,A1       Read file data from starting location
+        MOVE.L  #BYTES,D2       Set bytes to read
+        MOVE    #53,D0          Read from file
+        TRAP    #15
+        
+        BRA     CMPRSS          Manipulate data, then go to OP
+
 *-----------------------------------
 *    Conversion & Comparison Methods
 *-----------------------------------
+        
+*
+* Compress: Convert (and effectively, compress) data stored through TRAP to meaningful HEX data in the memory
+*
 
+CMPRSS  MOVEA.L #$7050,A0       Load address register past file header
+                                * ^ TODO?: (could save some cycles by setting it to (SLOC - MNADDR) * 2 + MNADDR)
+        MOVEA.L #MNADDR,A1      Set write location to minimum address
+        
+CMPADV  CMP.L   ELOC,A1         Compare ending location to write location
+                                * ^ (saves cycles by only manipulating necessary data instead of comparing to MXADDR)
+        BGE     OP              Branch to OP if <= to location
+        MOVE.L  (A0)+,D1        Transfer data to memory, post-increment location
+        BSR     TSTGRBG         Test if the data is not important (Easy68K specific data)
+        BEQ     CMPADV          If z-flag is set, then we don't care about that memory
+        
+        MOVE.L  D1,D0           Move data to D0
+        BSR     ASCII2HEX       Convert to HEX
+        MOVE.W  D1,(A1)         Move HEX to A1
+        ADD.W   #$2,A1          Advance A1 to next byte
+        BRA     CMPADV          Loop back
+        
+TSTGRBG * CMPRSS helper: Test if data is useful
+        MOVE.L  D1,-(SP)        Push D1 on stack
+        CMP.W   #$0D0A,D1
+        BEQ     FLAGST          
+        ROL.L   #8,D1
+        CMP.B   #$53,D1
+        BEQ     FLAGST
+        BRA     FLAGCL
+        
 *
 * ASCII2HEX: Convert ASCII into HEX.
 * Input ASCII from D0 output HEX to D1
@@ -109,7 +154,7 @@ A2H   * ASCII2HEX helper: Convert bytes that were > 30 to appropriate HEX value
         BEQ     A2H14
         CMP.B   #$15,D1         15 = E
         BEQ     A2H15
-        CMP.B   $16,D1          16 = F
+        CMP.B   #$16,D1         16 = F
         BEQ     A2H16
         
 A2HADV  * A2H conversion branch helper: Rotate to the next byte, and loop back to A2H until all bytes have been analyzed/converted
@@ -133,7 +178,7 @@ A2H16   MOVE.B  #$F,D1
 
 *
 * Mask: Mask an input
-* Input value from D1, input mask from D2, output masked value to D1
+* Input value from D0, input mask from D2, output masked value to D1
 *
 
 MASK    MOVE.L  D0,D1           Move the input to D1
@@ -160,7 +205,7 @@ FLAGST  MOVE.L  (SP)+,D1        Restore D1
         
        
 * Extract Mask: Test an input to a subsequent mask, and return the masked value in LSB format
-* Input value from D0, input mask from D2, output value in D2
+* Input value from D0, input mask from D2, output value in D1
 *
 
 EXTMSK  MOVE.L  D2,-(SP)        Push D2 on stack
@@ -179,9 +224,17 @@ EXTADV  LSR.L   #1,D2           Rotate mask right by 1 bit
 *   I/O
 *--------------------
 
+ILL4    LEA     ERR3,A1         File does not exist
+        MOVE.B  #14,D0
+        TRAP    #15
+
 PRMPT0  LEA     MSSG3,A1        File name request message
         MOVE.B  #14,D0
         TRAP    #15
+        
+        LEA     FILE,A1         Set FILE as storage for string
+        
+        MOVE.B  #255,D1         Max bytes for file name
                 
         MOVE.B  #2,D0           Input file name
         TRAP    #15
@@ -189,13 +242,19 @@ PRMPT0  LEA     MSSG3,A1        File name request message
         MOVE    #51,D0          Open file
         TRAP    #15
         
+        CMP.L   #$FFFFFFFF,D1   Test if the file was opened successfully
+        BEQ     ILL4
+        
         LEA     MNADDR,A1       Read file data from starting location
         MOVE    #BYTES,D2       Set bytes to read (max)
         MOVE    #53,D0          Read from file
         TRAP    #15
         
+        * TODO: Move read operations to the end of user location input operations to set BYTES accordingly
+        * OR, use the max bytes, scan for the end of the file, and add an extra error check to see if the ending address > than what exists
+        
         BRA     PRMPT1
-           
+                   
 ILL0    LEA     ERR0,A1         Starting location was too small
         MOVE.B  #14,D0
         TRAP    #15
@@ -268,7 +327,7 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         CMP.L   D0,D1           Compare ending location to starting location
         BLS     ILL2            Branch to ILL3 if <= starting location
         
-        BRA     OP
+        BRA     CMPRSS
         
 DONE    MOVE.B  #9,D0
         TRAP    #15
@@ -278,262 +337,253 @@ DONE    MOVE.B  #9,D0
 *--------------------
 
 OP      MOVEA.L SLOC,A0         Load address register
-        MOVE.L  (A0),D0         Transfer data to memory
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0           Replace value with HEX value
 
-LOOP1   CMP.L   ELOC,A0         Compare ending location to location
+INCREM  CMP.L   ELOC,A0         Compare ending location to location
         BGE     DONE            Branch to DONE if <= to location
-        
+        MOVE.W  (A0)+,D0        Transfer data to memory, post-increment A0
         * Mask bits to determine OP-code and branch correspondingly-- high order bits are checked first
         
-        MOVE.L  #%1110000010001000,D2
+        MOVE.W  #%1110000010001000,D2
         BSR     TSTMSK
         BEQ     BRLSR
 
-        MOVE.L  #%1110000001001000,D2
+        MOVE.W  #%1110000001001000,D2
         BSR     TSTMSK
         BEQ     BRLSR
 
-        MOVE.L  #%1110000000001000,D2
+        MOVE.W  #%1110000000001000,D2
         BSR     TSTMSK
         BEQ     BRLSR
 
-        MOVE.L  #%1110000010000000,D2
+        MOVE.W  #%1110000010000000,D2
         BSR     TSTMSK
         BEQ     BRASL
 
-        MOVE.L  #%1110000001000000,D2
+        MOVE.W  #%1110000001000000,D2
         BSR     TSTMSK
         BEQ     BRASL
 
-        MOVE.L  #%1110000000000000,D2
+        MOVE.W  #%1110000000000000,D2
         BSR     TSTMSK
         BEQ     BRASL
 
-        MOVE.L  #%1101000111000000,D2
+        MOVE.W  #%1101000111000000,D2
         BSR     TSTMSK
         BEQ     BRADDA
 
-        MOVE.L  #%1101000011000000,D2
+        MOVE.W  #%1101000011000000,D2
         BSR     TSTMSK
         BEQ     BRADDA
 
-        MOVE.L  #%1101000110000000,D2
+        MOVE.W  #%1101000110000000,D2
         BSR     TSTMSK
         BEQ     BRADD
 
-        MOVE.L  #%1101000101000000,D2
+        MOVE.W  #%1101000101000000,D2
         BSR     TSTMSK
         BEQ     BRADD
 
-        MOVE.L  #%1101000100000000,D2
+        MOVE.W  #%1101000100000000,D2
         BSR     TSTMSK
         BEQ     BRADD
 
-        MOVE.L  #%1101000010000000,D2
+        MOVE.W  #%1101000010000000,D2
         BSR     TSTMSK
         BEQ     BRADD
 
-        MOVE.L  #%1101000001000000,D2
+        MOVE.W  #%1101000001000000,D2
         BSR     TSTMSK
         BEQ     BRADD
 
-        MOVE.L  #%1101000000000000,D2
+        MOVE.W  #%1101000000000000,D2
         BSR     TSTMSK
         BEQ     BRADD
 
-        MOVE.L  #%1100000110000000,D2
+        MOVE.W  #%1100000110000000,D2
         BSR     TSTMSK
         BEQ     BRAND
 
-        MOVE.L  #%1100000101000000,D2
+        MOVE.W  #%1100000101000000,D2
         BSR     TSTMSK
         BEQ     BRAND
 
-        MOVE.L  #%1100000100000000,D2
+        MOVE.W  #%1100000100000000,D2
         BSR     TSTMSK
         BEQ     BRAND
 
-        MOVE.L  #%1100000010000000,D2
+        MOVE.W  #%1100000010000000,D2
         BSR     TSTMSK
         BEQ     BRAND
 
-        MOVE.L  #%1100000001000000,D2
+        MOVE.W  #%1100000001000000,D2
         BSR     TSTMSK
         BEQ     BRAND
 
-        MOVE.L  #%1100000000000000,D2
+        MOVE.W  #%1100000000000000,D2
         BSR     TSTMSK
         BEQ     BRAND
 
-        MOVE.L  #%1100000011000000,D2
+        MOVE.W  #%1100000011000000,D2
         BSR     TSTMSK
         BEQ     BRMULU
 
-        MOVE.L  #%1011000111000000,D2
+        MOVE.W  #%1011000111000000,D2
         BSR     TSTMSK
         BEQ     BRCMPA
 
-        MOVE.L  #%1011000011000000,D2
+        MOVE.W  #%1011000011000000,D2
         BSR     TSTMSK
         BEQ     BRCMPA
 
-        MOVE.L  #%1011000010000000,D2
+        MOVE.W  #%1011000010000000,D2
         BSR     TSTMSK
         BEQ     BRCMP
 
-        MOVE.L  #%1011000001000000,D2
+        MOVE.W  #%1011000001000000,D2
         BSR     TSTMSK
         BEQ     BRCMP
 
-        MOVE.L  #%1011000000000000,D2
+        MOVE.W  #%1011000000000000,D2
         BSR     TSTMSK
         BEQ     BRCMP
 
-        MOVE.L  #%1011000110000000,D2
+        MOVE.W  #%1011000110000000,D2
         BSR     TSTMSK
         BEQ     BREOR
 
-        MOVE.L  #%1011000101000000,D2
+        MOVE.W  #%1011000101000000,D2
         BSR     TSTMSK
         BEQ     BREOR
 
-        MOVE.L  #%1011000100000000,D2
+        MOVE.W  #%1011000100000000,D2
         BSR     TSTMSK
         BEQ     BREOR
 
-        MOVE.L  #%1001000111000000,D2
+        MOVE.W  #%1001000111000000,D2
         BSR     TSTMSK
         BEQ     BRSUBA
 
-        MOVE.L  #%1001000011000000,D2
+        MOVE.W  #%1001000011000000,D2
         BSR     TSTMSK
         BEQ     BRSUBA
 
-        MOVE.L  #%1001000110000000,D2
+        MOVE.W  #%1001000110000000,D2
         BSR     TSTMSK
         BEQ     BRSUB
 
-        MOVE.L  #%1001000101000000,D2
+        MOVE.W  #%1001000101000000,D2
         BSR     TSTMSK
         BEQ     BRSUB
 
-        MOVE.L  #%1001000100000000,D2
+        MOVE.W  #%1001000100000000,D2
         BSR     TSTMSK
         BEQ     BRSUB
 
-        MOVE.L  #%1001000010000000,D2
+        MOVE.W  #%1001000010000000,D2
         BSR     TSTMSK
         BEQ     BRSUB
 
-        MOVE.L  #%1001000001000000,D2
+        MOVE.W  #%1001000001000000,D2
         BSR     TSTMSK
         BEQ     BRSUB
 
-        MOVE.L  #%1001000000000000,D2
+        MOVE.W  #%1001000000000000,D2
         BSR     TSTMSK
         BEQ     BRSUB
 
-        MOVE.L  #%1000000000000000,D2
+        MOVE.W  #%1000000000000000,D2
         BSR     TSTMSK
         BEQ     BRDIVS
 
-        MOVE.L  #%0110000000000000,D2
+        MOVE.W  #%0110000000000000,D2
         BSR     TSTMSK
         BEQ     BRBCC
 
-        MOVE.L  #%0101000000000000,D2
+        MOVE.W  #%0101000000000000,D2
         BSR     TSTMSK
         BEQ     BRADDQ
 
-        MOVE.L  #%0100111001000000,D2
+        MOVE.W  #%0100111001000000,D2
         BSR     TSTMSK
         BEQ     BRRTS
 
-        MOVE.L  #%0100111010000000,D2
+        MOVE.W  #%0100111010000000,D2
         BSR     TSTMSK
         BEQ     BRJSR
 
-        MOVE.L  #%0100110100000000,D2
+        MOVE.W  #%0100110100000000,D2
         BSR     TSTMSK
         BEQ     BRNOT
 
-        MOVE.L  #%0100110010000000,D2
+        MOVE.W  #%0100110010000000,D2
         BSR     TSTMSK
         BEQ     BRNOT
 
-        MOVE.L  #%0100110000000000,D2
+        MOVE.W  #%0100110000000000,D2
         BSR     TSTMSK
         BEQ     BRNOT
 
-        MOVE.L  #%0100000111000000,D2
+        MOVE.W  #%0100000111000000,D2
         BSR     TSTMSK
         BEQ     BRLEA
 
-        MOVE.L  #%0100110011000000,D2
+        MOVE.W  #%0100110011000000,D2
         BSR     TSTMSK
         BEQ     BRMOVEM
 
-        MOVE.L  #%0100110010000000,D2
+        MOVE.W  #%0100110010000000,D2
         BSR     TSTMSK
         BEQ     BRMOVEM
 
-        MOVE.L  #%0100100011000000,D2
+        MOVE.W  #%0100100011000000,D2
         BSR     TSTMSK
         BEQ     BRMOVEM
 
-        MOVE.L  #%0100100010000000,D2
+        MOVE.W  #%0100100010000000,D2
         BSR     TSTMSK
         BEQ     BRMOVEM
 
-        MOVE.L  #%0011000001000000,D2
+        MOVE.W  #%0011000001000000,D2
         BSR     TSTMSK
         BEQ     BRMOVEA
 
-        MOVE.L  #%0011000000000000,D2
+        MOVE.W  #%0011000000000000,D2
         BSR     TSTMSK
         BEQ     BRMOVE
 
-        MOVE.L  #%0010000000000000,D2
+        MOVE.W  #%0010000000000000,D2
         BSR     TSTMSK
         BEQ     BRMOVE
 
-        MOVE.L  #%0010000000010000,D2
+        MOVE.W  #%0010000000010000,D2
         BSR     TSTMSK
         BEQ     BRMOVEA
 
-        MOVE.L  #%0001000000000000,D2
+        MOVE.W  #%0001000000000000,D2
         BSR     TSTMSK
         BEQ     BRMOVE
 
-        MOVE.L  #%0000110000000000,D2
+        MOVE.W  #%0000110000000000,D2
         BSR     TSTMSK
         BEQ     BRCMPI
 
-        MOVE.L  #%0000000100000000,D2
+        MOVE.W  #%0000000100000000,D2
         BSR     TSTMSK
         BEQ     BRBTST
 
-        MOVE.L  #%0000101000000000,D2
+        MOVE.W  #%0000101000000000,D2
         BSR     TSTMSK
         BEQ     BREORI
 
-        MOVE.L  #%0000000000000000,D2
+        MOVE.W  #%0000000000000000,D2
         BSR     TSTMSK
         BEQ     BRORI
 
-        MOVE.L  #%0000010000000000,D2
+        MOVE.W  #%0000010000000000,D2
         BSR     TSTMSK
         BEQ     BRSUBI
      
         BRA     BAD                 No mask matched, branch to BAD
-     
-
-INCREM  MOVE.L  (A0)+,D0            Post-Increment location to memory
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0               Replace value with HEX value
-        BRA     LOOP1               Loop back until ending location is reached
         
 BAD     BRA     INCREM
 BRSUBI  BRA     INCREM
