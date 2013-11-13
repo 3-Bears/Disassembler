@@ -13,24 +13,24 @@ MXADDR  EQU     $FFFFF0 Max address
 BYTES   EQU     10000   Number of bytes to read from file
 SLOC    DS.B    4       Starting location storage
 ELOC    DS.B    4       Ending location storage
-BITS_0_1_2   DS.B    2  Storage for bits 0,1,2
-BITS_3_4_5   DS.B    2  Storage for bits 3,4,5
+BITS_012   DS.B    2  Storage for bits 0,1,2
+BITS_345   DS.B    2  Storage for bits 3,4,5
 BITS_5       DS.B    2  Storage for bit 5
-BITS_6_7_8   DS.B    2  Storage for bits 6,7,8
-BITS_9_10_11 DS.B    2  Storage for bits 9,10,11
-BITS_12_13    DS.B   2  Storage for bits 12,13
+BITS_678   DS.B    2  Storage for bits 6,7,8
+BITS_9AB DS.B    2  Storage for bits 9,10,11
+BITS_CD    DS.B   2  Storage for bits 12,13
 
 *----MASKS(SHOW)-------
-BIT_34  EQU     %0000000000011000 ;used to show bits 3,4
-BIT_5   EQU     %0000000000100000 ;used to show bit 5
-BIT_67  EQU     %0000000011000000 ;used to show bits 6,7
-BIT_8   EQU     %0000000100000000 ;used to show bit 8
-BIT_012 EQU     %0000000000000111 ;used to show bits 0,1,2
-BIT_345 EQU     %0000000000111000 ;used to show bits 3,4,5
-BIT_678 EQU     %0000000111000000 ;used to show bits 8,7,6
-BIT_91011 EQU   %0000111000000000 ;used to show bits 9,10,11
-BIT_1213 EQU    %0011000000000000 ;used to show bits 12, 13
-BIT_12131415 EQU %1111000000000000 ;used to show bits 12,13,14,15
+BIT_34   EQU     %0000000000011000 ;used to show bits 3,4
+BIT_5    EQU     %0000000000100000 ;used to show bit 5
+BIT_67   EQU     %0000000011000000 ;used to show bits 6,7
+BIT_8    EQU     %0000000100000000 ;used to show bit 8
+BIT_012  EQU     %0000000000000111 ;used to show bits 0,1,2
+BIT_345  EQU     %0000000000111000 ;used to show bits 3,4,5
+BIT_678  EQU     %0000000111000000 ;used to show bits 8,7,6
+BIT_9AB  EQU   %0000111000000000 ;used to show bits 9,10,11
+BIT_CD   EQU    %0011000000000000 ;used to show bits 12, 13
+BIT_CDEF EQU %1111000000000000 ;used to show bits 12,13,14,15
 
 *----Words--------------
 _RTS     DC.B    'RTS', CR, LF,0
@@ -575,22 +575,25 @@ BRRTS
 GET_BITS_6_7_8
         MOVE.L  (A0),D0         Transfer data to memory
         BSR     ASCII2HEX 
+        MOVE.L  D1,D0
         MOVE.L  #BIT_678,D2  Mask
-        BSR    EXT     
-        MOVE.B  D1, BITS_6_7_8
+        BSR     EXT     
+        MOVE.B  D1, BITS_678
         RTS
         
 GET_BITS_12_13
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
-        MOVE.L  #BIT_1213, D2
+        MOVE.L  D1,D0
+        MOVE.L  #BIT_CD, D2
         BSR    EXT
-        MOVE.B  D3, BITS_12_13
+        MOVE.B  D3, BITS_CD
         RTS
         
 GET_BITS_5
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
+        MOVE.L  D1,D0
         MOVE.L   #BIT_5, D2
         BSR    EXT      
         MOVE.B  D3, BITS_5  
@@ -599,26 +602,31 @@ GET_BITS_5
 GET_BITS_0_1_2
         MOVE.L  (A0),D0  
         BSR     ASCII2HEX
+        MOVE.L  D1,D0
         MOVE.L  #BIT_012, D2
         BSR    EXT   
-        MOVE.B  D3, BITS_0_1_2 
+        MOVE.B  D3, BITS_012 
         RTS                     ;Return back to return to subroutine
         
 GET_BITS_3_4_5
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
+        MOVE.L  D1,D0
         MOVE.L   #BIT_345, D2    
         BSR    EXT
-        MOVE.B  D3, BITS_3_4_5     
+        MOVE.B  D3, BITS_345     
         RTS                     ;Return back to return to subroutine
         
 GET_BITS_9_10_11
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
-        MOVE.L  #BIT_91011, D2  
+        MOVE.L  D1,D0
+        MOVE.L  #BIT_9AB, D2  
         BSR    EXT
-        MOVE.B  D3, BITS_9_10_11
+        MOVE.B  D3, BITS_9AB
         RTS                     ;Return back to return to subroutine
+
+
 
 goToD0 
 goToD1 
