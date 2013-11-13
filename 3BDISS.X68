@@ -13,39 +13,25 @@ MXADDR  EQU     $FFFFF0 Max address
 BYTES   EQU     10000   Number of bytes to read from file
 SLOC    DS.B    4       Starting location storage
 ELOC    DS.B    4       Ending location storage
-BITS_012   DS.B    1  Storage for bits 0,1,2
-BITS_345   DS.B    1  Storage for bits 3,4,5
-BITS_5     DS.B    1  Storage for bit 5
-BITS_678   DS.B    1  Storage for bits 6,7,8
-BITS_9AB   DS.B    1  Storage for bits 9,10,11
-BITS_CD    DS.B    1  Storage for bits 12,13
-MODE       DS.B    1  Storage for which bits to use EA or OP
-
-*----MASKS(SHOW)-------
-BIT_34   EQU     %0000000000011000 ;used to show bits 3,4
-BIT_5    EQU     %0000000000100000 ;used to show bit 5
-BIT_67   EQU     %0000000011000000 ;used to show bits 6,7
-BIT_8    EQU     %0000000100000000 ;used to show bit 8
-BIT_012  EQU     %0000000000000111 ;used to show bits 0,1,2
-BIT_345  EQU     %0000000000111000 ;used to show bits 3,4,5
-BIT_678  EQU     %0000000111000000 ;used to show bits 8,7,6
-BIT_9AB  EQU   %0000111000000000 ;used to show bits 9,10,11
-BIT_CD   EQU    %0011000000000000 ;used to show bits 12, 13
-BIT_CDEF EQU %1111000000000000 ;used to show bits 12,13,14,15
+MSK_012 DS.B    1       Storage for bits 0,1,2
+MSK_345 DS.B    1       Storage for bits 3,4,5
+MSK_5   DS.B    1       Storage for bit 5
+MSK_678 DS.B    1       Storage for bits 6,7,8
+MSK_9AB DS.B    1       Storage for bits 9,10,11
+MSK_CD  DS.B    1       Storage for bits 12,13
+MODE    DS.B    1       Storage for which bits to use EA or OP
 
 *----Words--------------
-_RTS     DC.B    'RTS', CR, LF,0
-_MODE000 DC.B    'MODE 000',CR,LF,0
-_MODE001 DC.B    'MODE 001',CR,LF,0
-_MODE010 DC.B    'MODE 010',CR,LF,0
-_MODE011 DC.B    'MODE 011',CR,LF,0
-_MODE100 DC.B    'MODE 100',CR,LF,0
-_MODE101 DC.B    'MODE 101',CR,LF,0
-_MODE110 DC.B    'MODE 110',CR,LF,0
-_MODE111 DC.B    'MODE 111',CR,LF,0
+_RTS    DC.B    'RTS',CR,LF,0
+_M0     DC.B    'MODE 000',CR,LF,0
+_M1     DC.B    'MODE 001',CR,LF,0
+_M2     DC.B    'MODE 010',CR,LF,0
+_M3     DC.B    'MODE 011',CR,LF,0
+_M4     DC.B    'MODE 100',CR,LF,0
+_M5     DC.B    'MODE 101',CR,LF,0
+_M6     DC.B    'MODE 110',CR,LF,0
+_M7     DC.B    'MODE 111',CR,LF,0
 
-*----MASKS(DONTSHOW)------
-*USE NOT on the bits above
 MSSG0   DC.B    '  _     _     _     _     _     _ ',CR,LF
         DC.B    ' (o\---/o)   (o\---/o)   (o\---/o)',CR,LF
         DC.B    '  | - - |     | ^ ^ |     | . . |',CR,LF
@@ -68,7 +54,6 @@ ERR1    DC.B    'The input address was too big.',CR,LF,0
         ORG     OADDR
 
 START
-
         LEA     MSSG0,A1        Welcome message
         MOVE.B  #14,D0
         TRAP    #15
@@ -144,42 +129,50 @@ A2H15   MOVE.B  #$E,D1
         BRA     A2HADV
 A2H16   MOVE.B  #$F,D1
         BRA     A2HADV
-        
 
 *
-* Mask: Test an input to a mask.
-* Input value from D0, input mask from D2, and modify z-flag
+* Mask: Mask an input
+* Input value from D1, input mask from D2, output masked value to D1
+*
 
-MASK    MOVE.L  D1,-(SP)        Push D1 on stack
-        MOVE.L  D0,D1           Move the input to D1
+MASK    MOVE.L  D0,D1           Move the input to D1
         AND.L   D2,D1           Perform AND on input with the mask
+        RTS                     Return to caller
+
+*
+* Test Mask: Test an input to a mask.
+* Input value from D0, input mask from D2, and modify z-flag
+*
+
+TSTMSK  MOVE.L  D1,-(SP)        Push D1 on stack
+        BSR     MASK            Mask the input
         SUB.L   D2,D1           Mask - masked input
         CMP.L   #0,D1           Test the difference for 0
         BEQ     FLAGST          If it is 0, the input matched the mask; set the z-flag and return to the caller
         * If it is not 0, the input did not match the mask; clear the z-flag and return to the caller
 FLAGCL  MOVE.L  (SP)+,D1        Restore D1
-        MOVE    #0,CCR          Set the z-flag
-        RTS
+        MOVE    #%000,CCR       Set the z-flag
+        RTS                     Return to caller
 FLAGST  MOVE.L  (SP)+,D1        Restore D1
-        MOVE    #4,CCR          Set the z-flag
-        RTS
+        MOVE    #%100,CCR       Set the z-flag
+        RTS                     Return to caller
         
        
-* Extract: Test an input to a subsequent mask, and return the masked value in LSB format
+* Extract Mask: Test an input to a subsequent mask, and return the masked value in LSB format
 * Input value from D0, input mask from D2, output value in D2
 *
 
-EXT     MOVE.L  D2,-(SP)    Push D2 on stack
-        MOVE.L  D0,D1       Move the input to D1
-        AND.L   D2,D1       Perform AND on input with the mask
-EXTLP   BTST.L  #0,D2       Test the LSB of the mask for 0
-        BEQ     EXTADV      If it is 0, rotate the mask until it is 1
-        MOVE.L  (SP)+,D2    Restore the mask
-        RTS                 Return to caller
+EXTMSK  MOVE.L  D2,-(SP)        Push D2 on stack
+        MOVE.L  D0,D1           Move the input to D1
+        AND.L   D2,D1           Perform AND on input with the mask
+EXTLP   BTST.L  #0,D2           Test the LSB of the mask for 0
+        BEQ     EXTADV          If it is 0, rotate the mask until it is 1
+        MOVE.L  (SP)+,D2        Restore the mask
+        RTS                     Return to caller
         
-EXTADV  LSR.L   #1,D2       Rotate mask right by 1 bit
-        ROR.L   #1,D1       Rotate output in sync with mask
-        BRA     EXTLP       Return to loop
+EXTADV  LSR.L   #1,D2           Rotate mask right by 1 bit
+        ROR.L   #1,D1           Rotate output in sync with mask
+        BRA     EXTLP           Return to loop
         
 *--------------------
 *   I/O
@@ -278,7 +271,7 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         
 DONE    MOVE.B  #9,D0
         TRAP    #15
-        
+
 *--------------------
 *   OP
 *--------------------
@@ -294,243 +287,243 @@ LOOP1   CMP.L   ELOC,A0         Compare ending location to location
         * Mask bits to determine OP-code and branch correspondingly-- high order bits are checked first
         
 		MOVE.L	#%1110000010001000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRLSR
 
 		MOVE.L	#%1110000001001000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRLSR
 
 		MOVE.L	#%1110000000001000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRLSR
 
 		MOVE.L	#%1110000010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRASL
 
 		MOVE.L	#%1110000001000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRASL
 
 		MOVE.L	#%1110000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRASL
 
 		MOVE.L	#%1101000111000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADDA
 
 		MOVE.L	#%1101000011000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADDA
 
 		MOVE.L	#%1101000110000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADD
 
 		MOVE.L	#%1101000101000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADD
 
 		MOVE.L	#%1101000100000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADD
 
 		MOVE.L	#%1101000010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADD
 
 		MOVE.L	#%1101000001000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADD
 
 		MOVE.L	#%1101000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADD
 
 		MOVE.L	#%1100000110000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRAND
 
 		MOVE.L	#%1100000101000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRAND
 
 		MOVE.L	#%1100000100000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRAND
 
 		MOVE.L	#%1100000010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRAND
 
 		MOVE.L	#%1100000001000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRAND
 
 		MOVE.L	#%1100000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRAND
 
 		MOVE.L	#%1100000011000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMULU
 
 		MOVE.L	#%1011000111000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRCMPA
 
 		MOVE.L	#%1011000011000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRCMPA
 
 		MOVE.L	#%1011000010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRCMP
 
 		MOVE.L	#%1011000001000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRCMP
 
 		MOVE.L	#%1011000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRCMP
 
 		MOVE.L	#%1011000110000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BREOR
 
 		MOVE.L	#%1011000101000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BREOR
 
 		MOVE.L	#%1011000100000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BREOR
 
 		MOVE.L	#%1001000111000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUBA
 
 		MOVE.L	#%1001000011000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUBA
 
 		MOVE.L	#%1001000110000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000101000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000100000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000001000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUB
 
 		MOVE.L	#%1001000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUB
 
 		MOVE.L	#%1000000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRDIVS
 
 		MOVE.L	#%0110000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRBCC
 
 		MOVE.L	#%0101000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRADDQ
 
 		MOVE.L	#%0100111001000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRRTS
 
 		MOVE.L	#%0100111010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRJSR
 
 		MOVE.L	#%0100110100000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRNOT
 
 		MOVE.L	#%0100110010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRNOT
 
 		MOVE.L	#%0100110000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRNOT
 
 		MOVE.L	#%0100000111000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRLEA
 
 		MOVE.L	#%0100110011000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0100110010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0100100011000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0100100010000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVEM
 
 		MOVE.L	#%0011000001000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVEA
 
 		MOVE.L	#%0011000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVE
 
 		MOVE.L	#%0010000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVE
 
 		MOVE.L	#%0010000000010000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVEA
 
 		MOVE.L	#%0001000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRMOVE
 
 		MOVE.L	#%0000110000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRCMPI
 
 		MOVE.L	#%0000000100000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRBTST
 
 		MOVE.L	#%0000101000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BREORI
 
 		MOVE.L	#%0000000000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRORI
 
 		MOVE.L	#%0000010000000000,D2
-		BSR		MASK
+		BSR		TSTMSK
 		BEQ		BRSUBI
 		
 		BRA     BAD                 No mask matched, branch to BAD
@@ -572,213 +565,206 @@ BRLSR	BRA		INCREM
 *  Instruction Subroutines
 *--------------------------
 BRRTS 
-        *Call Print TAB function '      '
-        *LEA     _RTS, A1        ;load 'RTS' to be printed
-        MOVE.B    #0, D0    ;load the length of message
-        
-        BRA     INCREM           ;Return to subroutine
+        * Call Print TAB function '      '
+        *LEA     _RTS, A1       Load 'RTS' to be printed
+        MOVE.B    #0, D0        Load the length of message
+        BRA     INCREM          Return to subroutine
 
 BRMOVE
-        BSR     GET_BITS_CD   Get the size of MOVE instruction
-        BSR     GET_BITS_9AB  Get the register
-        BSR     GET_BITS_678  Get the OPmode
-        BSR     GET_BITS_345  Get the EA mode
-        BSR     GET_BITS_012  Get the EA Register
-        *Call Print 'MOVE' function
-        *Call Print Dot '.' function
-        *Call Function that prints the Size (B/W/L)
-        *Call Print TAB '   ' function
+        BSR     EXTMSK_CD       Get the size of MOVE instruction
+        BSR     EXTMSK_9AB      Get the register
+        BSR     EXTMSK_678      Get the OPmode
+        BSR     EXTMSK_345      Get the EA mode
+        BSR     EXTMSK_012      Get the EA Register
+        * Call Print 'MOVE' function
+        * Call Print Dot '.' function
+        * Call Function that prints the Size (B/W/L)
+        * Call Print TAB '   ' function
         LEA     MODE_TBL,A6     Load the EA_Table
-        MOVE.B  BITS_345,D3   Load the EA MODE
-        MOVE.B  BITS_345,MODE   
+        MOVE.B  MSK_345,D3      Load the EA MODE
+        MOVE.B  MSK_345,MODE   
         MULU    #4,D3
         JSR     00(A6,D3)
         
-        *Call Print COMMA function ','
+        * Call Print COMMA function ','
         
         LEA     MODE_TBL,A6
-        MOVE.B  BITS_678,D3 Load the OpMode
-        MOVE.B  BITS_678,MODE
+        MOVE.B  MSK_678,D3      Load the OP Mode
+        MOVE.B  MSK_678,MODE
         MULU    #4, D3
         JSR     00(A6,D3)
         
-        
-
-        BRA     INCREM      
+        BRA     INCREM
 
 *----------------------------------------------
 *   User Functions
 *----------------------------------------------
-GET_BITS_678
-        MOVE.L  (A0),D0         Transfer data to memory
-        BSR     ASCII2HEX 
+EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
+        MOVE.L  (A0),D0                 Transfer data to memory
+        BSR     ASCII2HEX               Convert data to HEX
+        MOVE.L  D1,D0                   Input
+        MOVE.L  #%0000000111000000,D2   Mask
+        BSR     EXTMSK                  Extract masked bits
+        MOVE.B  D1,MSK_678              Store masked bits
+        RTS                             Return to caller
+        
+EXTMSK_CD       * 15 14[13 12]11 10 09 08 07 06 05 04 03 02 01 00
+        MOVE.L  (A0),D0
+        BSR     ASCII2HEX
         MOVE.L  D1,D0
-        MOVE.L  #BIT_678,D2  Mask
-        BSR     EXT     
-        MOVE.B  D1, BITS_678
+        MOVE.L  #%0011000000000000,D2
+        BSR     EXTMSK
+        MOVE.B  D1,MSK_CD
         RTS
         
-GET_BITS_CD
+EXTMSK_5        * 15 14 13 12 11 10 09 08 07[06]05 04 03 02 01 00
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
         MOVE.L  D1,D0
-        MOVE.L  #BIT_CD, D2
-        BSR    EXT
-        MOVE.B  D1, BITS_CD
+        MOVE.L  #%0000000000100000,D2
+        BSR     EXTMSK
+        MOVE.B  D1,MSK_5
         RTS
         
-GET_BITS_5
+EXTMSK_012      * 15 14 13 12 11 10 09 08 07 06 05 04 03[02 01 00]
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
         MOVE.L  D1,D0
-        MOVE.L   #BIT_5, D2
-        BSR    EXT      
-        MOVE.B  D1, BITS_5  
+        MOVE.L  #%0000000000000111,D2
+        BSR     EXTMSK
+        MOVE.B  D1,MSK_012
         RTS
         
-GET_BITS_012
-        MOVE.L  (A0),D0  
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0
-        MOVE.L  #BIT_012, D2
-        BSR    EXT   
-        MOVE.B  D1, BITS_012 
-        RTS                     ;Return back to return to subroutine
-        
-GET_BITS_345
+EXTMSK_345      * 15 14 13 12 11 10 09 08 07 06[05 04 03]02 01 00
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
         MOVE.L  D1,D0
-        MOVE.L   #BIT_345, D2    
-        BSR    EXT
-        MOVE.B  D1, BITS_345     
-        RTS                     ;Return back to return to subroutine
+        MOVE.L  #%0000000000111000,D2
+        BSR     EXTMSK
+        MOVE.B  D1,MSK_345
+        RTS
         
-GET_BITS_9AB
+EXTMSK_9AB      * 15 14 13 12[11 10 09]08 07 06 05 04 03 02 01 00
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
         MOVE.L  D1,D0
-        MOVE.L  #BIT_9AB, D2  
-        BSR    EXT
-        MOVE.B  D1, BITS_9AB
-        RTS                     ;Return back to return to subroutine
+        MOVE.L  #%0000111000000000,D2
+        BSR     EXTMSK
+        MOVE.B  D1,MSK_9AB
+        RTS
 
-
-
-goToD0 
+JMP_D0 
             *ummm we can do a couple of things here
             *we can add the print stuff directly in here
             *or we can make seperate print functions
-            RTS
-goToD1 
-            *see goToD0
-            RTS
-goToD2 
-            *see goToD0
-            RTS
-goToD3 
-            *see goToD0
-            RTS
-goToD4 
-            *see goToD0
-            RTS
-goToD5
-            *see goToD0
-            RTS
-goToD6 
-            *see goToD0
-            RTS
-goToD7 
-            *see goToD0
-            RTS
-goToA0  
-            *see goToD0
-            RTS
-goToA1 
-            *see goToD0
-            RTS
-goToA2 
-            *see goToD0
-            RTS
-goToA3
-            *see goToD0
-            RTS
-goToA4 
-            *see goToD0
-            RTS
-goToA5 
-            *see goToD0
-            RTS
-goToA6 
-            *see goToD0
-            RTS
-goToA7
-            *see goToD0
-            RTS
+        RTS
+JMP_D1 
+            *see JMP_D0
+        RTS
+JMP_D2 
+            *see JMP_D0
+        RTS
+JMP_D3 
+            *see JMP_D0
+        RTS
+JMP_D4 
+            *see JMP_D0
+        RTS
+JMP_D5
+            *see JMP_D0
+        RTS
+JMP_D6 
+            *see JMP_D0
+        RTS
+JMP_D7 
+            *see JMP_D0
+        RTS
+JMP_A0  
+            *see JMP_D0
+        RTS
+JMP_A1 
+            *see JMP_D0
+        RTS
+JMP_A2 
+            *see JMP_D0
+        RTS
+JMP_A3
+            *see JMP_D0
+        RTS
+JMP_A4 
+            *see JMP_D0
+        RTS
+JMP_A5 
+            *see JMP_D0
+        RTS
+JMP_A6 
+            *see JMP_D0
+        RTS
+JMP_A7
+            *see JMP_D0
+        RTS
             
-Mode000
-            *Need to print a Data Register
-            *Call function to go to the data register to be printed
-            *Need to use reg table
-            LEA     DN_TBL,A6 
-            MOVE.B  MODE,D3 Load the mode
-            MULU    #4,D3
-            JSR     00(A6,D3)
-            LEA     _MODE000,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-Mode001 
-            *Need to print a Address Register
-            *Call function to go to the address register to be printed
-            LEA     AN_TBL,A6
-            MOVE.B  MODE,D3 Load the mode
-            MULU    #4,D3
-            JSR     00(A6,D3)
-            LEA     _MODE001,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-Mode010 
-            LEA     _MODE010,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-Mode011 
-            *Call function to print a '(' paran
-            LEA     AN_TBL,A6
-            MOVE.B  MODE,D3 Load the mode
-            MULU    #4,D3
-            JSR     00(A6,D3)
-            LEA     _MODE011,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-Mode100 
-            LEA     _MODE100,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-Mode101 
-            LEA     _MODE101,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-Mode110 
-            LEA     _MODE110,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-Mode111 
-            *Call Print Pound Sign function
-            *Retrieve value from Memory
-            *Print value
-            LEA     _MODE111,A1
-            MOVE.B  #14, D0
-            TRAP    #15
-            RTS
-
- 
+JMP_M0
+        *Need to print a Data Register
+        *Call function to go to the data register to be printed
+        *Need to use reg table
+        LEA     DN_TBL,A6 
+        MOVE.B  MODE,D3     Load the mode
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        LEA     _M0,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
+JMP_M1
+        *Need to print a Address Register
+        *Call function to go to the address register to be printed
+        LEA     AN_TBL,A6
+        MOVE.B  MODE,D3     Load the mode
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        LEA     _M1,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
+JMP_M2
+        LEA     _M2,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
+JMP_M3
+        *Call function to print a '(' paran
+        LEA     AN_TBL,A6
+        MOVE.B  MODE,D3     Load the mode
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        LEA     _M3,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
+JMP_M4
+        LEA     _M4,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
+JMP_M5
+        LEA     _M5,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
+JMP_M6 
+        LEA     _M6,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
+JMP_M7 
+        *Call Print Pound Sign function
+        *Retrieve value from Memory
+        *Print value
+        LEA     _M7,A1
+        MOVE.B  #14, D0
+        TRAP    #15
+        RTS
 
 *---------------------------
 *   TABLES:
@@ -792,42 +778,45 @@ Mode111
 *   0000-0111 = D0-D7
 *   1000-1111 = A0-A7
 *---------------------------
-DN_TBL      JMP     goToD0 ;000
-            JMP     goToD1 ;001
-            JMP     goToD2 ;010
-            JMP     goToD3 ;011
-            JMP     goToD4 ;100
-            JMP     goToD5 ;101
-            JMP     goToD6 ;110
-            JMP     goToD7 ;111
+
+DN_TBL
+        JMP     JMP_D0  000
+        JMP     JMP_D1  001
+        JMP     JMP_D2  010
+        JMP     JMP_D3  011
+        JMP     JMP_D4  100
+        JMP     JMP_D5  101
+        JMP     JMP_D6  110
+        JMP     JMP_D7  111
             
 *-----------------------------
 *   MODE Table
 *   MODES (0000-0111)
 *-----------------------------
-MODE_TBL    JMP     Mode000 ;0000
-            JMP     Mode001 ;0001
-            JMP     Mode010 ;0010
-            JMP     Mode011 ;0011
-            JMP     Mode100 ;0100
-            JMP     Mode101 ;0101
-            JMP     Mode110 ;0110
-            JMP     Mode111 ;0111
+MODE_TBL
+        JMP     JMP_M0  000
+        JMP     JMP_M1  001
+        JMP     JMP_M2  010
+        JMP     JMP_M3  011
+        JMP     JMP_M4  100
+        JMP     JMP_M5  101
+        JMP     JMP_M6  110
+        JMP     JMP_M7  111
             
 *-----------------------------
 *   AN Table
 *   MODES (0000-0111)
 *-----------------------------
-AN_TBL      JMP     goToA0
-            JMP     goToA1
-            JMP     goToA2
-            JMP     goToA3
-            JMP     goToA4
-            JMP     goToA5
-            JMP     goToA6
-            JMP     goToA7
+AN_TBL
+        JMP     JMP_A0  000
+        JMP     JMP_A1  001
+        JMP     JMP_A2  010
+        JMP     JMP_A3  011
+        JMP     JMP_A4  100
+        JMP     JMP_A5  101
+        JMP     JMP_A6  110
+        JMP     JMP_A7  111
 
         BRA     DONE
-        
+     
         END     START
-
