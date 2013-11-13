@@ -575,27 +575,27 @@ BRAND
         CMP.B   #$4, D5
         BLT     ADDMODE1
         LEA     MODE_TBL,A6
-        MOVE.B  EXTMSK_9AB,D3
-        MOVE.B  EXTMSK_9AB,D3
+        MOVE.B  MSK_9AB,D3
+        MOVE.B  MSK_9AB,D3
         MULU    #4,D3
         JSR     00(A6,D3)
         *Call function to print a COMMA ','
         LEA     MODE_TBL,A6
-        MOVE.B  EXTMSK_345,D3
-        MOVE.B  EXTMSK_012,MODE
+        MOVE.B  MSK_345,D3
+        MOVE.B  MSK_012,MODE
         MULU    #4,D3
         JSR     00(A6,D3)
         BRA     INCREM
 ADDMODE1
         LEA     MODE_TBL,A6
-        MOVE.B  EXTMSK_345,D3
-        MOVE.B  EXTMSK_012,MODE
+        MOVE.B  MSK_345,D3
+        MOVE.B  MSK_012,MODE
         MULU    #4,D3
         JSR     00(A6,D3)
         *Call function to print a COMMA ','
         LEA     MODE_TBL,A6
-        MOVE.B  EXTMSK_9AB,D3
-        MOVE.B  EXTMSK_9AB,MODE
+        MOVE.B  MSK_9AB,D3
+        MOVE.B  MSK_9AB,MODE
         MULU    #4,D3
         JSR     00(A6,D3)
         BRA     INCREM
@@ -649,12 +649,26 @@ BRMOVEA
 
         *Call print COMMA function ','
         LEA     AN_TBL,A6
-        MOVE.B  EXTMSK_9AB,D3
-        MOVE.B  EXTMSK_9AB,MODE
+        MOVE.B  MSK_9AB,D3
+        MOVE.B  MSK_9AB,MODE
         MULU    #4,D3
         JSR     00(A6,D3)
         BRA     INCREM
 
+BRNOT
+        BSR     EXTMSK_67
+        BSR     EXTMSK_012
+        BSR     EXTMSK_345
+        *Print NOT
+        *Call function to print DOT '.'
+        *Call function to print based on size (B/W/L)
+        *Call function to print a TAB
+        LEA     MODE_TBL,A6
+        MOVE.B  MSK_345,D3
+        MOVE.B  MSK_012,MODE
+        MULU    #4,D3
+        JSR     00(A6,D3)
+        BRA     INCREM
 *----------------------------------------------
 *   User Functions
 *----------------------------------------------
