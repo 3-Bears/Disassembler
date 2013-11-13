@@ -19,6 +19,7 @@ BITS_5     DS.B    1  Storage for bit 5
 BITS_678   DS.B    1  Storage for bits 6,7,8
 BITS_9AB   DS.B    1  Storage for bits 9,10,11
 BITS_CD    DS.B    1  Storage for bits 12,13
+MODE       DS.B    1  Storage for which bits to use EA or OP
 
 *----MASKS(SHOW)-------
 BIT_34   EQU     %0000000000011000 ;used to show bits 3,4
@@ -589,6 +590,7 @@ BRMOVE
         *Call Print TAB '   ' function
         LEA     MODE_TBL,A6     Load the EA_Table
         MOVE.B  BITS_345,D3   Load the EA MODE
+        MOVE.B  BITS_345,MODE   
         MULU    #4,D3
         JSR     00(A6,D3)
         
@@ -596,6 +598,7 @@ BRMOVE
         
         LEA     MODE_TBL,A6
         MOVE.B  BITS_678,D3 Load the OpMode
+        MOVE.B  BITS_678,MODE
         MULU    #4, D3
         JSR     00(A6,D3)
         
@@ -663,37 +666,54 @@ GET_BITS_9AB
 
 
 goToD0 
+            *ummm we can do a couple of things here
+            *we can add the print stuff directly in here
+            *or we can make seperate print functions
             RTS
 goToD1 
+            *see goToD0
             RTS
 goToD2 
+            *see goToD0
             RTS
 goToD3 
+            *see goToD0
             RTS
 goToD4 
+            *see goToD0
             RTS
 goToD5
+            *see goToD0
             RTS
 goToD6 
+            *see goToD0
             RTS
 goToD7 
+            *see goToD0
             RTS
-            
 goToA0  
+            *see goToD0
             RTS
 goToA1 
+            *see goToD0
             RTS
 goToA2 
+            *see goToD0
             RTS
 goToA3
+            *see goToD0
             RTS
 goToA4 
+            *see goToD0
             RTS
 goToA5 
+            *see goToD0
             RTS
 goToA6 
+            *see goToD0
             RTS
 goToA7
+            *see goToD0
             RTS
             
 Mode000
@@ -701,7 +721,7 @@ Mode000
             *Call function to go to the data register to be printed
             *Need to use reg table
             LEA     DN_TBL,A6 
-            MOVE.B  BITS_012,D3 Load the mode
+            MOVE.B  MODE,D3 Load the mode
             MULU    #4,D3
             JSR     00(A6,D3)
             LEA     _MODE000,A1
@@ -712,7 +732,7 @@ Mode001
             *Need to print a Address Register
             *Call function to go to the address register to be printed
             LEA     AN_TBL,A6
-            MOVE.B  BITS_012,D3 Load the mode
+            MOVE.B  MODE,D3 Load the mode
             MULU    #4,D3
             JSR     00(A6,D3)
             LEA     _MODE001,A1
@@ -725,6 +745,11 @@ Mode010
             TRAP    #15
             RTS
 Mode011 
+            *Call function to print a '(' paran
+            LEA     AN_TBL,A6
+            MOVE.B  MODE,D3 Load the mode
+            MULU    #4,D3
+            JSR     00(A6,D3)
             LEA     _MODE011,A1
             MOVE.B  #14, D0
             TRAP    #15
