@@ -34,7 +34,14 @@ BIT_CDEF EQU %1111000000000000 ;used to show bits 12,13,14,15
 
 *----Words--------------
 _RTS     DC.B    'RTS', CR, LF,0
-_MODE111 DC.B    'Print# and data',CR,LF,0
+_MODE000 DC.B    'MODE 000',CR,LF,0
+_MODE001 DC.B    'MODE 001',CR,LF,0
+_MODE010 DC.B    'MODE 010',CR,LF,0
+_MODE011 DC.B    'MODE 011',CR,LF,0
+_MODE100 DC.B    'MODE 100',CR,LF,0
+_MODE101 DC.B    'MODE 101',CR,LF,0
+_MODE110 DC.B    'MODE 110',CR,LF,0
+_MODE111 DC.B    'MODE 111',CR,LF,0
 
 *----MASKS(DONTSHOW)------
 *USE NOT on the bits above
@@ -580,14 +587,14 @@ BRMOVE
         *Call Print Dot '.' function
         *Call Function that prints the Size (B/W/L)
         *Call Print TAB '   ' function
-        LEA     EA_TBL,A6     Load the EA_Table
+        LEA     MODE_TBL,A6     Load the EA_Table
         MOVE.B  BITS_345,D3   Load the EA MODE
         MULU    #4,D3
         JSR     00(A6,D3)
         
         *Call Print COMMA function ','
         
-        LEA     OP_TBL,A6
+        LEA     MODE_TBL,A6
         MOVE.B  BITS_678,D3 Load the OpMode
         MULU    #4, D3
         JSR     00(A6,D3)
@@ -671,48 +678,73 @@ goToD6
             RTS
 goToD7 
             RTS
-goToA0 
+            
+goToA0  
             RTS
 goToA1 
             RTS
 goToA2 
             RTS
-goToA3 
+goToA3
             RTS
 goToA4 
-
             RTS
-goToA5
+goToA5 
             RTS
 goToA6 
             RTS
-goToA7 
+goToA7
             RTS
-  
-
-goToEA_Mode0000
+            
+Mode000
             *Need to print a Data Register
             *Call function to go to the data register to be printed
             *Need to use reg table
-            LEA     REG_TBL,A6 
+            LEA     DN_TBL,A6 
             MOVE.B  BITS_012,D3 Load the mode
             MULU    #4,D3
             JSR     00(A6,D3)
-            RTS 
-goToEA_Mode0001 
+            LEA     _MODE000,A1
+            MOVE.B  #14, D0
+            TRAP    #15
+            RTS
+Mode001 
             *Need to print a Address Register
             *Call function to go to the address register to be printed
-            LEA     REG_TBL,A6
+            LEA     AN_TBL,A6
             MOVE.B  BITS_012,D3 Load the mode
-            MULU    #8,D3
+            MULU    #4,D3
             JSR     00(A6,D3)
+            LEA     _MODE001,A1
+            MOVE.B  #14, D0
+            TRAP    #15
             RTS
-goToEA_Mode0010 
-goToEA_Mode0011 
-goToEA_Mode0100 
-goToEA_Mode0101 
-goToEA_Mode0110 
-goToEA_Mode0111 
+Mode010 
+            LEA     _MODE010,A1
+            MOVE.B  #14, D0
+            TRAP    #15
+            RTS
+Mode011 
+            LEA     _MODE011,A1
+            MOVE.B  #14, D0
+            TRAP    #15
+            RTS
+Mode100 
+            LEA     _MODE100,A1
+            MOVE.B  #14, D0
+            TRAP    #15
+            RTS
+Mode101 
+            LEA     _MODE101,A1
+            MOVE.B  #14, D0
+            TRAP    #15
+            RTS
+Mode110 
+            LEA     _MODE110,A1
+            MOVE.B  #14, D0
+            TRAP    #15
+            RTS
+Mode111 
             *Call Print Pound Sign function
             *Retrieve value from Memory
             *Print value
@@ -721,14 +753,7 @@ goToEA_Mode0111
             TRAP    #15
             RTS
 
-goToOP_Mode0000 
-goToOP_Mode0001 
-goToOP_Mode0010 
-goToOP_Mode0011 
-goToOP_Mode0100 
-goToOP_Mode0101 
-goToOP_Mode0110 
-goToOP_Mode0111 
+ 
 
 *---------------------------
 *   TABLES:
@@ -738,52 +763,44 @@ goToOP_Mode0111
 *   MANIP:      (...)    
 
 *---------------------------
-*   Register Table
+*   DN Table
 *   0000-0111 = D0-D7
 *   1000-1111 = A0-A7
 *---------------------------
-REG_TBL     JMP     goToD0 ;0000
-            JMP     goToD1 ;0001
-            JMP     goToD2 ;0010
-            JMP     goToD3 ;0011
-            JMP     goToD4 ;0100
-            JMP     goToD5 ;0101
-            JMP     goToD6 ;0110
-            JMP     goToD7 ;0111
-            JMP     goToA0 ;1000
-            JMP     goToA1 ;1001
-            JMP     goToA2 ;1010
-            JMP     goToA3 ;1011
-            JMP     goToA4 ;1100
-            JMP     goToA5 ;1101
-            JMP     goToA6 ;1110
-            JMP     goToA7 ;1111
+DN_TBL      JMP     goToD0 ;000
+            JMP     goToD1 ;001
+            JMP     goToD2 ;010
+            JMP     goToD3 ;011
+            JMP     goToD4 ;100
+            JMP     goToD5 ;101
+            JMP     goToD6 ;110
+            JMP     goToD7 ;111
             
 *-----------------------------
-*   EA Table
+*   MODE Table
 *   MODES (0000-0111)
 *-----------------------------
-EA_TBL      JMP     goToEA_Mode0000 ;0000
-            JMP     goToEA_Mode0001 ;0001
-            JMP     goToEA_Mode0010 ;0010
-            JMP     goToEA_Mode0011 ;0011
-            JMP     goToEA_Mode0100 ;0100
-            JMP     goToEA_Mode0101 ;0101
-            JMP     goToEA_Mode0110 ;0110
-            JMP     goToEA_Mode0111 ;0111
+MODE_TBL    JMP     Mode000 ;0000
+            JMP     Mode001 ;0001
+            JMP     Mode010 ;0010
+            JMP     Mode011 ;0011
+            JMP     Mode100 ;0100
+            JMP     Mode101 ;0101
+            JMP     Mode110 ;0110
+            JMP     Mode111 ;0111
             
 *-----------------------------
-*   OP Mode Table
+*   AN Table
 *   MODES (0000-0111)
 *-----------------------------
-OP_TBL      JMP     goToOP_Mode0000 ;0000
-            JMP     goToOP_Mode0001 ;0001
-            JMP     goToOP_Mode0010 ;0010
-            JMP     goToOP_Mode0011 ;0011
-            JMP     goToOP_Mode0100 ;0100
-            JMP     goToOP_Mode0101 ;0101
-            JMP     goToOP_Mode0110 ;0110
-            JMP     goToOP_Mode0111 ;0111
+AN_TBL      JMP     goToA0
+            JMP     goToA1
+            JMP     goToA2
+            JMP     goToA3
+            JMP     goToA4
+            JMP     goToA5
+            JMP     goToA6
+            JMP     goToA7
 
         BRA     DONE
         
