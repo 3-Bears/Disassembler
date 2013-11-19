@@ -17,10 +17,15 @@ MSK_012 DS.B    1       Storage for bits 0,1,2
 MSK_345 DS.B    1       Storage for bits 3,4,5
 MSK_5   DS.B    1       Storage for bit 5
 MSK_67  DS.B    1       Storage for bits 6,7
+MSK_8   DS.B    1       Storage for bit 8
 MSK_678 DS.B    1       Storage for bits 6,7,8
+MSK_89AB DS.B   1       Storage for bits 8,9,10,11
 MSK_9AB DS.B    1       Storage for bits 9,10,11
 MSK_CD  DS.B    1       Storage for bits 12,13
 MODE    DS.B    1       Storage for which bits to use EA or OP
+DISP8   DS.B    1       Storage for 8bits displacement
+DISP16  DS.B    2       Storage for 16bits displacement (Word)
+DISP32  DS.B    4       Storage for 32bits displacement (Long)
 
 *----Words--------------
 _RTS    DC.B    'RTS',CR,LF,0
@@ -588,31 +593,8 @@ INCREM  CMP.L   ELOC,A0         Compare ending location to location
         BRA     BAD                 No mask matched, branch to BAD
         
 BAD     BRA     INCREM
-BRSUBI  BRA     INCREM
-BRORI   BRA     INCREM
-BREORI  BRA     INCREM
-BRBTST  BRA     INCREM
-BRCMPI  BRA     INCREM
-*BRMOVE  BRA     INCREM
-*BRMOVEA BRA     INCREM
 BRMOVEM BRA     INCREM
-*BRLEA   BRA     INCREM
-*BRNOT   BRA     INCREM
-*BRJSR   BRA     INCREM
-*BRADDQ  BRA     INCREM
-BRBCC   BRA     INCREM
-BRDIVS  BRA     INCREM
-*BRSUB   BRA     INCREM
-*BRSUBA  BRA     INCREM
-*BREOR   BRA     INCREM
-*BRCMP   BRA     INCREM
-*BRCMPA  BRA     INCREM
-BRMULU  BRA     INCREM
-*BRAND   BRA     INCREM
-*BRADD   BRA     INCREM
-*BRADDA  BRA     INCREM
-BRASL   BRA     INCREM
-BRLSR   BRA     INCREM
+
 
 *--------------------------
 *  Instruction Subroutines
@@ -650,9 +632,7 @@ BRADDA
         BRA     INCREM
 BRADDQ
         BSR     EXTMSK_9AB
-        BSR     EXTMSK_67
-        BSR     EXTMSK_012
-        BSR     EXTMSK_345
+        BSR     EXTMSK_7to0
         *Print ADDQ
         *Print  .
         *Print  size according to MSK_67
@@ -682,6 +662,62 @@ ANDMODE1 *AND Dn, <ea>
         *Call function to print a COMMA ','
         BSR     EAMODE
         BRA     INCREM  Jump to next instruction
+
+BRBTST
+        BSR     EXTMSK_Bto0
+        *Print  BTST
+        *Print  tab
+        MOVE.B  MSK_678,D4
+        CMP.B   #4,D4 if 4 then it's Dn,<ea>
+        BNE     BTSTIMMED 
+        MOVE.B  MSK_9AB,MODE
+        BSR     DNMODE
+        *Print comma ','
+        BSR     EAMODE
+        BRA     INCREM
+BTSTIMMED        
+        *Still need to figure out and finish coding
+        BRA     INCREM
+
+BRBCC   
+        BSR     EXTMSK_89AB
+        *Print  TAB
+        MOVE.B  MSK_89AB,D4
+        BSR     EXTMSK_70 Get lower 8 bits(displacement)
+        MOVE.B  DISP8,D4
+        CMP.B   #7,D4
+        BEQ     BRBEQ
+        CMP.B   #13,D4
+        BEQ     BRBLT
+        CMP.B   #6,D4
+        BEQ     BRBNE
+        CMP.B   #2,D4
+        BEQ     BRBHI
+BRBEQ
+        *Print BEQ
+        *CMP DISP8 to get displacement
+        *If 00 then 16 displacement
+        *If FF then 32 displacement
+        BRA     ENDBCC        
+BRBLT   
+        *Print BLT
+        *CMP DISP8 to get displacement
+        *If 00 then 16 displacement
+        *If FF then 32 displacement
+        BRA     ENDBCC
+BRBNE   
+        *Print BNE
+        *CMP DISP8 to get displacement
+        *If 00 then 16 displacement
+        *If FF then 32 displacement
+        BRA     ENDBCC
+BRBHI
+        *Print BHI
+        *CMP DISP8 to get displacement
+        *If 00 then 16 displacement
+        *If FF then 32 displacement
+ENDBCC  
+        BRA     INCREM
 BRCMP
         BSR     EXTMSK_Bto0
         *Print  CMP
@@ -704,6 +740,17 @@ BRCMPA
         MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
         BSR     ANMODE
         BRA     INCREM Jump to next instruction   
+BRCMPI
+        BSR     EXTMSK_7to0
+        *Print  CMPI
+        *Print  .
+        *Print  size according to bits 67
+        *Print  tab
+        *Print  #
+        *Print  data from memory
+        *Print  ','
+        BSR     EAMODE
+        BRA     INCREM
 BRRTS 
         * Call Print TAB function '      '
         *LEA     _RTS, A1       Load 'RTS' to be printed
@@ -754,7 +801,91 @@ BRMOVEA
         MOVE.B  MSK_9AB,MODE      Get the register number
         BSR     ANMODE
         BRA     INCREM          Get next instruction
+BRASL
+        *Print ASL
+        *Print  tab
+        BSR     EXTMSK_67
+        MOVE.B  MSK_67, D4
+        CMP.B   #3,D4  If 3 or 11 then it's a memory shift
+        BEQ     ASLMEMORY
+        *Not a memory shift its a Register Shift
+        BSR     EXTMSK_9AB
+        BSR     EXTMSK_5
+        BSR     EXTMSK_012
+        BSR     EXTMSK_8   Should alway be 1 because ASL not ASR
+        MOVE.B  MSK_5, D4
+        CMP.B   #1, D4 If 1 it's Dn,Dn
+        BEQ     ASLDN
+        *#data,Dn
+        *Print  #
+        *Print bits 9AB, 000 is 8
+        BRA     ASLDNPRINT
+ASLDN   *Dn, Dn
+        MOVE.B  MSK_9AB,MODE
+        BSR     DNMODE     
+ASLDNPRINT
+        *Print ,
+        MOVE.B  MSK_012, MODE
+        BSR     DNMODE
+        BRA     INCREM        
+ASLMEMORY
+        BSR     EXTMSK_012
+        BSR     EXTMSK_345
+        BSR     EAMODE
+        BRA     INCREM
 
+        BRA     INCREM
+BRLSR
+        *Print LSR
+        *Print  tab
+        BSR     EXTMSK_67
+        MOVE.B  MSK_67, D4
+        CMP.B   #3,D4  If 3 or 11 then it's a memory shift
+        BEQ     LSRMEMORY
+        *Not a memory shift its a Register Shift
+        BSR     EXTMSK_9AB
+        BSR     EXTMSK_5
+        BSR     EXTMSK_012
+        BSR     EXTMSK_8   Should alway be 0 because LSR not LSL
+        MOVE.B  MSK_5, D4
+        CMP.B   #1, D4 If 1 it's Dn,Dn
+        BEQ     LSRDN
+        *#data,Dn
+        *Print  #
+        *Print bits 9AB 000 is 8
+        BRA     LSRDNPRINT
+LSRDN   *Dn, Dn
+        MOVE.B  MSK_9AB,MODE
+        BSR     DNMODE     
+LSRDNPRINT
+        *Print ,
+        MOVE.B  MSK_012, MODE
+        BSR     DNMODE
+        BRA     INCREM        
+LSRMEMORY
+        BSR     EXTMSK_012
+        BSR     EXTMSK_345
+        BSR     EAMODE
+        BRA     INCREM
+
+BRMULU
+        BSR     EXTMSK_Bto0
+        *Print  MULU
+        *Print  tab
+        BSR     EAMODE
+        *Print  ,
+        MOVE.B  MSK_9AB,MODE      Get the register number
+        BSR     DNMODE
+        BRA     INCREM
+BRDIVS
+        BSR     EXTMSK_Bto0
+        *Print  DIVS
+        *Print  tab
+        BSR     EAMODE
+        *Print  ,
+        MOVE.B  MSK_9AB,MODE      Get the register number
+        BSR     DNMODE        
+        BRA     INCREM
 BREOR
         BSR     EXTMSK_Bto0
         *Print EOR
@@ -764,11 +895,26 @@ BREOR
         *Print a comma ','
         BSR     EAMODE
         BRA     INCREM          Get next instruction
-
+BRORI
+        BSR     EXTMSK_7to0
+        *Print  ORI
+        *Print  tab
+        *Print  #
+        *Print  data according to size
+        *Print  comma ','
+        BSR     EAMODE
+        BRA     INCREM
+BREORI
+        BSR     EXTMSK_7to0
+        *Print  EORI
+        *Print  tab
+        *Print  #
+        *Print  data according to size
+        *Print  comma ','
+        BSR     EAMODE
+        BRA     INCREM
 BRNOT
-        BSR     EXTMSK_67      Get the size
-        BSR     EXTMSK_012     Get the EA<register>
-        BSR     EXTMSK_345     Get the EA<mode>
+        BSR     EXTMSK_7to0
         *Print NOT
         *Call function to print DOT '.'
         *Call function to print based on size (B/W/L)
@@ -806,6 +952,17 @@ BRSUBA
         MOVE.B  MSK_9AB,MODE Load the register number
         BSR     ANMODE  Print <An>     
         BRA     INCREM
+BRSUBI
+        BSR     EXTMSK_7to0
+        *Print  SUBI
+        *Print  .
+        *Print  size according to bits 67
+        *Print  tab
+        *print  #
+        *print  data *32/16/8
+        *print  ','
+        BSR     EAMODE
+        BRA     INCREM
 
 *----------------------------------------------
 *   User Functions
@@ -838,6 +995,19 @@ EXTMSK_Bto0     * 15 14 13 12 [11 10 09 08 07 06 05 04 03 02 01 00]
         BSR     EXTMSK_345 Get EA<mode>
         BSR     EXTMSK_012 Get EA<register>
         RTS
+EXTMSK_7to0     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
+        BSR     EXTMSK_67
+        BSR     EXTMSK_345 Get EA<mode>
+        BSR     EXTMSK_012 Get EA<register>
+        RTS
+EXTMSK_70     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
+        MOVE.L  (A0),D0                 Transfer data to memory
+        BSR     ASCII2HEX               Convert data to HEX
+        MOVE.L  D1,D0                   Input
+        MOVE.L  #%0000000111111111,D2   Mask
+        BSR     EXTMSK                  Extract masked bits
+        MOVE.B  D1,DISP8                Store masked bits
+        RTS
 EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
         MOVE.L  (A0),D0                 Transfer data to memory
         BSR     ASCII2HEX               Convert data to HEX
@@ -846,7 +1016,16 @@ EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_678              Store masked bits
         RTS                             Return to caller
-
+        
+EXTMSK_89AB     * 15 14 13 12 [11 10 09 08] 07 06 05 04 03 02 01 00
+        MOVE.L  (A0),D0                 Transfer data to memory
+        BSR     ASCII2HEX               Convert data to HEX
+        MOVE.L  D1,D0                   Input
+        MOVE.L  #%0000111100000000,D2   Mask
+        BSR     EXTMSK                  Extract masked bits
+        MOVE.B  D1,MSK_89AB              Store masked bits
+        RTS                             Return to caller
+        
 EXTMSK_67      * 15 14 13 12 11 10 09 08 [07 06]05 04 03 02 01 00
         MOVE.L  (A0),D0                 Transfer data to memory
         BSR     ASCII2HEX               Convert data to HEX
@@ -873,7 +1052,14 @@ EXTMSK_5        * 15 14 13 12 11 10 09 08 07 06[05]04 03 02 01 00
         BSR     EXTMSK
         MOVE.B  D1,MSK_5
         RTS
-        
+EXTMSK_8        * 15 14 13 12 11 10 09 [08] 07 06 05 04 03 02 01 00
+        MOVE.L  (A0),D0
+        BSR     ASCII2HEX
+        MOVE.L  D1,D0
+        MOVE.L  #%0000000100000000,D2
+        BSR     EXTMSK
+        MOVE.B  D1,MSK_8
+        RTS        
 EXTMSK_012      * 15 14 13 12 11 10 09 08 07 06 05 04 03[02 01 00]
         MOVE.L  (A0),D0
         BSR     ASCII2HEX
@@ -1068,3 +1254,4 @@ AN_TBL
         BRA     DONE
      
         END     START
+
