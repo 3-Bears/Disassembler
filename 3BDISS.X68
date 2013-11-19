@@ -596,134 +596,248 @@ BRCMPI  BRA     INCREM
 *BRMOVE  BRA     INCREM
 *BRMOVEA BRA     INCREM
 BRMOVEM BRA     INCREM
-BRLEA   BRA     INCREM
+*BRLEA   BRA     INCREM
 *BRNOT   BRA     INCREM
-BRJSR   BRA     INCREM
-BRADDQ  BRA     INCREM
+*BRJSR   BRA     INCREM
+*BRADDQ  BRA     INCREM
 BRBCC   BRA     INCREM
 BRDIVS  BRA     INCREM
-BRSUB   BRA     INCREM
-BRSUBA  BRA     INCREM
-BREOR   BRA     INCREM
-BRCMP   BRA     INCREM
-BRCMPA  BRA     INCREM
+*BRSUB   BRA     INCREM
+*BRSUBA  BRA     INCREM
+*BREOR   BRA     INCREM
+*BRCMP   BRA     INCREM
+*BRCMPA  BRA     INCREM
 BRMULU  BRA     INCREM
 *BRAND   BRA     INCREM
-BRADD   BRA     INCREM
-BRADDA  BRA     INCREM
+*BRADD   BRA     INCREM
+*BRADDA  BRA     INCREM
 BRASL   BRA     INCREM
 BRLSR   BRA     INCREM
 
 *--------------------------
 *  Instruction Subroutines
 *--------------------------
+BRADD
+        BSR     EXTMSK_Bto0
+        *Print ADD
+        *Print  .
+        *Print  size according to OPMODE
+        *Print  tab
+        MOVE.B  MSK_678, D5 Copy OPmode
+        CMP.B   #$4, D5 If greater than 4, Syntax is ADD Dn, <ea>
+        BGT     BRADD1
+        BSR     EAMODE
+        *Print ','
+        MOVE.B  MSK_9AB,MODE      Get the register number
+        BSR     DNMODE
+        BRA     INCREM
+BRADD1                
+        MOVE.B  MSK_9AB,MODE      Get the register number
+        BSR     DNMODE
+        *Print '','
+        BSR     EAMODE        
+        BRA     INCREM
 
-BRAND   
+BRADDA
+        *Print ADDA
+        *Print  .
+        *Print  Size according to OPMODE
+        *Print  tab
+        BSR     EAMODE 
+        *Print  ','
+        MOVE.B  MSK_9AB,MODE      Get the register number
+        BSR     DNMODE       
+        BRA     INCREM
+BRADDQ
         BSR     EXTMSK_9AB
-        BSR     EXTMSK_678
-        BSR     EXTMSK_345
+        BSR     EXTMSK_67
         BSR     EXTMSK_012
-        MOVE.B  EXTMSK_678, D5
-        CMP.B   #$4, D5
-        BLT     ADDMODE1
-        LEA     MODE_TBL,A6
-        MOVE.B  MSK_9AB,D3
-        MOVE.B  MSK_9AB,D3
-        MULU    #4,D3
-        JSR     00(A6,D3)
-        *Call function to print a COMMA ','
-        LEA     MODE_TBL,A6
-        MOVE.B  MSK_345,D3
-        MOVE.B  MSK_012,MODE
-        MULU    #4,D3
-        JSR     00(A6,D3)
+        BSR     EXTMSK_345
+        *Print ADDQ
+        *Print  .
+        *Print  size according to MSK_67
+        *Print  tab
+        *Print  #
+        *Print  Data
+        *Print  ,
+        BSR     EAMODE
         BRA     INCREM
-ADDMODE1
-        LEA     MODE_TBL,A6
-        MOVE.B  MSK_345,D3
-        MOVE.B  MSK_012,MODE
-        MULU    #4,D3
-        JSR     00(A6,D3)
+BRAND   
+        BSR     EXTMSK_Bto0      
+        *PRINT AND
+        *Print DOT '.'
+        *Print Size
+        *Print Tab
+        MOVE.B  MSK_678, D5 Copy OPmode
+        CMP.B   #$4, D5 If greater than 4, Syntax is AND Dn, <ea>
+        BGT     ANDMODE1
+        BSR     EAMODE
         *Call function to print a COMMA ','
-        LEA     MODE_TBL,A6
-        MOVE.B  MSK_9AB,D3
-        MOVE.B  MSK_9AB,MODE
-        MULU    #4,D3
-        JSR     00(A6,D3)
-        BRA     INCREM
-
+        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
+        BSR     DNMODE
+        BRA     INCREM Jump to next instruction
+ANDMODE1 *AND Dn, <ea>
+        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
+        BSR     DNMODE
+        *Call function to print a COMMA ','
+        BSR     EAMODE
+        BRA     INCREM  Jump to next instruction
+BRCMP
+        BSR     EXTMSK_Bto0
+        *Print  CMP
+        *Print  .
+        *Print  size according to opmode
+        *Print  tab
+        BSR     EAMODE
+        *Print  ,
+        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
+        BSR     DNMODE
+        BRA     INCREM Jump to next instruction       
+BRCMPA
+        BSR     EXTMSK_Bto0
+        *Print  CMPA
+        *Print  .
+        *Print  size according to opmode
+        *Print  tab
+        BSR     EAMODE
+        *Print  ,
+        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
+        BSR     ANMODE
+        BRA     INCREM Jump to next instruction   
 BRRTS 
         * Call Print TAB function '      '
         *LEA     _RTS, A1       Load 'RTS' to be printed
         MOVE.B    #0, D0        Load the length of message
         BRA     INCREM          Return to subroutine
+BRLEA
+        BSR     EXTMSK_Bto0
+        *Print  LEA
+        *Print  tab
+        BSR     EAMODE
+        *Print  ,
+        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
+        BSR     ANMODE        
 
+BRJSR
+        BSR     EXTMSK_012
+        BSR     EXTMSK_345
+        *Print  JSR
+        *Print  tab
+        BSR     EAMODE
+        BRA     INCREM
 BRMOVE
         BSR     EXTMSK_CD       Get the size of MOVE instruction
-        BSR     EXTMSK_9AB      Get the register
-        BSR     EXTMSK_678      Get the OPmode
-        BSR     EXTMSK_345      Get the EA mode
-        BSR     EXTMSK_012      Get the EA Register
+        BSR     EXTMSK_Bto0
         * Call Print 'MOVE' function
         * Call Print Dot '.' function
         * Call Function that prints the Size (B/W/L)
         * Call Print TAB '   ' function
-        LEA     MODE_TBL,A6     Load the EA_Table
-        MOVE.B  MSK_345,D3      Load the EA MODE
-        MOVE.B  MSK_345,MODE   
-        MULU    #4,D3
-        JSR     00(A6,D3)
-        
+        BSR     EAMODE
         * Call Print COMMA function ','
-        
-        LEA     MODE_TBL,A6
+        LEA     MODE_TBL,A6     Load the Mode table
         MOVE.B  MSK_678,D3      Load the OP Mode
-        MOVE.B  MSK_678,MODE
-        MULU    #4, D3
-        JSR     00(A6,D3)
-        
-        BRA     INCREM
+        MOVE.B  MSK_9AB,MODE    Copy the EA mode into the mode variable
+        MULU    #4, D3          
+        JSR     00(A6,D3)       Jump to appropriate EA<mode> 
+        CLR.L   D3       
+        BRA     INCREM          Go to next instruction
 
 BRMOVEA 
         BSR     EXTMSK_CD       Get the size of MOVE instruction
-        BSR     EXTMSK_9AB      Get the register
-        BSR     EXTMSK_345      Get the EA mode
-        BSR     EXTMSK_012      Get the EA Register
+        BSR     EXTMSK_Bto0
         *Call Print 'MOVEA' function
         *Call Print DOT '.' function
         *Call function that prints the size (B/W/L)
         *Call Print TAB '   ' function
-        LEA     MODE_TBL,A6
-        MOVE.B  MSK_345,D3
-        MOVE.B  MSK_012,MODE
-        MULU    #4,D3
-        JSR     00(A6,D3)
-
+        BSR     EAMODE
         *Call print COMMA function ','
-        LEA     AN_TBL,A6
-        MOVE.B  MSK_9AB,D3
-        MOVE.B  MSK_9AB,MODE
-        MULU    #4,D3
-        JSR     00(A6,D3)
-        BRA     INCREM
+        MOVE.B  MSK_9AB,MODE      Get the register number
+        BSR     ANMODE
+        BRA     INCREM          Get next instruction
+
+BREOR
+        BSR     EXTMSK_Bto0
+        *Print EOR
+        *Print a tab
+        MOVE.B  MSK_9AB, MODE     Copy the register Number
+        BSR     DNMODE
+        *Print a comma ','
+        BSR     EAMODE
+        BRA     INCREM          Get next instruction
 
 BRNOT
-        BSR     EXTMSK_67
-        BSR     EXTMSK_012
-        BSR     EXTMSK_345
+        BSR     EXTMSK_67      Get the size
+        BSR     EXTMSK_012     Get the EA<register>
+        BSR     EXTMSK_345     Get the EA<mode>
         *Print NOT
         *Call function to print DOT '.'
         *Call function to print based on size (B/W/L)
         *Call function to print a TAB
-        LEA     MODE_TBL,A6
-        MOVE.B  MSK_345,D3
-        MOVE.B  MSK_012,MODE
-        MULU    #4,D3
-        JSR     00(A6,D3)
+        BSR     EAMODE
         BRA     INCREM
+BRSUB
+        BSR     EXTMSK_Bto0
+        MOVE.B  MSK_678, D5 Copy OPmode
+        *Print SUB
+        *Print .
+        *Print Size according to EXTMSK_678
+        CMP.B   #$4, D5 If greater than 4, Syntax is SUB Dn,<ea>
+        BGT     BRSUB1
+        *Syntax SUB <ea>,Dn
+        BSR     EAMODE
+        *Print ','
+        MOVE.B  MSK_9AB,MODE Load the register number
+        BSR     DNMODE
+        BRA     INCREM             
+BRSUB1    
+        MOVE.B  MSK_9AB,MODE Load the register number
+        BSR     DNMODE      
+        *Print comma ','
+        BSR     EAMODE
+        BRA     INCREM      Get next instruction
+BRSUBA
+        BSR     EXTMSK_Bto0
+        *Print  SUBA
+        *Print  .
+        *Print  Size according to MSK_678
+        *Print  tab
+        BSR     EAMODE  Print <EA>
+        *Print  ,
+        MOVE.B  MSK_9AB,MODE Load the register number
+        BSR     ANMODE  Print <An>     
+        BRA     INCREM
+
 *----------------------------------------------
 *   User Functions
 *----------------------------------------------
+DNMODE  
+        LEA     DN_TBL,A6  Load Dn table
+        MOVE.B  MODE,D3 Load the register number
+        MULU    #4,D3
+        JSR     00(A6,D3)  Jump to appropriate Dn  
+        CLR.L   D3
+        RTS
+ANMODE
+        LEA     AN_TBL,A6       Load the address table
+        MOVE.B  MODE, D3        Move register into MODE variabl
+        MULU    #4,D3 
+        JSR     00(A6,D3)       Jump to appropriate An
+        CLR.L   D3 
+        RTS
+EAMODE
+        LEA     MODE_TBL,A6 Load the mode table
+        MOVE.B  MSK_345,D3 load the EA<mode>
+        MULU    #4,D3       Get offset address
+        MOVE.B  MSK_012,MODE Move EA<register>
+        JSR     00(A6,D3)   Jump to appropriate MODE
+        CLR.L   D3
+        RTS
+EXTMSK_Bto0     * 15 14 13 12 [11 10 09 08 07 06 05 04 03 02 01 00]
+        BSR     EXTMSK_9AB Get register
+        BSR     EXTMSK_678 Get OPmode
+        BSR     EXTMSK_345 Get EA<mode>
+        BSR     EXTMSK_012 Get EA<register>
+        RTS
 EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
         MOVE.L  (A0),D0                 Transfer data to memory
         BSR     ASCII2HEX               Convert data to HEX
