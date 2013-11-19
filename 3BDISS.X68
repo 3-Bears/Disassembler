@@ -1142,10 +1142,7 @@ JMP_M0
         *Need to print a Data Register
         *Call function to go to the data register to be printed
         *Need to use reg table
-        LEA     DN_TBL,A6 
-        MOVE.B  MODE,D3     Load the mode
-        MULU    #4,D3
-        JSR     00(A6,D3)
+        BSR     DNMODE   
         LEA     _M0,A1
         MOVE.B  #14, D0
         TRAP    #15
@@ -1153,30 +1150,33 @@ JMP_M0
 JMP_M1
         *Need to print a Address Register
         *Call function to go to the address register to be printed
-        LEA     AN_TBL,A6
-        MOVE.B  MODE,D3     Load the mode
-        MULU    #4,D3
-        JSR     00(A6,D3)
+        BSR     ANMODE
         LEA     _M1,A1
         MOVE.B  #14, D0
         TRAP    #15
         RTS
 JMP_M2
+        *Print (
+        BSR     ANMODE
+        *Print )
         LEA     _M2,A1
         MOVE.B  #14, D0
         TRAP    #15
         RTS
 JMP_M3
         *Call function to print a '(' paran
-        LEA     AN_TBL,A6
-        MOVE.B  MODE,D3     Load the mode
-        MULU    #4,D3
-        JSR     00(A6,D3)
+        BSR     ANMODE
+        *Print )
+        *Print +
         LEA     _M3,A1
         MOVE.B  #14, D0
         TRAP    #15
         RTS
 JMP_M4
+        *Print -
+        *Print (
+        BSR     ANMODE
+        *Print )
         LEA     _M4,A1
         MOVE.B  #14, D0
         TRAP    #15
@@ -1254,4 +1254,5 @@ AN_TBL
         BRA     DONE
      
         END     START
+
 
