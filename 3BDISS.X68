@@ -7,6 +7,17 @@
 CR      EQU     $0D     ASCII: carriage return
 LF      EQU     $0A     ASCII: line feed
 TB      EQU     $09     ASCII: horizontal tab
+DOT     EQU     $2E     ASCII: .
+COMMA   EQU     $2C     ASCII: ,
+PLUS    EQU     $2B     ASCII: +
+MINUS   EQU     $2D     ASCII: -
+OPARE   EQU     $28     ASCII: (
+CPARE   EQU     $29     ASCII: )
+SPACE   EQU     $20     ASCII: Space
+SHARP   EQU     $23     ASCII: #
+DOLLAR  EQU     $24     ASCII: $
+PERCEN  EQU     $25     ASCII: %
+
 OADDR   EQU     $1000   Org address
 MNADDR  EQU     $7000   Min address
 MXADDR  EQU     $FFFFF0 Max address
