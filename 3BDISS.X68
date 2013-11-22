@@ -82,7 +82,7 @@ START
         BRA     PRMPT0
         
 DEBUG   MOVE.L  #$7000,(SLOC)   Store starting location
-        MOVE.L  #$701F,(ELOC)   Store ending location
+        MOVE.L  #$7999,(ELOC)   Store ending location
         LEA     FILE,A1         Set file
         MOVE    #51,D0          Open file
         TRAP    #15
@@ -117,8 +117,8 @@ CMPADV  CMP.L   ELOC,A1         Compare ending location to write location
                                 * ^ (saves cycles by only manipulating necessary data instead of comparing to MXADDR)
         BGE     RETURN          Branch to OP if <= to location
         MOVE.L  (A0)+,D1        Transfer data to memory, post-increment location
-        BSR     TSTGRBG         Test if the data is not important (Easy68K specific data)
-        BEQ     CMPADV          If z-flag is set, then we don't care about that memory
+        CMP.W   #$0D0A,D1       Test if the data is not important (Easy68K specific data)
+        BEQ     CMPGRBG         If z-flag is set, then we don't care about that memory
         
         MOVE.L  D1,D0           Move data to D0
         BSR     ASCII2HEX       Convert to HEX
@@ -126,14 +126,9 @@ CMPADV  CMP.L   ELOC,A1         Compare ending location to write location
         ADD.W   #$2,A1          Advance A1 to next byte
         BRA     CMPADV          Loop back
         
-TSTGRBG * CMPRSS helper: Test if data is useful
-        MOVE.L  D1,-(SP)        Push D1 on stack
-        CMP.W   #$0D0A,D1
-        BEQ     FLAGST          
-        ROL.L   #8,D1
-        CMP.B   #$53,D1
-        BEQ     FLAGST
-        BRA     FLAGCL
+CMPGRBG * CMPRSS helper: If the data was garbage, advance to next useful data
+        ADD.L   #8,A0
+        BRA     CMPADV
         
 *
 * ASCII2HEX: Convert ASCII into HEX.
@@ -1364,3 +1359,4 @@ AN_TBL
         BRA     DONE
      
         END     START
+
