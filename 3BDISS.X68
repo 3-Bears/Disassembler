@@ -92,12 +92,19 @@ DEBUG   MOVE.L  #$7000,(SLOC)   Store starting location
         MOVE    #53,D0          Read from file
         TRAP    #15
         
-        BRA     CMPRSS          Manipulate data, then go to OP
+        BSR     CMPRSS          Manipulate data
+        BRA     OP
 
 *-----------------------------------
 *    Conversion & Comparison Methods
 *-----------------------------------
-        
+
+*
+* Return: Helper method for lazy programmers
+*
+
+RETURN  RTS
+
 *
 * Compress: Convert (and effectively, compress) data stored through TRAP to meaningful HEX data in the memory
 *
@@ -108,7 +115,7 @@ CMPRSS  MOVEA.L #$7050,A0       Load address register past file header
         
 CMPADV  CMP.L   ELOC,A1         Compare ending location to write location
                                 * ^ (saves cycles by only manipulating necessary data instead of comparing to MXADDR)
-        BGE     OP              Branch to OP if <= to location
+        BGE     RETURN          Branch to OP if <= to location
         MOVE.L  (A0)+,D1        Transfer data to memory, post-increment location
         BSR     TSTGRBG         Test if the data is not important (Easy68K specific data)
         BEQ     CMPADV          If z-flag is set, then we don't care about that memory
@@ -148,6 +155,7 @@ ASCII2HEX
         
         MOVE.L  (SP)+,D2        Restore D2
                 
+                              * XAXBXCXD
         ROL.B   #4,D1           XAXBXCDX
         LSL.W   #4,D1           XAXBCDX0
         ROL.W   #8,D1           XAXBX0CD
@@ -195,6 +203,73 @@ A2H16   MOVE.B  #$F,D1
         BRA     A2HADV
 
 *
+* HEX2ASCII: Convert ASCII into HEX.
+* Input HEX from D0.W output ASCII to D1.L
+*
+
+HEX2ASCII
+        MOVE.L  D0,D1           Move the input to D1
+
+                              * XXXXABCD
+        SWAP	D1	        	ABCDXXXX
+        CLR.W	D1		        ABCD0000
+        ROL.L	#4,D1   		BCD0000A
+        LSL.B	#4,D1	    	BCD000A0
+        ROL.W	#8,D1		    BCD0A000
+        ROL.L	#4,D1   		CD0A000B
+        ROL.W	#8,D1	    	CD0A0B00
+        ROL.L	#4,D1		    D0A0B00C
+        LSL.B	#4,D1		    D0A0B0C0
+        ROL.L	#4,D1		    0A0B0C0D
+
+        MOVE.L  D2,-(SP)        Push D2 on stack
+        CLR.L   D2              
+        MOVE.B  #3,D2           Set rotation count
+        BSR     H2A             Start loop
+        MOVE.L  (SP)+,D2        Restore D2
+
+        ADD     #$3030,D1       Convert last word
+        SWAP    D1              Swap bytes
+        ADD     #$3030,D1       Convert first word
+        SWAP    D1              Restore order
+        RTS                     Return to caller
+        
+        
+H2A   * ASCII2HEX helper: Convert bytes that were > 30 to appropriate HEX value
+        CMP.B   #$A,D1         A = 11
+        BEQ     H2AA
+        CMP.B   #$B,D1         B = 12
+        BEQ     H2AB
+        CMP.B   #$C,D1         C = 13
+        BEQ     H2AC
+        CMP.B   #$D,D1         D = 14
+        BEQ     H2AD
+        CMP.B   #$E,D1         E = 15
+        BEQ     H2AE
+        CMP.B   #$F,D1         F = 16
+        BEQ     H2AF
+        
+H2AADV  * H2A conversion branch helper: Rotate to the next byte, and loop back to H2A until all bytes have been analyzed/converted
+        ROL.L   #8,D1           Rotate 1st byte to the end
+        DBRA    D2,H2A          If count is > 0, decrement and loop back to A2H
+        RTS                     If count == 0, return to sub-routine
+
+* H2A conversion branches
+H2AA    MOVE.B  #$11,D1
+        BRA     H2AADV
+H2AB    MOVE.B  #$12,D1
+        BRA     H2AADV
+H2AC    MOVE.B  #$13,D1
+        BRA     H2AADV
+H2AD    MOVE.B  #$14,D1
+        BRA     H2AADV
+H2AE    MOVE.B  #$15,D1
+        BRA     H2AADV
+H2AF    MOVE.B  #$16,D1
+        BRA     H2AADV
+
+
+*
 * Mask: Mask an input
 * Input value from D0, input mask from D2, output masked value to D1
 *
@@ -221,7 +296,7 @@ FLAGST  MOVE.L  (SP)+,D1        Restore D1
         MOVE    #%100,CCR       Set the z-flag
         RTS                     Return to caller
         
-       
+*
 * Extract Mask: Test an input to a subsequent mask, and return the masked value in LSB format
 * Input value from D0, input mask from D2, output value in D1
 *
@@ -237,6 +312,45 @@ EXTLP   BTST.L  #0,D2           Test the LSB of the mask for 0
 EXTADV  LSR.L   #1,D2           Rotate mask right by 1 bit
         ROR.L   #1,D1           Rotate output in sync with mask
         BRA     EXTLP           Return to loop
+
+*
+* Display ASCII: Display the ASCII from D0.L to screen
+*
+DSPAX   MOVEM.L D0-D2,-(SP)     Push D0-D2
+        MOVE.L  D0,D1
+        BRA     DSPHST          Branch to DISPHX Start
+
+*
+* Display HEX Word: Display the hex from D0.W to screen
+*
+
+DSPHXW  MOVEM.L D0-D2,-(SP)     Push D0-D2 on stack
+        BSR     HEX2ASCII       Get ASCII in D1
+
+DSPHST  CLR.L   D2              
+        MOVE.B  #3,D2           Set rotation count
+        MOVE.B  #6,D0           Set trap #6 to read single char from D1.B
+        BSR     DSPHADV         Start loop
+
+        MOVEM.L  (SP)+,D0-D2    Restore D0-D2
+        RTS                     Return to caller
+
+DSPHADV ROL.L   #8,D1           Rotate bytes left
+        TRAP    #15             Display char in D1.B
+        DBRA    D2,DSPHADV      If count is > 0, decrement and loop back to DSPHADV
+        RTS                     If count == 0, return to sub-routine
+
+*
+* Display HEX Long: Display the hex from D0.L to screen
+*
+
+DSPHXL  SWAP    D0              Swap first half to D0.W
+        BSR     DSPHXW          Display first half
+        SWAP    D0              Swap lower half to D0.W
+        BSR     DSPHXW          Display lower half
+        RTS                     Return to caller
+        
+
         
 *--------------------
 *   I/O
@@ -358,6 +472,11 @@ OP      MOVEA.L SLOC,A0         Load address register
 
 INCREM  CMP.L   ELOC,A0         Compare ending location to location
         BGE     DONE            Branch to DONE if <= to location
+        
+        MOVE.L  A0,D0           Input HEX address
+        BSR     DSPHXW          Display address to screen
+
+
         MOVE.W  (A0)+,D0        Transfer data to memory, post-increment A0
         * Mask bits to determine OP-code and branch correspondingly-- high order bits are checked first
         
@@ -1013,16 +1132,12 @@ EXTMSK_7to0     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
         RTS
 EXTMSK_70     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
         MOVE.L  (A0),D0                 Transfer data to memory
-        BSR     ASCII2HEX               Convert data to HEX
-        MOVE.L  D1,D0                   Input
         MOVE.L  #%0000000111111111,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,DISP8                Store masked bits
         RTS
 EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
         MOVE.L  (A0),D0                 Transfer data to memory
-        BSR     ASCII2HEX               Convert data to HEX
-        MOVE.L  D1,D0                   Input
         MOVE.L  #%0000000111000000,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_678              Store masked bits
@@ -1030,8 +1145,6 @@ EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
         
 EXTMSK_89AB     * 15 14 13 12 [11 10 09 08] 07 06 05 04 03 02 01 00
         MOVE.L  (A0),D0                 Transfer data to memory
-        BSR     ASCII2HEX               Convert data to HEX
-        MOVE.L  D1,D0                   Input
         MOVE.L  #%0000111100000000,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_89AB              Store masked bits
@@ -1039,8 +1152,6 @@ EXTMSK_89AB     * 15 14 13 12 [11 10 09 08] 07 06 05 04 03 02 01 00
         
 EXTMSK_67      * 15 14 13 12 11 10 09 08 [07 06]05 04 03 02 01 00
         MOVE.L  (A0),D0                 Transfer data to memory
-        BSR     ASCII2HEX               Convert data to HEX
-        MOVE.L  D1,D0                   Input
         MOVE.L  #%0000000011000000,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_67               Store masked bits
@@ -1048,8 +1159,6 @@ EXTMSK_67      * 15 14 13 12 11 10 09 08 [07 06]05 04 03 02 01 00
 
 EXTMSK_CD       * 15 14[13 12]11 10 09 08 07 06 05 04 03 02 01 00
         MOVE.L  (A0),D0
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0
         MOVE.L  #%0011000000000000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_CD
@@ -1057,24 +1166,18 @@ EXTMSK_CD       * 15 14[13 12]11 10 09 08 07 06 05 04 03 02 01 00
         
 EXTMSK_5        * 15 14 13 12 11 10 09 08 07 06[05]04 03 02 01 00
         MOVE.L  (A0),D0
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0
         MOVE.L  #%0000000000100000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_5
         RTS
 EXTMSK_8        * 15 14 13 12 11 10 09 [08] 07 06 05 04 03 02 01 00
         MOVE.L  (A0),D0
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0
         MOVE.L  #%0000000100000000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_8
         RTS        
 EXTMSK_012      * 15 14 13 12 11 10 09 08 07 06 05 04 03[02 01 00]
         MOVE.L  (A0),D0
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0
         MOVE.L  #%0000000000000111,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_012
@@ -1082,8 +1185,6 @@ EXTMSK_012      * 15 14 13 12 11 10 09 08 07 06 05 04 03[02 01 00]
         
 EXTMSK_345      * 15 14 13 12 11 10 09 08 07 06[05 04 03]02 01 00
         MOVE.L  (A0),D0
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0
         MOVE.L  #%0000000000111000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_345
@@ -1091,8 +1192,6 @@ EXTMSK_345      * 15 14 13 12 11 10 09 08 07 06[05 04 03]02 01 00
         
 EXTMSK_9AB      * 15 14 13 12[11 10 09]08 07 06 05 04 03 02 01 00
         MOVE.L  (A0),D0
-        BSR     ASCII2HEX
-        MOVE.L  D1,D0
         MOVE.L  #%0000111000000000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_9AB
@@ -1265,5 +1364,3 @@ AN_TBL
         BRA     DONE
      
         END     START
-
-
