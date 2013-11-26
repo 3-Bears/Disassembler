@@ -22,6 +22,7 @@ OADDR   EQU     $1000   Org address
 MNADDR  EQU     $7000   Min address
 MXADDR  EQU     $FFFFF0 Max address
 BYTES   EQU     $8FFF   Number of bytes to read from file (max address - min address)
+GBUFF   DS.L    1       Pointer to next location in "Good buffer"
 SLOC    DS.B    4       Starting location storage
 ELOC    DS.B    4       Ending location storage
 MSK_012 DS.B    1       Storage for bits 0,1,2
@@ -49,6 +50,52 @@ _M5     DC.B    'MODE 101',CR,LF,0
 _M6     DC.B    'MODE 110',CR,LF,0
 _M7     DC.B    'MODE 111',CR,LF,0
 
+*-----I/O Memory-----
+IOOPCD  DS.B    1       IO offset value for OP-code in OP-code name memory
+IOADDR  DS.L    1       IO address value for instruction memory location
+IOOPRA  DS.L    1       IO operand value for instruction EA
+LC      DS.B    1       IO line counter for screen
+
+* OP-code name memory
+* Example to display MULU:
+*       LEA     OPCDNM,A1
+*       ADD.L   #$2B,A1
+*       MOVE.B  #14,D0
+*       TRAP    #15
+*                NAME           DEC     HEX
+OPCDNM  DC.B    'MOVE',0        00      00
+        DC.B    'MOVEA',0       05      05
+        DC.B    'MOVEM',0       11      0B
+        DC.B    'ADD',0         17      11
+        DC.B    'ADDA',0        21      15
+        DC.B    'ADDQ',0        26      1A
+        DC.B    'SUB',0         31      1F
+        DC.B    'SUBA',0        35      23
+        DC.B    'SUBI',0        40      28
+        DC.B    'MULU',0        45      2D
+        DC.B    'DIVS',0        50      32
+        DC.B    'LEA',0         55      37
+        DC.B    'AND',0         59      3B
+        DC.B    'ORI',0         63      3F
+        DC.B    'EOR',0         67      43
+        DC.B    'EORI',0        71      47
+        DC.B    'NOT',0         76      4C
+        DC.B    'ASL',0         80      50
+        DC.B    'LSR',0         84      54
+        DC.B    'BTST',0        88      58
+        DC.B    'CMP',0         93      5D
+        DC.B    'CMPA',0        97      61
+        DC.B    'CMPI',0        102     66
+        DC.B    'BCC',0         107     6B
+        DC.B    'BEQ',0         111     6F
+        DC.B    'BLT',0         115     73
+        DC.B    'BNE',0         119     77
+        DC.B    'BHI',0         123     7B
+        DC.B    'JSR',0         127     7F
+        DC.B    'RTS',0         131     83
+        DC.B    'BAD',0         135     87
+
+
 MSSG0   DC.B    '  _     _     _     _     _     _ ',CR,LF
         DC.B    ' (o\---/o)   (o\---/o)   (o\---/o)',CR,LF
         DC.B    '  | - - |     | ^ ^ |     | . . |',CR,LF
@@ -57,14 +104,16 @@ MSSG0   DC.B    '  _     _     _     _     _     _ ',CR,LF
         DC.B    '\_______):     THREE     :(_______/',CR,LF
         DC.B    '| |   |        BEARS        |   | |',CR,LF
         DC.B    '| |   |    DISASSEMBLER     |   | |',CR,LF
-        DC.B    '|  \__|_____________________|__/  |',CR,LF
+        DC.B    '|  \__|__Joey__Terence__Win_|__/  |',CR,LF
         DC.B    ' \    I  /_  )   |   (  _\  I    /',CR,LF
         DC.B    '  \____)___)(___/ \___)(___(____/',CR,LF
         DC.B    'Welcome to 3B Disassembler. Enter 0 at any time to quit.',CR,LF,0
 MSSG1   DC.B    'Enter the starting location of the code to be disassembled:',0
 MSSG2   DC.B    'Enter the ending location of the code to be disassembled:',0
 MSSG3   DC.B    'Enter the name of the file you wish to disassemble:',0
-HEADR   DC.B    'Address    Code        Line',CR,LF,0
+MSSG4   DC.B    'Press any key for the next page.',0
+MSSG5   DC.B    'You have reached the end of the program.',0
+HEADR   DC.B    'Address      Code        Line',CR,LF,0
 ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
 ERR3    DC.B    'That file does not exist. Please make sure it is located in the same directory,',CR,LF
@@ -73,7 +122,7 @@ FILE    DC.B    'test.s68',0
 
         ORG     OADDR
 
-START
+START   MOVE.B  #0,LC
         JMP     DEBUG           Debug shortcut for dev team
         LEA     MSSG0,A1        Welcome message
         MOVE.B  #14,D0
@@ -82,7 +131,8 @@ START
         BRA     PRMPT0
         
 DEBUG   MOVE.L  #$7000,(SLOC)   Store starting location
-        MOVE.L  #$7999,(ELOC)   Store ending location
+        MOVE.L  #$7000,(GBUFF)  Store good buffer
+        MOVE.L  #$7100,(ELOC)   Store ending location
         LEA     FILE,A1         Set file
         MOVE    #51,D0          Open file
         TRAP    #15
@@ -93,6 +143,11 @@ DEBUG   MOVE.L  #$7000,(SLOC)   Store starting location
         TRAP    #15
         
         BSR     CMPRSS          Manipulate data
+
+        LEA     HEADR,A1
+        MOVE.B  #14,D0
+        TRAP    #15
+
         BRA     OP
 
 *-----------------------------------
@@ -454,25 +509,84 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         CMP.L   D0,D1           Compare ending location to starting location
         BLS     ILL2            Branch to ILL3 if <= starting location
         
-        BRA     CMPRSS
+        MOVE.L  SLOC,GBUFF      Store starting location in GBUFF for OP
+        BSR     CMPRSS
+        BRA     OP
         
-DONE    MOVE.B  #9,D0
+PRINT   MOVE.L  (IOADDR),D0     Read memory location
+        BSR     DSPHXL          Display as hex long
+        MOVE.B  #6,D0           Display character
+        MOVE.B  #TB,D1          Read tab
+        TRAP    #15
+        LEA     OPCDNM,A1       Read OP-code
+        CLR.L   D0
+        CMP.B   #$FF,(IOOPCD)   Test if OP-code exists
+        BNE     BRGOOD
+BRBAD   MOVE.B  #$87,IOOPCD
+BRGOOD  MOVE.B  (IOOPCD),D0     Get offset
+        ADD.L   D0,A1           Add offset
+        MOVE.B  #14,D0          Display string until NULL character
+        TRAP    #15
+
+        MOVE.B  #6,D0           Display character
+        MOVE.B  #TB,D1          Read tab
+        TRAP    #15
+
+        MOVE.B  #CR,D1
+        TRAP    #15
+        MOVE.B  #LF,D1
+        TRAP    #15
+
+        *DISPLAY IO OPERAND
+        
+        MOVE.L  GBUFF,A0        Set A0 to ELOC location
+        CMPA.L  ELOC,A0         Compare next buffer to ending location
+        BGE     DONE            Branch to DONE if >= ending location
+
+        ADD.B   #1,LC
+        CMP.B   #30,LC          Compare #30 to line counter
+        BEQ     PAUSE           If ==, branch to PAUSE
+
+        * Reset IO OP-code
+        MOVE.B  #$FF,(IOOPCD)
+        BRA     OP              Branch to OP for next instruction
+
+PAUSE   LEA     MSSG4,A1        Display keypress prompt
+        MOVE.B  #14,D0
+        TRAP    #15
+        MOVE.B  #12,D0          Hide keyboard input
+        MOVE.B  #0,D1
+        TRAP    #15
+        MOVE.B  #5,D0           Request keyboard input
+        TRAP    #15
+        MOVE.B  #12,D0          Show keyboard input
+        MOVE.B  #1,D1
+        TRAP    #15
+        MOVE.B  #11,D0          Clear the screen
+        MOVE.W  #$FF00,D1
+        TRAP    #15
+        LEA     HEADR,A1        Display header
+        MOVE.B  #14,D0
+        TRAP    #15
+        CLR.B   (LC)            Reset line counter
+        BRA     OP
+
+DONE    LEA     MSSG5,A1        Display header
+        MOVE.B  #14,D0
+        TRAP    #15
+        MOVE.B  #9,D0
         TRAP    #15
 
 *--------------------
 *   OP
 *--------------------
 
-OP      MOVEA.L SLOC,A0         Load address register
-
-INCREM  CMP.L   ELOC,A0         Compare ending location to location
-        BGE     DONE            Branch to DONE if <= to location
-        
-        MOVE.L  A0,D0           Input HEX address
-        BSR     DSPHXW          Display address to screen
+OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
+        MOVE.L  (A0),D0         Transfer data to memory
+        MOVE.L  GBUFF,IOADDR    Set memory location for IO
+        ADD.L   #4,(GBUFF)      Increment GBUFF by long
 
 
-        MOVE.W  (A0)+,D0        Transfer data to memory, post-increment A0
         * Mask bits to determine OP-code and branch correspondingly-- high order bits are checked first
         
         MOVE.W  #%1110000010001000,D2
@@ -715,16 +829,13 @@ INCREM  CMP.L   ELOC,A0         Compare ending location to location
         BSR     TSTMSK
         BEQ     BRSUBI
      
-        BRA     BAD                 No mask matched, branch to BAD
-        
-BAD     BRA     INCREM
-BRMOVEM BRA     INCREM
-
+        BRA     BRBAD                 No mask matched, branch to BRBAD
 
 *--------------------------
 *  Instruction Subroutines
 *--------------------------
 BRADD
+        MOVE.B  #$11,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print ADD
         *Print  .
@@ -737,15 +848,16 @@ BRADD
         *Print ','
         MOVE.B  MSK_9AB,MODE      Get the register number
         BSR     DNMODE
-        BRA     INCREM
+        BRA     PRINT
 BRADD1                
         MOVE.B  MSK_9AB,MODE      Get the register number
         BSR     DNMODE
         *Print '','
         BSR     EAMODE        
-        BRA     INCREM
+        BRA     PRINT
 
 BRADDA
+        MOVE.B  #$15,(IOOPCD)       Set OP-code name
         *Print ADDA
         *Print  .
         *Print  Size according to OPMODE
@@ -754,8 +866,9 @@ BRADDA
         *Print  ','
         MOVE.B  MSK_9AB,MODE      Get the register number
         BSR     DNMODE       
-        BRA     INCREM
+        BRA     PRINT
 BRADDQ
+        MOVE.B  #$1A,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_9AB
         BSR     EXTMSK_7to0
         *Print ADDQ
@@ -766,8 +879,9 @@ BRADDQ
         *Print  Data
         *Print  ,
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 BRAND   
+        MOVE.B  #$3B,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0      
         *PRINT AND
         *Print DOT '.'
@@ -780,15 +894,16 @@ BRAND
         *Call function to print a COMMA ','
         MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
         BSR     DNMODE
-        BRA     INCREM Jump to next instruction
+        BRA     PRINT Jump to next instruction
 ANDMODE1 *AND Dn, <ea>
         MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
         BSR     DNMODE
         *Call function to print a COMMA ','
         BSR     EAMODE
-        BRA     INCREM  Jump to next instruction
+        BRA     PRINT  Jump to next instruction
 
 BRBTST
+        MOVE.B  #$58,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print  BTST
         *Print  tab
@@ -799,12 +914,13 @@ BRBTST
         BSR     DNMODE
         *Print comma ','
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 BTSTIMMED        
         *Still need to figure out and finish coding
-        BRA     INCREM
+        BRA     PRINT
 
 BRBCC   
+        MOVE.B  #$6B,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_89AB
         *Print  TAB
         MOVE.B  MSK_89AB,D4
@@ -819,31 +935,36 @@ BRBCC
         CMP.B   #2,D4
         BEQ     BRBHI
 BRBEQ
+        MOVE.B  #$6F,(IOOPCD)       Set OP-code name
         *Print BEQ
         *CMP DISP8 to get displacement
         *If 00 then 16 displacement
         *If FF then 32 displacement
         BRA     ENDBCC        
 BRBLT   
+        MOVE.B  #$73,(IOOPCD)       Set OP-code name
         *Print BLT
         *CMP DISP8 to get displacement
         *If 00 then 16 displacement
         *If FF then 32 displacement
         BRA     ENDBCC
 BRBNE   
+        MOVE.B  #$77,(IOOPCD)       Set OP-code name
         *Print BNE
         *CMP DISP8 to get displacement
         *If 00 then 16 displacement
         *If FF then 32 displacement
         BRA     ENDBCC
 BRBHI
+        MOVE.B  #$7B,(IOOPCD)       Set OP-code name
         *Print BHI
         *CMP DISP8 to get displacement
         *If 00 then 16 displacement
         *If FF then 32 displacement
 ENDBCC  
-        BRA     INCREM
+        BRA     PRINT
 BRCMP
+        MOVE.B  #$5D,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print  CMP
         *Print  .
@@ -853,8 +974,9 @@ BRCMP
         *Print  ,
         MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
         BSR     DNMODE
-        BRA     INCREM Jump to next instruction       
+        BRA     PRINT Jump to next instruction       
 BRCMPA
+        MOVE.B  #$61,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print  CMPA
         *Print  .
@@ -864,8 +986,9 @@ BRCMPA
         *Print  ,
         MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
         BSR     ANMODE
-        BRA     INCREM Jump to next instruction   
+        BRA     PRINT Jump to next instruction   
 BRCMPI
+        MOVE.B  #$66,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_7to0
         *Print  CMPI
         *Print  .
@@ -875,13 +998,15 @@ BRCMPI
         *Print  data from memory
         *Print  ','
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 BRRTS 
+        MOVE.B  #$83,(IOOPCD)       Set OP-code name
         * Call Print TAB function '      '
         *LEA     _RTS, A1       Load 'RTS' to be printed
         MOVE.B    #0, D0        Load the length of message
-        BRA     INCREM          Return to subroutine
+        BRA     PRINT          Return to subroutine
 BRLEA
+        MOVE.B  #$37,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print  LEA
         *Print  tab
@@ -891,13 +1016,15 @@ BRLEA
         BSR     ANMODE        
 
 BRJSR
+        MOVE.B  #$7F,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_012
         BSR     EXTMSK_345
         *Print  JSR
         *Print  tab
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 BRMOVE
+        MOVE.B  #$00,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_CD       Get the size of MOVE instruction
         BSR     EXTMSK_Bto0
         * Call Print 'MOVE' function
@@ -912,9 +1039,10 @@ BRMOVE
         MULU    #4, D3          
         JSR     00(A6,D3)       Jump to appropriate EA<mode> 
         CLR.L   D3       
-        BRA     INCREM          Go to next instruction
+        BRA     PRINT          Go to next instruction
 
 BRMOVEA 
+        MOVE.B  #$05,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_CD       Get the size of MOVE instruction
         BSR     EXTMSK_Bto0
         *Call Print 'MOVEA' function
@@ -925,8 +1053,12 @@ BRMOVEA
         *Call print COMMA function ','
         MOVE.B  MSK_9AB,MODE      Get the register number
         BSR     ANMODE
-        BRA     INCREM          Get next instruction
+        BRA     PRINT          Get next instruction
+BRMOVEM
+        MOVE.B  #$0B,(IOOPCD)       Set OP-code name
+        BRA     PRINT
 BRASL
+        MOVE.B  #$50,(IOOPCD)       Set OP-code name
         *Print ASL
         *Print  tab
         BSR     EXTMSK_67
@@ -952,15 +1084,16 @@ ASLDNPRINT
         *Print ,
         MOVE.B  MSK_012, MODE
         BSR     DNMODE
-        BRA     INCREM        
+        BRA     PRINT        
 ASLMEMORY
         BSR     EXTMSK_012
         BSR     EXTMSK_345
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 
-        BRA     INCREM
+        BRA     PRINT
 BRLSR
+        MOVE.B  #$54,(IOOPCD)       Set OP-code name
         *Print LSR
         *Print  tab
         BSR     EXTMSK_67
@@ -986,14 +1119,15 @@ LSRDNPRINT
         *Print ,
         MOVE.B  MSK_012, MODE
         BSR     DNMODE
-        BRA     INCREM        
+        BRA     PRINT        
 LSRMEMORY
         BSR     EXTMSK_012
         BSR     EXTMSK_345
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 
 BRMULU
+        MOVE.B  #$2D,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print  MULU
         *Print  tab
@@ -1001,8 +1135,9 @@ BRMULU
         *Print  ,
         MOVE.B  MSK_9AB,MODE      Get the register number
         BSR     DNMODE
-        BRA     INCREM
+        BRA     PRINT
 BRDIVS
+        MOVE.B  #$32,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print  DIVS
         *Print  tab
@@ -1010,8 +1145,9 @@ BRDIVS
         *Print  ,
         MOVE.B  MSK_9AB,MODE      Get the register number
         BSR     DNMODE        
-        BRA     INCREM
+        BRA     PRINT
 BREOR
+        MOVE.B  #$43,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print EOR
         *Print a tab
@@ -1019,8 +1155,9 @@ BREOR
         BSR     DNMODE
         *Print a comma ','
         BSR     EAMODE
-        BRA     INCREM          Get next instruction
+        BRA     PRINT          Get next instruction
 BRORI
+        MOVE.B  #$3F,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_7to0
         *Print  ORI
         *Print  tab
@@ -1028,8 +1165,9 @@ BRORI
         *Print  data according to size
         *Print  comma ','
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 BREORI
+        MOVE.B  #$47,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_7to0
         *Print  EORI
         *Print  tab
@@ -1037,16 +1175,18 @@ BREORI
         *Print  data according to size
         *Print  comma ','
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 BRNOT
+        MOVE.B  #$4C,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_7to0
         *Print NOT
         *Call function to print DOT '.'
         *Call function to print based on size (B/W/L)
         *Call function to print a TAB
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 BRSUB
+        MOVE.B  #$1F,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         MOVE.B  MSK_678, D5 Copy OPmode
         *Print SUB
@@ -1059,14 +1199,15 @@ BRSUB
         *Print ','
         MOVE.B  MSK_9AB,MODE Load the register number
         BSR     DNMODE
-        BRA     INCREM             
+        BRA     PRINT             
 BRSUB1    
         MOVE.B  MSK_9AB,MODE Load the register number
         BSR     DNMODE      
         *Print comma ','
         BSR     EAMODE
-        BRA     INCREM      Get next instruction
+        BRA     PRINT      Get next instruction
 BRSUBA
+        MOVE.B  #$23,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_Bto0
         *Print  SUBA
         *Print  .
@@ -1076,8 +1217,9 @@ BRSUBA
         *Print  ,
         MOVE.B  MSK_9AB,MODE Load the register number
         BSR     ANMODE  Print <An>     
-        BRA     INCREM
+        BRA     PRINT
 BRSUBI
+        MOVE.B  #$28,(IOOPCD)       Set OP-code name
         BSR     EXTMSK_7to0
         *Print  SUBI
         *Print  .
@@ -1087,7 +1229,7 @@ BRSUBI
         *print  data *32/16/8
         *print  ','
         BSR     EAMODE
-        BRA     INCREM
+        BRA     PRINT
 
 *----------------------------------------------
 *   User Functions
@@ -1126,67 +1268,67 @@ EXTMSK_7to0     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
         BSR     EXTMSK_012 Get EA<register>
         RTS
 EXTMSK_70     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
-        MOVE.L  (A0),D0                 Transfer data to memory
+        MOVE.L  (GBUFF),D0                 Transfer data to memory
         MOVE.L  #%0000000111111111,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,DISP8                Store masked bits
         RTS
 EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
-        MOVE.L  (A0),D0                 Transfer data to memory
+        MOVE.L  (GBUFF),D0                 Transfer data to memory
         MOVE.L  #%0000000111000000,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_678              Store masked bits
         RTS                             Return to caller
         
 EXTMSK_89AB     * 15 14 13 12 [11 10 09 08] 07 06 05 04 03 02 01 00
-        MOVE.L  (A0),D0                 Transfer data to memory
+        MOVE.L  (GBUFF),D0                 Transfer data to memory
         MOVE.L  #%0000111100000000,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_89AB              Store masked bits
         RTS                             Return to caller
         
 EXTMSK_67      * 15 14 13 12 11 10 09 08 [07 06]05 04 03 02 01 00
-        MOVE.L  (A0),D0                 Transfer data to memory
+        MOVE.L  (GBUFF),D0                 Transfer data to memory
         MOVE.L  #%0000000011000000,D2   Mask
         BSR     EXTMSK                  Extract masked bits
         MOVE.B  D1,MSK_67               Store masked bits
         RTS                             Return to caller
 
 EXTMSK_CD       * 15 14[13 12]11 10 09 08 07 06 05 04 03 02 01 00
-        MOVE.L  (A0),D0
+        MOVE.L  (GBUFF),D0
         MOVE.L  #%0011000000000000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_CD
         RTS
         
 EXTMSK_5        * 15 14 13 12 11 10 09 08 07 06[05]04 03 02 01 00
-        MOVE.L  (A0),D0
+        MOVE.L  (GBUFF),D0
         MOVE.L  #%0000000000100000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_5
         RTS
 EXTMSK_8        * 15 14 13 12 11 10 09 [08] 07 06 05 04 03 02 01 00
-        MOVE.L  (A0),D0
+        MOVE.L  (GBUFF),D0
         MOVE.L  #%0000000100000000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_8
         RTS        
 EXTMSK_012      * 15 14 13 12 11 10 09 08 07 06 05 04 03[02 01 00]
-        MOVE.L  (A0),D0
+        MOVE.L  (GBUFF),D0
         MOVE.L  #%0000000000000111,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_012
         RTS
         
 EXTMSK_345      * 15 14 13 12 11 10 09 08 07 06[05 04 03]02 01 00
-        MOVE.L  (A0),D0
+        MOVE.L  (GBUFF),D0
         MOVE.L  #%0000000000111000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_345
         RTS
         
 EXTMSK_9AB      * 15 14 13 12[11 10 09]08 07 06 05 04 03 02 01 00
-        MOVE.L  (A0),D0
+        MOVE.L  (GBUFF),D0
         MOVE.L  #%0000111000000000,D2
         BSR     EXTMSK
         MOVE.B  D1,MSK_9AB
@@ -1250,7 +1392,7 @@ JMP_M0
         BSR     DNMODE   
         LEA     _M0,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 JMP_M1
         *Need to print a Address Register
@@ -1258,7 +1400,7 @@ JMP_M1
         BSR     ANMODE
         LEA     _M1,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 JMP_M2
         *Print (
@@ -1266,7 +1408,7 @@ JMP_M2
         *Print )
         LEA     _M2,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 JMP_M3
         *Call function to print a '(' paran
@@ -1275,7 +1417,7 @@ JMP_M3
         *Print +
         LEA     _M3,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 JMP_M4
         *Print -
@@ -1284,17 +1426,17 @@ JMP_M4
         *Print )
         LEA     _M4,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 JMP_M5
         LEA     _M5,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 JMP_M6 
         LEA     _M6,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 JMP_M7 
         *Call Print Pound Sign function
@@ -1302,7 +1444,7 @@ JMP_M7
         *Print value
         LEA     _M7,A1
         MOVE.B  #14, D0
-        TRAP    #15
+        *TRAP    #15
         RTS
 
 *---------------------------
@@ -1359,4 +1501,3 @@ AN_TBL
         BRA     DONE
      
         END     START
-
