@@ -7,16 +7,6 @@
 CR      EQU     $0D     ASCII: carriage return
 LF      EQU     $0A     ASCII: line feed
 TB      EQU     $09     ASCII: horizontal tab
-DOT     EQU     $2E     ASCII: .
-COMMA   EQU     $2C     ASCII: ,
-PLUS    EQU     $2B     ASCII: +
-MINUS   EQU     $2D     ASCII: -
-OPARE   EQU     $28     ASCII: (
-CPARE   EQU     $29     ASCII: )
-SPACE   EQU     $20     ASCII: Space
-SHARP   EQU     $23     ASCII: #
-DOLLAR  EQU     $24     ASCII: $
-PERCEN  EQU     $25     ASCII: %
 
 OADDR   EQU     $1000   Org address
 MNADDR  EQU     $7000   Min address
@@ -25,46 +15,23 @@ BYTES   EQU     $8FFF   Number of bytes to read from file (max address - min add
 GBUFF   DS.L    1       Pointer to next location in "Good buffer"
 SLOC    DS.B    4       Starting location storage
 ELOC    DS.B    4       Ending location storage
-MSK_012 DS.B    1       Storage for bits 0,1,2
-MSK_345 DS.B    1       Storage for bits 3,4,5
-MSK_5   DS.B    1       Storage for bit 5
-MSK_67  DS.B    1       Storage for bits 6,7
-MSK_8   DS.B    1       Storage for bit 8
-MSK_678 DS.B    1       Storage for bits 6,7,8
-MSK_89AB DS.B   1       Storage for bits 8,9,10,11
-MSK_9AB DS.B    1       Storage for bits 9,10,11
-MSK_CD  DS.B    1       Storage for bits 12,13
-MODE    DS.B    1       Storage for which bits to use EA or OP
-DISP8   DS.B    1       Storage for 8bits displacement
-DISP16  DS.B    2       Storage for 16bits displacement (Word)
-DISP32  DS.B    4       Storage for 32bits displacement (Long)
-
-*----Words--------------
-_RTS    DC.B    'RTS',CR,LF,0
-_M0     DC.B    'MODE 000',CR,LF,0
-_M1     DC.B    'MODE 001',CR,LF,0
-_M2     DC.B    'MODE 010',CR,LF,0
-_M3     DC.B    'MODE 011',CR,LF,0
-_M4     DC.B    'MODE 100',CR,LF,0
-_M5     DC.B    'MODE 101',CR,LF,0
-_M6     DC.B    'MODE 110',CR,LF,0
-_M7     DC.B    'MODE 111',CR,LF,0
 
 *-----I/O Memory-----
-IOOPCD  DS.B    1       IO offset value for OP-code in OP-code name memory
-IOSIZE  DS.B    1       IO size for OP-code, or FF if none
+IOOPCD  DS.B    1       IO offset value for OPNAME
+IOBDCD  DS.B    1       IO offset value for BAD OPNAME
+IOSIZE  DS.B    1       IO size for OP code, or FF if none
 IOADDR  DS.L    1       IO address value for instruction memory location
-IOOPRA  DS.L    1       IO operand value for instruction EA
-LC      DS.B    1       IO line counter for screen
+IOLC    DS.B    1       IO line counter for screen
 
-* OP-code name memory
+
+* OP code name memory
 * Example to display MULU:
-*       LEA     OPCDNM,A1
+*       LEA     OPNAME,A1
 *       ADD.L   #$2D,A1
 *       MOVE.B  #14,D0
 *       TRAP    #15
 *                NAME           DEC     HEX
-OPCDNM  DC.B    'MOVE',0        00      00
+OPNAME  DC.B    'MOVE',0        00      00
         DC.B    'MOVEA',0       05      05
         DC.B    'MOVEM',0       11      0B
         DC.B    'ADD',0         17      11
@@ -95,12 +62,20 @@ OPCDNM  DC.B    'MOVE',0        00      00
         DC.B    'JSR',0         127     7F
         DC.B    'RTS',0         131     83
         DC.B    'BAD',0         135     87
+        DC.B    'MOVEQ',0       139     8B
 
 IOOPSZ  DC.B    '.B',0          0       00
         DC.B    '.W',0          3       03
         DC.B    '.L',0          6,      06
         DC.B    '  ',0          9,      09
 
+*-----EA Memory------
+DMD     DS.B    1               Destination mode
+DRG     DS.B    1               Destination register
+SMD     DS.B    1               Source mode
+SRG     DS.B    1               Source register
+
+*--------------------
 
 MSSG0   DC.B    '  _     _     _     _     _     _ ',CR,LF
         DC.B    ' (o\---/o)   (o\---/o)   (o\---/o)',CR,LF
@@ -128,7 +103,7 @@ FILE    DC.B    'test.s68',0
 
         ORG     OADDR
 
-START   MOVE.B  #0,LC
+START   MOVE.B  #0,IOLC
         JMP     DEBUG           Debug shortcut for dev team
         LEA     MSSG0,A1        Welcome message
         MOVE.B  #14,D0
@@ -159,6 +134,15 @@ DEBUG   MOVE.L  #$7000,(SLOC)   Store starting location
 *-----------------------------------
 *    Conversion & Comparison Methods
 *-----------------------------------
+
+*
+* Flag set / clear: Sets or clears the flag
+*
+ 
+FLAGST  MOVE.W  #%100,CCR       Set the z-flag
+        RTS                     Return to caller
+FLAGCL  MOVE.W  #%000,CCR       Clear the z-flg
+        RTS                     Return to caller
 
 *
 * Return: Helper method for lazy programmers
@@ -341,17 +325,37 @@ MASK    MOVE.L  D0,D1           Move the input to D1
 
 TSTMSK  MOVE.L  D1,-(SP)        Push D1 on stack
         BSR     MASK            Mask the input
-        SUB.L   D2,D1           Mask - masked input
-        CMP.L   #0,D1           Test the difference for 0
-        BEQ     FLAGST          If it is 0, the input matched the mask; set the z-flag and return to the caller
-        * If it is not 0, the input did not match the mask; clear the z-flag and return to the caller
-FLAGCL  MOVE.L  (SP)+,D1        Restore D1
-        MOVE    #%000,CCR       Set the z-flag
-        RTS                     Return to caller
-FLAGST  MOVE.L  (SP)+,D1        Restore D1
-        MOVE    #%100,CCR       Set the z-flag
-        RTS                     Return to caller
+        CMP.L   D1,D2           Test if the input matched the mask
+        BNE     *+8             If it didn't match, skip two lines
+        MOVE.L  (SP)+,D1        Restore D1
+        BRA     FLAGST          Set flag & return to caller
+        MOVE.L  (SP)+,D1        Restore D1
+        BRA     FLAGCL          Clear flag & return to caller
+
+*
+* Compare Mask: Strictly test an input to two masks allowing don't cares.
+* Input value from D0, input 1 mask from D2, input 0 mask from D3, and modify z-flag
+*
+
+CMPMSK  
+        MOVEM.L D0-D4,-(SP)     Push D1-D4 on stack
+        MOVE.L  D0,D4           Copy input to D4
+        AND.L   D2,D0           AND 1 mask to input
+        CMP.L   D0,D2           Compare masked input to 1 mask
+        BEQ     *+10            If it matched, skip two lines
+        MOVEM.L (SP)+,D0-D4     If it didn't match, restore D1-D4
+        BRA     FLAGCL          Clear flag & return to caller
+        MOVE.L  D4,D0           Restore input
+        NOT.L   D0              !input
+        AND.L   D3,D0           AND 0 mask on input; effectively, NOR 0 mask to the input
+        CMP.L   D0,D3           Compare masked input to 0 mask
+        BNE     *+10            If it didn't match, skip to clear flag
+        MOVEM.L (SP)+,D0-D4     If it matched, restore D1-D4
+        BRA     FLAGST          Set flag & return to caller
+        MOVEM.L (SP)+,D0-D4     Restore D1-D4
+        BRA     FLAGCL          Clear flag & return to caller
         
+
 *
 * Extract Mask: Test an input to a subsequent mask, and return the masked value in LSB format
 * Input value from D0, input mask from D2, output value in D1
@@ -377,10 +381,41 @@ DSPAX   MOVEM.L D0-D2,-(SP)     Push D0-D2
         BRA     DSPHST          Branch to DISPHX Start
 
 *
+* Display HEX Address: Display the hex from A1 according to the byte length in D2.L
+*
+
+DSPHXA  MOVEM.L D0-D2/A1,-(SP)  Push D0-D2, and A1 to stack
+DSPHXLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch to return
+        BRA     DSPHXRT         If count is <= 0, branch to return
+        MOVE.B  (A1)+,D0        Get HEX byte in D0, post-increment A1
+        BSR     HEX2ASCII       Get ASCII in D1
+        ROL.W   #8,D1           Read first byte
+        MOVE.B  #6,D0           Display char from D1.B
+        TRAP    #15
+        ROL.W   #8,D1           Read second byte
+        TRAP    #15
+        BRA     DSPHXLP         Loop back
+DSPHXRT MOVEM.L (SP)+,D0-D2/A1  Else, restore values
+        RTS                     Return to caller
+        
+
+
+*
+* Display HEX Nibble: Display the hex from D0.B to screen
+*
+
+DSPHXN  MOVEM.L D0/D1,-(SP)     Push D0 and D1 to stack
+        BSR     HEX2ASCII       Get ASCII in D1
+        MOVE.B  #6,D0           Set trap #6 to read single char from D1.B
+        TRAP    #15
+        MOVEM.L (SP)+,D0/D1     Restore D0 and D1
+        RTS                     Return to caller
+
+*
 * Display HEX Word: Display the hex from D0.W to screen
 *
 
-DSPHXW  MOVEM.L D0-D2,-(SP)     Push D0-D2 on stack
+DSPHXW  MOVEM.L D0-D2,-(SP)     Push D0-D2 to stack
         BSR     HEX2ASCII       Get ASCII in D1
 
 DSPHST  CLR.L   D2              
@@ -518,41 +553,261 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         MOVE.L  SLOC,GBUFF      Store starting location in GBUFF for OP
         BSR     CMPRSS
         BRA     OP
+
+DISPOP  MOVEM.L D0-D2,-(SP)         Push D0-D2 to stack
+        MOVE.B  #6,D0               Display character
+        MULU.W  #4,D2
+        JMP     MODTBL(PC,D2.W)     Jump to mode
+MODTBL  BRA     DISP0               Dn
+        BRA     DISP1               An
+        BRA     DISP2               (An)
+        BRA     DISP3               (An)+
+        BRA     DISP4               -(An)
+        BRA     DISP5               (d,An)
+        BRA     DISP6               (d,An,Xn)
+        BRA     DISP7               (XXX).W/(XXX).L/(d,PC)/(d,PC,Xn)/#data
+* Dn	    	000	XXX
+DISP0   MOVE.B  #'D',D1             Read D
+        TRAP    #15
+        MOVE.L  D3,D0               Read reg from D3
+        BSR     DSPHXN              Display as hex nibble
+        BRA     DISPD               Branch to return
+* An		    001	XXX
+DISP1   MOVE.B  #'A',D1             Read A
+        TRAP    #15
+        MOVE.L  D3,D0               Read reg from D3
+        BSR     DSPHXN              Display as hex byte
+        BRA     DISPD               Branch to return
+* (An)		    010	XXX
+DISP2   MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        MOVE.B  #'A',D1             Read A
+        TRAP    #15
+        MOVE.L  D3,D0               Read reg from D3
+        BSR     DSPHXN              Display as hex nibble
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #')',D1             Read )
+        TRAP    #15
+        BRA     DISPD               Branch to return
+* (An)+		    011	XXX
+DISP3   MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        MOVE.B  #'A',D1             Read A
+        TRAP    #15
+        MOVE.L  D3,D0               Read reg from D3
+        BSR     DSPHXN              Display as hex nibble
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #')',D1             Read )
+        TRAP    #15
+        MOVE.B  #'+',D1             Read +
+        TRAP    #15
+        BRA     DISPD               Branch to return
+* -(An)		    100	XXX
+DISP4   MOVE.B  #'-',D1             Read +
+        TRAP    #15
+        MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        MOVE.B  #'A',D1             Read A
+        TRAP    #15
+        MOVE.L  D3,D0               Read reg from D3
+        BSR     DSPHXN              Display as hex nibble
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #')',D1             Read )
+        TRAP    #15
+        BRA     DISPD               Branch to return
+* (d,An)		101	XXX
+DISP5   MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        *----TODO---*
+        * Display d *
+        MOVE.B  #',',D1             Read ,
+        TRAP    #15
+        MOVE.B  #'A',D1             Read A
+        TRAP    #15
+        *----TODO---*
+        * Display A *
+        MOVE.B  #')',D1             Read )
+        TRAP    #15
+        BRA     DISPD               Branch to return
+* (d,An,Xn)	    110	XXX
+DISP6   MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        *----TODO---*
+        * Display d *
+        MOVE.B  #',',D1             Read ,
+        TRAP    #15
+        MOVE.B  #'A',D1             Read A
+        TRAP    #15
+        *----TODO---*
+        * Display A *
+        MOVE.B  #',',D1             Read ,
+        TRAP    #15
+        MOVE.B  #'X',D1             Read X
+        TRAP    #15
+        *----TODO---*
+        * Display X *
+        MOVE.B  #')',D1             Read )
+        TRAP    #15
+        BRA     DISPD               Branch to return
+* (XXX).W/(XXX).L/(d,PC)/(d,PC,Xn)/#data
+DISP7   MULU.W  #4,D3
+        JMP     REGTBL(PC,D3.W)     Jump to reg
+REGTBL  BRA     DISP8               (XXX).W
+        BRA     DISP9               (XXX).L
+        BRA     DISPA               (d,PC)
+        BRA     DISPB               (d,PC,Xn)
+        BRA     DISPC               #data
+* (XXX.W)		111	000
+DISP8   
+        MOVE.B  #'$',D1             Read $
+        TRAP    #15
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        CLR.L   D2
+        MOVE.B  #2,D2               Read word size to D2
+        BSR     DSPHXA              Display address
+        ADD.L   D2,(IOADDR)         Advance IO address by word
+        BRA     DISPD               Branch to return
+* (XXX.L)		111	001
+DISP9   MOVE.B  #'$',D1             Read $
+        TRAP    #15
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        CLR.L   D2
+        MOVE.B  #4,D2               Read long size to D2
+        BSR     DSPHXA              Display address
+        ADD.L   D2,(IOADDR)         Advance IO address by long
+        BRA     DISPD               Branch to return
+* (d,PC)		111	010
+DISPA   MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        *----TODO---*
+        * Display d *
+        MOVE.B  #',',D1             Read ,
+        TRAP    #15
+        MOVE.B  #'P',D1             Read P
+        TRAP    #15
+        MOVE.B  #'C',D1             Read C
+        TRAP    #15
+        MOVE.B  #')',D1             Read )
+        TRAP    #15
+        BRA     DISPD
+* (d,PC,Xn)		111	011
+DISPB   MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        *----TODO---*
+        * Display d *
+        MOVE.B  #',',D1             Read ,
+        TRAP    #15
+        MOVE.B  #'P',D1             Read P
+        TRAP    #15
+        MOVE.B  #'C',D1             Read C
+        TRAP    #15
+        MOVE.B  #',',D1             Read ,
+        TRAP    #15
+        MOVE.B  #'X',D1             Read X
+        TRAP    #15
+        *----TODO---*
+        * Display X *
+        MOVE.B  #')',D1             Read )
+        TRAP    #15
+        BRA     DISPD               Branch to return
+* #<data>		111	100
+DISPC   MOVE.B  #'#',D1             Read #
+        TRAP    #15
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        CLR.L   D2
+        MOVE.B  (IOSIZE),D2         Read instruction size to D2
+        MULU.W  #2,D2               Translate size to value
+        BSR     DSPHXA              Display address
+        ADD.L   D2,A1               Advance A1 by instruction size
+        MOVE.L  A1,(IOADDR)         Move A1 to IOADDR
+        BRA     DISPD               Branch to return
+DISPD   MOVEM.L (SP)+,D0-D2         Restore D0-D2
+        RTS                         Return to caller
         
-BRBAD   MOVE.B  #$87,(IOOPCD)
-        ADD.L   #$2,(GBUFF)
-PRINT   CMP.B   #$FF,(IOOPCD)   Test if OP-code exists
-        BEQ     BRBAD           If it does not, display BAD
+BRBAD   MOVE.B  (IOOPCD),(IOBDCD)   Move OPCODE to BAD OPCODE
+        MOVE.B  #$87,(IOOPCD)       Set OPCODE to BAD
+        ADD.L   #$2,(GBUFF)         Advance the buffer
+PRINT   CMP.B   #$FF,(IOOPCD)       Test if OP code exists
+        BEQ     BRBAD               If it does not, display BAD
 
-        MOVE.B  #$03,D0         Set size to 3
-        CMP.B   #$FF,(IOSIZE)   Test if OP-size exists
-        BEQ     SETSZ           If it does not, use size 3 -- none
-        MOVE.B  (IOSIZE),D0     If it does, move the OP-size to D0
-SETSZ   MULU.W  #$3,D0          Multiply size by 3 for correct offset       
-        MOVE.B  D0,(IOSIZE)     Store offset
-
-        MOVE.L  (IOADDR),D0     Read memory location
-        BSR     DSPHXL          Display as hex long
-        MOVE.B  #6,D0           Display character
-        MOVE.B  #TB,D1          Read tab
+        MOVE.L  (IOADDR),D0         Read memory location
+        BSR     DSPHXL              Display as hex long
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #TB,D1              Read tab
         TRAP    #15
 
         CLR.L   D0
-        LEA     OPCDNM,A1       Read OP-code
-        MOVE.B  (IOOPCD),D0     Get offset
-        ADD.L   D0,A1           Add offset
-        MOVE.B  #14,D0          Display string until NULL character
+        LEA     OPNAME,A1           Read OP-code
+        MOVE.B  (IOOPCD),D0         Get offset
+        ADD.L   D0,A1               Add offset
+        MOVE.B  #14,D0              Display string until NULL char
+        TRAP    #15
+    
+        CMP.B   #$FF,(IOBDCD)       Test if BAD OP code exists
+        BEQ     *+50                If it doesn't exist, don't display it
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #' ',D1             Read space
+        TRAP    #15
+        MOVE.B  #'(',D1             Read (
+        TRAP    #15
+        LEA     OPNAME,A1           Read OP-code
+        MOVE.B  (IOBDCD),D0         Get offset
+        ADD.L   D0,A1               Add offset
+        MOVE.B  #14,D0              Display string until NULL char
+        TRAP    #15
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #'?',D1
+        TRAP    #15                 Read ?
+        MOVE.B  #')',D1             Read )
         TRAP    #15
 
-        LEA     IOOPSZ,A1
-        MOVE.B  (IOSIZE),D0
-        ADD.L   D0,A1
-        MOVE.B  #14,D0
-        TRAP    #15 
-        
+        LEA     IOOPSZ,A1           Read OP code size
+        MOVE.B  #$03,D0             Set size to 3
+        CMP.B   #$FF,(IOSIZE)       Test if OP size exists
+        BEQ     *+6                 If OP size doesn't exist, skip the next line
+        MOVE.B  (IOSIZE),D0         If OP size exists, move it to D0
+        MULU.W  #$3,D0              Multiply size by 3 for correct offset
+        ADD.L   D0,A1               Add offset
+        MOVE.B  #14,D0              Display string until NULL char
+        TRAP    #15
 
-        MOVE.B  #6,D0           Display character
-        MOVE.B  #TB,D1          Read tab
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #TB,D1              Read tab
+        TRAP    #15
+
+        ADD.L   #2,(IOADDR)         Move memory location past first word
+
+        CLR.B   D4                  Set source to false
+        CLR.W   D2
+        CLR.W   D3
+        MOVE.B  (SMD),D2            Read source mode to D2
+        CMP.B   #$FF,D2             Test if it exists
+        BEQ     NOSRC               If it does not exist, do not display source
+        MOVE.B  (SRG),D3            Read source reg to D3
+        CMP.B   #$FF,D3             Test if it exists
+        BEQ     NOSRC               If it does not exist, do not display source
+        BSR     DISPOP              If both mode & register exist, display accordingly
+        MOVE.B  #1,D4               Set source to true
+
+NOSRC   CLR.W   D2
+        CLR.W   D3
+        MOVE.B  (DMD),D2            Read dest mode to D2
+        CMP.B   #$FF,D2             Test if it exists
+        BEQ     NODST               If it does not exist, do not display dest
+        MOVE.B  (DRG),D3            Read dest reg to D3
+        CMP.B   #$FF,D3             Test if it exists
+        BEQ     NODST               If it does not exist, do not display dest
+
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #',',D1             Read comma
+        CMP.B   #1,D4               Test if source was displayed
+        BNE     *+2                 If it was not displayed, don't display a comma
+        TRAP    #15                 If it was displayed, display a comma
+
+        BSR     DISPOP              If both mode & register exist, display accordingly
+
+NODST   MOVE.B  #6,D0               Display character
+        MOVE.B  #TB,D1              Read tab
         TRAP    #15
 
         MOVE.B  #CR,D1
@@ -562,40 +817,48 @@ SETSZ   MULU.W  #$3,D0          Multiply size by 3 for correct offset
 
         *DISPLAY IO OPERAND
         
-        MOVE.L  GBUFF,A0        Set A0 to ELOC location
-        CMPA.L  ELOC,A0         Compare next buffer to ending location
-        BGE     DONE            Branch to DONE if >= ending location
+        MOVE.L  GBUFF,A0            Set A0 to ELOC location
+        CMPA.L  ELOC,A0             Compare next buffer to ending location
+        BGE     DONE                Branch to DONE if >= ending location
 
-        ADD.B   #1,LC
-        CMP.B   #30,LC          Compare #30 to line counter
-        BEQ     PAUSE           If ==, branch to PAUSE
+        ADD.B   #1,IOLC
+        CMP.B   #30,IOLC            Compare #30 to line counter
+        BEQ     PAUSE               If ==, branch to PAUSE
 
-        * Reset IO OP-code
+        * Reset IO instruction values
+        MOVE.B  #$FF,(SMD)
+        MOVE.B  #$FF,(SRG)
+        MOVE.B  #$FF,(DMD)
+        MOVE.B  #$FF,(DRG)
         MOVE.B  #$FF,(IOOPCD)
+        MOVE.B  #$FF,(IOBDCD)
         MOVE.B  #$FF,(IOSIZE)
-        BRA     OP              Branch to OP for next instruction
 
-PAUSE   LEA     MSSG4,A1        Display keypress prompt
+        BRA     OP                  Branch to OP for next instruction
+
+PAUSE   LEA     MSSG4,A1            Display keypress prompt
         MOVE.B  #14,D0
         TRAP    #15
-        MOVE.B  #12,D0          Hide keyboard input
+        MOVE.B  #12,D0              Hide keyboard input
         MOVE.B  #0,D1
         TRAP    #15
-        MOVE.B  #5,D0           Request keyboard input
+        MOVE.B  #5,D0               Request keyboard input
         TRAP    #15
-        MOVE.B  #12,D0          Show keyboard input
+*----TODO----*
+* Test if keycode was for ENTER
+        MOVE.B  #12,D0              Show keyboard input
         MOVE.B  #1,D1
         TRAP    #15
-        MOVE.B  #11,D0          Clear the screen
+        MOVE.B  #11,D0              Clear the screen
         MOVE.W  #$FF00,D1
         TRAP    #15
-        LEA     HEADR,A1        Display header
+        LEA     HEADR,A1            Display header
         MOVE.B  #14,D0
         TRAP    #15
-        CLR.B   (LC)            Reset line counter
+        CLR.B   (IOLC)              Reset line counter
         BRA     OP
 
-DONE    LEA     MSSG5,A1        Display header
+DONE    LEA     MSSG5,A1            Display header
         MOVE.B  #14,D0
         TRAP    #15
         MOVE.B  #9,D0
@@ -635,14 +898,6 @@ OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
         MOVE.W  #%1110000000000000,D2
         BSR     TSTMSK
         BEQ     BRASL
-
-        MOVE.W  #%1101000111000000,D2
-        BSR     TSTMSK
-        BEQ     BRADDA
-
-        MOVE.W  #%1101000011000000,D2
-        BSR     TSTMSK
-        BEQ     BRADDA
 
         MOVE.W  #%1101000110000000,D2
         BSR     TSTMSK
@@ -764,6 +1019,12 @@ OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
         BSR     TSTMSK
         BEQ     BRDIVS
 
+        *0111XXX0XXXXXXXX
+        MOVE.W  #%0111000000000000,D2
+        MOVE.W  #%1000000100000000,D3
+        BSR     CMPMSK
+        BEQ     BRMOVEQ
+
         MOVE.W  #%0110000000000000,D2
         BSR     TSTMSK
         BEQ     BRBCC
@@ -812,10 +1073,6 @@ OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
         BSR     TSTMSK
         BEQ     BRMOVEM
 
-        MOVE.W  #%0011000001000000,D2
-        BSR     TSTMSK
-        BEQ     BRMOVEA
-
         MOVE.W  #%0011000000000000,D2
         BSR     TSTMSK
         BEQ     BRMOVE
@@ -823,10 +1080,6 @@ OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
         MOVE.W  #%0010000000000000,D2
         BSR     TSTMSK
         BEQ     BRMOVE
-
-        MOVE.W  #%0010000000010000,D2
-        BSR     TSTMSK
-        BEQ     BRMOVEA
 
         MOVE.W  #%0001000000000000,D2
         BSR     TSTMSK
@@ -852,802 +1105,303 @@ OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
         BSR     TSTMSK
         BEQ     BRSUBI
      
-        BRA     BRBAD                 No mask matched, branch to BRBAD
+        BRA     BRBAD           No mask matched, branch to BRBAD
 
 *--------------------------
 *  Instruction Subroutines
 *--------------------------
 *
-* Advance Buffer: Advances the buffer based on the REG & MODE (in that order) in D1.B
+* Advance Buffer: Advances A0 based on the REG & MODE (in that order)
+* Input reg & mode in D1.B, output difference to D2
+* Todo? May be better to copy buffer to A1 and advance A1
 *
 
-ADVBFR  MOVE.B  D0,-(SP)        Push D0 to the stack
+ADVBFR  MOVE.B  D1,-(SP)        Push D1 to the stack
+        MOVE.L  (GBUFF),D2      Copy buffer to D2
         CMP.B   #$07,D1         Test 000 111 = Address (Word)
-        BNE     *+6             Branch to next test
+        BNE.S   *+6             Branch to next test
         ADD.L   #$2,(GBUFF)     Advance buffer by word
         CMP.B   #$0F,D1         Test 001 111 = Address (Long)
-        BNE     *+6             Branch to next test
+        BNE.S   *+6             Branch to next test
         ADD.L   #$4,(GBUFF)     Advance buffer by long
-        CMP.B   #$27,D1         Test 100 111 = Immediate (OP-code size)
-        BNE     ADVRET          Branch to return
-        MOVE.B  (IOSIZE),D0     Else, read size to D0
-        CMP.B   #$0,D0          Test 0 = Byte
-        BNE     *+6             Branch to next test
-        ADD.L   #$2,(GBUFF)     Advance buffer by word (00BT)
-        CMP.B   #$1,D0          Test 1 = Word
-        BNE     *+6             Branch to next test
+        CMP.B   #$27,D1         Test 100 111 = Immediate (OP code size)
+        BNE.S   ADVRET          Branch to return
+        MOVE.B  (IOSIZE),D1     Else, read size to D1
+        CMP.B   #$1,D0          Test 0 = Byte
+        BNE.S   *+6             Branch to next test
+        ADD.L   #$2,(GBUFF)     Advance buffer by word (00XBBX)
+        CMP.B   #$1,D1          Test 1 = Word
+        BNE.S   *+6             Branch to next test
         ADD.L   #$2,(GBUFF)     Advance buffer by word        
-        CMP.B   #$2,D0          Test 2 = Long
-        BNE     *+6             Branch to return method
+        CMP.B   #$2,D1          Test 2 = Long
+        BNE.S   *+6             Branch to return method
         ADD.L   #$4,(GBUFF)     Advance buffer by long
-ADVRET  MOVE.B  (SP)+,D0        Restore D0
+ADVRET  NEG.L   D2              Negate original buffer
+        ADD.L   (GBUFF),D2      Add buffer to get difference
+        MOVE.B  (SP)+,D1        Restore D1
         RTS                     Return to caller
 
+
 *
-* Standard Size: Test the standard size code, branches using displacement to avoid superfluous labels
-* Inputs size from D0.B, outputs size to IOSIZE or branches to BAD if no size was found
+* Standard Size: Test the standard size code
+* Inputs size from D0.B, outputs size to IOSIZE (if found)
+* Set Z-flag if size was found, or clear Z-flag if size was not found
 *
 
-SSIZE   MOVE.B  D1,-(SP)    Push D1 to the stack
-        MOVE.B  #$FF,D1
+SSIZE   MOVE.B  D1,-(SP)    Push D1 to stack
+        MOVE.B  #$FF,D1     Set size to null
         CMP.B   #%01,D0     01 = Byte
-        BNE     *+6
-        MOVE.B  #$0,D1
+        BNE.S   *+6         Branch to next test
+        MOVE.B  #$0,D1      Set size to byte
         CMP.B   #%11,D0     11 = Word
-        BNE     *+6
-        MOVE.B  #$1,D1
+        BNE.S   *+6         Branch to next test
+        MOVE.B  #$1,D1      Set size to word
         CMP.B   #%10,D0     10 = Long
-        BNE     *+6
-        MOVE.B  #$2,D1
+        BNE.S   *+6         Branch to next test
+        MOVE.B  #$2,D1      Set size to long
         CMP.B   #$FF,D1     Test if size was found
-        BEQ     BRBAD       If size was not found, branch to BAD; TODO: correct stack
-        MOVE.B  D1,(IOSIZE) Else, store size in IOSIZE
+        BEQ     *+18        If it was not found, branch to clear flag      
+        MOVE.B  D1,(IOSIZE) If it was found, store size in IOSIZE
         MOVE.B  (SP)+,D1    Restore D1
-        RTS                 Return to caller
+        BRA     FLAGST      Set flag & return to caller
+        MOVE.B  (SP)+,D1    Restore D1
+        BRA     FLAGCL      Clear flag & return to caller
 
 *
-* ADD: 1101|REG|OPM|EAM|EAR
+* OP Size: Test the OP size code
+* Inputs size from D0.B, outputs size to IOSIZE (if found), outputs 0 to D1.B for Dn, or 1 to D1.B for <ea> 
+* Set Z-flag if size was found, or clear Z-flag if size was not found
 * OPM (OP-MODE):  Byte | Word | Long | Operation
 *                  000 |  001 |  010 | <ea> + Dn -> Dn
 *                  100 |  101 |  110 | Dn + <ea> -> <ea>
-*                   001    010    011
-*                   101    110    100
+*
 
-BRADD   MOVE.L  GBUFF,A0    Point A0 to GBUFF
-        MOVE.B  (A0),D0     Move instruction byte to D0
-        LSR.B   #4,D0       Byte -> Nibble
-        CMP.B   #%1101,D0   Test if the first nibble matches the ADD instruction
-        BNE     BRBAD       If bytes are not equal, branch to BAD
+OPSIZE  MOVE.B  (DMD),D0    Get the OP mode from dest mode
+        MOVE.B  #0,D1       Move 0 to D1 for Dn
+        CMP.B   #4,D0       Compare OP mode to 4
+        BNE.S   *+18        Branch to next test
+        SUB.B   #4,D0       Subtract 4
+        MOVE.B  #1,D1       Move 1 to D1 for <EA>
+        MOVE.B  #$FF,D1     Set size to null
+        CMP.B   #%000,D0    000 = Byte
+        BNE.S   *+6         Branch to next test
+        MOVE.B  #$0,D1      Set size to byte
+        CMP.B   #%001,D0    001 = Word
+        BNE.S   *+6         Branch to next test
+        MOVE.B  #$1,D1      Set size to word
+        CMP.B   #%010,D0    010 = Long
+        BNE.S   *+6         Branch to next test
+        MOVE.B  #$2,D1      Set size to long
+        CMP.B   #$FF,D1     Test if size was found
+        BEQ     *+14        If it was not found, branch to clear flag
+        MOVE.B  D1,(IOSIZE) If it was found, store size in IOSIZE
+        BRA     FLAGST      Set flag & return to caller
+        BRA     FLAGCL      Clear the flag & return to caller
+
+*
+* Extract destination: Extracts destination mode to DMD and destination register to DRG from instruction in A0.W
+* Outputs a combination of mode & reg in D1.B
+*
+
+EXDST   MOVEM.L D0/D2,-(SP)     Push D0 and D2 to stack
+        MOVE.W  (A0),D0         Move instruction word to D0
+        MOVE.L  #$1C0,D2        Extract dest mode at 0000000111000000
+        BSR     EXTMSK          Get dest mode to D1
+        MOVE.B  D1,(DMD)        Move dest mode to DMD
+        MOVE.L  #$E00,D2        Extract dest reg at 0000111000000000
+        BSR     EXTMSK          Get dest reg to D1
+        MOVE.B  D1,(DRG)        Move dest reg to (DRG)
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (DMD),D1        Add mode after reg
+        MOVEM.L (SP)+,D0/D2     Restore D0 and D2
+        RTS                     Return to caller
+
+*
+* Extract source: Extracts source mode and register
+* Inputs instruction from A0, outputs mode to SMD and register to SRG
+* Outputs a combination of mode & reg in D1.B
+*
+
+EXSRC   MOVEM.L D0/D2,-(SP)     Push D0 and D2 to stack
+        MOVE.W  (A0),D0         Move instruction word to D0
+        MOVE.L  #$38,D2         Extract src mode at 0000000000111000
+        BSR     EXTMSK          Get src mode to D1
+        MOVE.B  D1,(SMD)        Move src mode to (OMD)
+        MOVE.L  #$7,D2          Extract src reg at 0000000000000111
+        BSR     EXTMSK          Get src reg to D1
+        MOVE.B  D1,(SRG)        Move src reg to (ORG)
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (SMD),D1        Add mode after reg
+        MOVEM.L (SP)+,D0/D2     Restore D0 and D2
+        RTS                     Return to caller
+
+*
+* ADD: 1101|REG|OPM|EAM|EAR
+*
+
+BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
+        MOVE.B  (A0),D0         Move instruction byte to D0
+        LSR.B   #4,D0           Byte -> Nibble
+        CMP.B   #%1101,D0       Test if the first nibble matches the ADD instruction
+        BNE     BRBAD           If bytes are not equal, branch to BAD
+
+        BSR     EXSRC           Extract EA mode & register
+        BSR     EXDST           Extract OP mode & register
         
-        MOVE.W  (A0),D0     Move instruction word to D0
-        MOVE.L  #%0000000111000000,D2
-        BSR     EXTMSK      Get OP-mode to D1
-        
-        CMP.B   #$4,D1         If greater than 4, Syntax is ADD Dn, <ea>
-        BGT     BRADD1
-        *BSR     EAMODE        
-        *BSR     EXTMSK_678
-        *MOVE.B  MSK_9AB,MODE      Get the register number
-        *BSR     DNMODE
+        CMP.B   #%011,(DMD)     Compare 011 to OP mode
+        BNE.S   *+8             Branch to next test
+        MOVE.B  #1,(IOSIZE)     Set size to word
+        CMP.B   #%111,(DMD)     Compare 111 to OP mode
+        BNE.S   *+8             Branch to next test
+        MOVE.B  #2,(IOSIZE)     Set size to long
+        CMP.B   #$FF,(IOSIZE)   Test if size was found
+        BNE     BRADDA          If size was found, branch to BRADDA        
 
-        ADD.L   #$2,(GBUFF)
-        MOVE.B  #$11,(IOOPCD)       Set OP-code name
+        BSR     OPSIZE          If size was not found, translate OP mode
+        BNE     BRBAD           If size was not found, branch to BAD
 
-        BRA     PRINT
+        *CMP.B   #1,D1           Compare destination mode to <EA>
 
-BRADD1  MOVE.B  MSK_9AB,MODE      Get the register number
-        BSR     DNMODE
-        *Print '','
-        BSR     EAMODE        
-        BRA     PRINT
+        ADD.L   #$2,(GBUFF)     Advace buffer
+        BRA     PRINT           Go to next instruction
 
-BRADDA  MOVE.B  #$15,(IOOPCD)       Set OP-code name
-        *Print ADDA
-        *Print  .
-        *Print  Size according to OPMODE
-        *Print  tab
-        BSR     EAMODE 
-        *Print  ','
-        MOVE.B  MSK_9AB,MODE      Get the register number
-        BSR     DNMODE       
-        BRA     PRINT
+*
+* ADDA: 1101|REG|OPM|EAM|EAR
+*
+
+BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
+        ADD.L   #$2,(GBUFF)     Advance buffer
+        BRA     PRINT           Go to next instruction
 
 BRADDQ  MOVE.B  #$1A,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_9AB
-        BSR     EXTMSK_7to0
-        *Print ADDQ
-        *Print  .
-        *Print  size according to MSK_67
-        *Print  tab
-        *Print  #
-        *Print  Data
-        *Print  ,
-        BSR     EAMODE
         BRA     PRINT
 
 BRAND   MOVE.B  #$3B,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0      
-        *PRINT AND
-        *Print DOT '.'
-        *Print Size
-        *Print Tab
-        MOVE.B  MSK_678, D5 Copy OPmode
-        CMP.B   #$4, D5 If greater than 4, Syntax is AND Dn, <ea>
-        BGT     ANDMODE1
-        BSR     EAMODE
-        *Call function to print a COMMA ','
-        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
-        BSR     DNMODE
-        BRA     PRINT Jump to next instruction
-ANDMODE1 *AND Dn, <ea>
-        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
-        BSR     DNMODE
-        *Call function to print a COMMA ','
-        BSR     EAMODE
-        BRA     PRINT  Jump to next instruction
+        BRA     PRINT
 
 BRBTST  MOVE.B  #$58,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print  BTST
-        *Print  tab
-        MOVE.B  MSK_678,D4
-        CMP.B   #4,D4 if 4 then it's Dn,<ea>
-        BNE     BTSTIMMED 
-        MOVE.B  MSK_9AB,MODE
-        BSR     DNMODE
-        *Print comma ','
-        BSR     EAMODE
-        BRA     PRINT
-BTSTIMMED        
-        *Still need to figure out and finish coding
         BRA     PRINT
 
-BRBCC   MOVE.L  GBUFF,A0
+BRBCC   MOVE.B  #$6B,(IOOPCD)       Set OP-code name
+        MOVE.L  GBUFF,A0
         MOVE.W  (A0),D0
         MOVE.L  #%11110000,D2
         BSR     EXTMSK
         CMP.B   #%0110,D1
         BNE     BRBAD
-        
-        MOVE.B  #$6B,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_89AB
-        *Print  TAB
-        MOVE.B  MSK_89AB,D4
-       * BSR     EXTMSK_70 Get lower 8 bits(displacement)
-       * MOVE.B  DISP8,D4
-        CMP.B   #7,D4
-        BEQ     BRBEQ
-        CMP.B   #13,D4
-        BEQ     BRBLT
-        CMP.B   #6,D4
-        BEQ     BRBNE
-        CMP.B   #2,D4
-        BEQ     BRBHI
+       
+       * CMP.B   #7,D4
+       * BEQ     BRBEQ
+       * CMP.B   #13,D4
+       * BEQ     BRBLT
+       * CMP.B   #6,D4
+       * BEQ     BRBNE
+       * CMP.B   #2,D4
+       * BEQ     BRBHI
+        BRA     PRINT
 
 BRBEQ   MOVE.B  #$6F,(IOOPCD)       Set OP-code name
-        
-        *Print BEQ
-        *CMP DISP8 to get displacement
-        *If 00 then 16 displacement
-        *If FF then 32 displacement
-        BRA     ENDBCC
+        BRA     PRINT
         
 BRBLT   MOVE.B  #$73,(IOOPCD)       Set OP-code name
-        *Print BLT
-        *CMP DISP8 to get displacement
-        *If 00 then 16 displacement
-        *If FF then 32 displacement
-        BRA     ENDBCC
+        BRA     PRINT
 
 BRBNE   MOVE.B  #$77,(IOOPCD)       Set OP-code name
-        *Print BNE
-        *CMP DISP8 to get displacement
-        *If 00 then 16 displacement
-        *If FF then 32 displacement
-        BRA     ENDBCC
+        BRA     PRINT
 
 BRBHI   MOVE.B  #$7B,(IOOPCD)       Set OP-code name
-        *Print BHI
-        *CMP DISP8 to get displacement
-        *If 00 then 16 displacement
-        *If FF then 32 displacement
-ENDBCC  BRA     PRINT
+        BRA     PRINT
 
 BRCMP   MOVE.B  #$5D,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print  CMP
-        *Print  .
-        *Print  size according to opmode
-        *Print  tab
-        BSR     EAMODE
-        *Print  ,
-        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
-        BSR     DNMODE
-        BRA     PRINT Jump to next instruction
+        BRA     PRINT
        
 BRCMPA  MOVE.B  #$61,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print  CMPA
-        *Print  .
-        *Print  size according to opmode
-        *Print  tab
-        BSR     EAMODE
-        *Print  ,
-        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
-        BSR     ANMODE
-        BRA     PRINT Jump to next instruction 
+        BRA     PRINT
   
 BRCMPI  MOVE.B  #$66,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_7to0
-        *Print  CMPI
-        *Print  .
-        *Print  size according to bits 67
-        *Print  tab
-        *Print  #
-        *Print  data from memory
-        *Print  ','
-        BSR     EAMODE
         BRA     PRINT
 
 BRRTS   MOVE.B  #$83,(IOOPCD)       Set OP-code name
-        * Call Print TAB function '      '
-        *LEA     _RTS, A1       Load 'RTS' to be printed
-        MOVE.B    #0, D0        Load the length of message
-        BRA     PRINT          Return to subroutine
+        BRA     PRINT               Next instruction
 
 BRLEA   MOVE.B  #$37,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print  LEA
-        *Print  tab
-        BSR     EAMODE
-        *Print  ,
-        MOVE.B  MSK_9AB,MODE Copy the EA<register> into MODE
-        BSR     ANMODE        
+        BRA     PRINT  
 
 BRJSR   MOVE.B  #$7F,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_012
-        BSR     EXTMSK_345
-        *Print  JSR
-        *Print  tab
-        BSR     EAMODE
         BRA     PRINT
         
-BRMOVE  MOVE.L  GBUFF,A0        Point A0 to GBUFF
-        MOVE.B  (A0),D0         Move byte to D0
+*
+* Move: 00|SZ|DRG|DMD|SMD|SRG
+*
+
+BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
+        MOVE.B  (A0),D0         Move instruction byte to D0
         LSR.B   #6,D0           Shift 6 bits right
         TST.B   D0              Test if the first 2 bits match the MOVE instruction
         BNE     BRBAD           If they are not 0, branch to BAD
 
-        BSR     EXTMSK_CD       Get the size of MOVE instruction
-        MOVE.B  (MSK_CD),D0     Store it in D0
+        MOVE.L  #$3000,D2       Extract size at 0011000000000000
+        BSR     EXTMSK          Get the size to D1
+        MOVE.B  D1,D0           Move size to D0
         BSR     SSIZE           Translate size
-       
-        BSR     EXTMSK_Bto0
+        BNE     BRBAD           If size was not found, branch to BAD
 
-        * Call Print 'MOVE' function
-        * Call Print Dot '.' function
-        * Call Function that prints the Size (B/W/L)
-        * Call Print TAB '   ' function
-        BSR     EAMODE
-        * Call Print COMMA function ','
-        LEA     MODE_TBL,A6     Load the Mode table
-        MOVE.B  MSK_678,D3      Load the OP Mode
-        MOVE.B  MSK_9AB,MODE    Copy the EA mode into the mode variable
-        MULU    #4, D3          
-        JSR     00(A6,D3)       Jump to appropriate EA<mode> 
-        CLR.L   D3
-        CLR.L   D0
+        BSR     EXDST           Extract destination mode & register
+        BSR     ADVBFR          Advance the buffer accordingly
 
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        MOVE.L  #%0000111111000000,D2
-        BSR     EXTMSK
-        BSR     ADVBFR
-        
-        MOVE.L  #%0000000000000111,D2
-        BSR     EXTMSK
-        LSL.W   #3,D1
-        MOVE.W  D1,D3
-        MOVE.L  #%0000000000111000,D2
-        BSR     EXTMSK
-        OR.W    D3,D1
-        BSR     ADVBFR
+        BSR     EXSRC           Extract source mode & register
+        BSR     ADVBFR          Advance the buffer accordingly
 
-        ADD.L   #$2,(GBUFF)
-        MOVE.B  #$00,(IOOPCD)       Set OP-code name
+        CMP.B   #1,(DMD)        Test if the dest mode == 001
+        BEQ     BRMOVEA         If the dest mode is equal, branch to BRMOVEA
 
+        ADD.L   #$2,(GBUFF)     Advance buffer
         BRA     PRINT           Go to next instruction
 
-BRMOVEA ADD.L   #$4,(GBUFF)
-        MOVE.B  #$05,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_CD       Get the size of MOVE instruction
-        BSR     EXTMSK_Bto0
-        *Call Print 'MOVEA' function
-        *Call Print DOT '.' function
-        *Call function that prints the size (B/W/L)
-        *Call Print TAB '   ' function
-        BSR     EAMODE
-        *Call print COMMA function ','
-        MOVE.B  MSK_9AB,MODE      Get the register number
-        BSR     ANMODE
-
-        CLR.L   D0
-        CLR.L   D3
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        
-        MOVE.L  #%0000000000000111,D2
-        BSR     EXTMSK
-        LSL.W   #3,D1
-        MOVE.W  D1,D3
-        MOVE.L  #%0000000000111000,D2
-        BSR     EXTMSK
-        OR.W    D3,D1
-        BSR     ADVBFR
-
-        ADD.L   #$2,(GBUFF)
-
-        BRA     PRINT          Get next instruction
+BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
+        ADD.L   #$2,(GBUFF)     Advance buffer
+        BRA     PRINT           Go to next instruction
 
 BRMOVEM ADD.L   #$8,(GBUFF)
         MOVE.B  #$0B,(IOOPCD)       Set OP-code name
         BRA     PRINT
 
+BRMOVEQ MOVE.B  #$8B,(IOOPCD)       Set OP-code name
+        BRA     BRBAD
+
 BRASL   MOVE.B  #$50,(IOOPCD)       Set OP-code name
-        *Print ASL
-        *Print  tab
-        BSR     EXTMSK_67
-        MOVE.B  MSK_67, D4
-        CMP.B   #3,D4  If 3 or 11 then it's a memory shift
-        BEQ     ASLMEMORY
-        *Not a memory shift its a Register Shift
-        BSR     EXTMSK_9AB
-        BSR     EXTMSK_5
-        BSR     EXTMSK_012
-        BSR     EXTMSK_8   Should alway be 1 because ASL not ASR
-        MOVE.B  MSK_5, D4
-        CMP.B   #1, D4 If 1 it's Dn,Dn
-        BEQ     ASLDN
-        *#data,Dn
-        *Print  #
-        *Print bits 9AB, 000 is 8
-        BRA     ASLDNPRINT
-
-ASLDN   *Dn, Dn
-        MOVE.B  MSK_9AB,MODE
-        BSR     DNMODE     
-
-ASLDNPRINT
-        *Print ,
-        MOVE.B  MSK_012, MODE
-        BSR     DNMODE
-        BRA     PRINT        
-ASLMEMORY
-        BSR     EXTMSK_012
-        BSR     EXTMSK_345
-        BSR     EAMODE
-        BRA     PRINT
-
         BRA     PRINT
 
 BRLSR   MOVE.B  #$54,(IOOPCD)       Set OP-code name
-        *Print LSR
-        *Print  tab
-        BSR     EXTMSK_67
-        MOVE.B  MSK_67, D4
-        CMP.B   #3,D4  If 3 or 11 then it's a memory shift
-        BEQ     LSRMEMORY
-        *Not a memory shift its a Register Shift
-        BSR     EXTMSK_9AB
-        BSR     EXTMSK_5
-        BSR     EXTMSK_012
-        BSR     EXTMSK_8   Should alway be 0 because LSR not LSL
-        MOVE.B  MSK_5, D4
-        CMP.B   #1, D4 If 1 it's Dn,Dn
-        BEQ     LSRDN
-        *#data,Dn
-        *Print  #
-        *Print bits 9AB 000 is 8
-        BRA     LSRDNPRINT
-
-LSRDN   *Dn, Dn
-        MOVE.B  MSK_9AB,MODE
-        BSR     DNMODE     
-
-LSRDNPRINT
-        *Print ,
-        MOVE.B  MSK_012, MODE
-        BSR     DNMODE
         BRA     PRINT        
 
-LSRMEMORY
-        BSR     EXTMSK_012
-        BSR     EXTMSK_345
-        BSR     EAMODE
-        BRA     PRINT
-
 BRMULU  MOVE.B  #$2D,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print  MULU
-        *Print  tab
-        BSR     EAMODE
-        *Print  ,
-        MOVE.B  MSK_9AB,MODE      Get the register number
-        BSR     DNMODE
         BRA     PRINT
 
-BRDIVS  MOVE.B  #$32,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print  DIVS
-        *Print  tab
-        BSR     EAMODE
-        *Print  ,
-        MOVE.B  MSK_9AB,MODE      Get the register number
-        BSR     DNMODE        
+BRDIVS  MOVE.B  #$32,(IOOPCD)       Set OP-code name     
         BRA     PRINT
 
 BREOR   MOVE.B  #$43,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print EOR
-        *Print a tab
-        MOVE.B  MSK_9AB, MODE     Copy the register Number
-        BSR     DNMODE
-        *Print a comma ','
-        BSR     EAMODE
-        BRA     PRINT          Get next instruction
+        BRA     PRINT               Get next instruction
 
 BRORI   MOVE.B  #$3F,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_7to0
-        *Print  ORI
-        *Print  tab
-        *Print  #
-        *Print  data according to size
-        *Print  comma ','
-        BSR     EAMODE
         BRA     PRINT
 
 BREORI  MOVE.B  #$47,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_7to0
-        *Print  EORI
-        *Print  tab
-        *Print  #
-        *Print  data according to size
-        *Print  comma ','
-        BSR     EAMODE
         BRA     PRINT
 
 BRNOT   MOVE.B  #$4C,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_7to0
-        *Print NOT
-        *Call function to print DOT '.'
-        *Call function to print based on size (B/W/L)
-        *Call function to print a TAB
-        BSR     EAMODE
         BRA     PRINT
 
 BRSUB   MOVE.B  #$1F,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        MOVE.B  MSK_678, D5 Copy OPmode
-        *Print SUB
-        *Print .
-        *Print Size according to EXTMSK_678
-        CMP.B   #$4, D5 If greater than 4, Syntax is SUB Dn,<ea>
-        BGT     BRSUB1
-        *Syntax SUB <ea>,Dn
-        BSR     EAMODE
-        *Print ','
-        MOVE.B  MSK_9AB,MODE Load the register number
-        BSR     DNMODE
         BRA     PRINT        
-     
-BRSUB1  MOVE.B  MSK_9AB,MODE Load the register number
-        BSR     DNMODE      
-        *Print comma ','
-        BSR     EAMODE
-        BRA     PRINT      Get next instruction
 
-BRSUBA  MOVE.B  #$23,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_Bto0
-        *Print  SUBA
-        *Print  .
-        *Print  Size according to MSK_678
-        *Print  tab
-        BSR     EAMODE  Print <EA>
-        *Print  ,
-        MOVE.B  MSK_9AB,MODE Load the register number
-        BSR     ANMODE  Print <An>     
+BRSUBA  MOVE.B  #$23,(IOOPCD)       Set OP-code name   
         BRA     PRINT
 
 BRSUBI  MOVE.B  #$28,(IOOPCD)       Set OP-code name
-        BSR     EXTMSK_7to0
-        *Print  SUBI
-        *Print  .
-        *Print  size according to bits 67
-        *Print  tab
-        *print  #
-        *print  data *32/16/8
-        *print  ','
-        BSR     EAMODE
         BRA     PRINT
 
-*----------------------------------------------
-*   User Functions
-*----------------------------------------------
-DNMODE  
-        LEA     DN_TBL,A6  Load Dn table
-        MOVE.B  MODE,D3 Load the register number
-        MULU    #4,D3
-        JSR     00(A6,D3)  Jump to appropriate Dn  
-        CLR.L   D3
-        RTS
-ANMODE
-        LEA     AN_TBL,A6       Load the address table
-        MOVE.B  MODE, D3        Move register into MODE variabl
-        MULU    #4,D3 
-        JSR     00(A6,D3)       Jump to appropriate An
-        CLR.L   D3 
-        RTS
-EAMODE
-        LEA     MODE_TBL,A6 Load the mode table
-        CLR.L   D3
-        MOVE.B  MSK_345,D3 load the EA<mode>
-        MULU    #4,D3       Get offset address
-        MOVE.B  MSK_012,MODE Move EA<register>
-        JSR     00(A6,D3)   Jump to appropriate MODE
-        CLR.L   D3
-        RTS
-EXTMSK_Bto0     * 15 14 13 12 [11 10 09 08 07 06 05 04 03 02 01 00]
-        BSR     EXTMSK_9AB Get register
-        BSR     EXTMSK_678 Get OPmode
-        BSR     EXTMSK_345 Get EA<mode>
-        BSR     EXTMSK_012 Get EA<register>
-        RTS
-EXTMSK_7to0     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
-        BSR     EXTMSK_67
-        BSR     EXTMSK_345 Get EA<mode>
-        BSR     EXTMSK_012 Get EA<register>
-        RTS
-EXTMSK_70     * 15 14 13 12 11 10 09 08 [07 06 05 04 03 02 01 00]
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0            Transfer data to memory
-        MOVE.L  #%0000000111111111,D2   Mask
-        BSR     EXTMSK                  Extract masked bits
-        MOVE.B  D1,DISP8                Store masked bits
-        RTS
-EXTMSK_678      * 15 14 13 12 11 10 09[08 07 06]05 04 03 02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0            Transfer data to memory
-        MOVE.L  #%0000000111000000,D2   Mask
-        BSR     EXTMSK                  Extract masked bits
-        MOVE.B  D1,MSK_678              Store masked bits
-        RTS                             Return to caller
-        
-EXTMSK_89AB     * 15 14 13 12 [11 10 09 08] 07 06 05 04 03 02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0           Transfer data to memory
-        MOVE.L  #%0000111100000000,D2   Mask
-        BSR     EXTMSK                  Extract masked bits
-        MOVE.B  D1,MSK_89AB              Store masked bits
-        RTS                             Return to caller
-        
-EXTMSK_67      * 15 14 13 12 11 10 09 08 [07 06]05 04 03 02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0             Transfer data to memory
-        MOVE.L  #%0000000011000000,D2   Mask
-        BSR     EXTMSK                  Extract masked bits
-        MOVE.B  D1,MSK_67               Store masked bits
-        RTS                             Return to caller
-
-EXTMSK_CD       * 15 14[13 12]11 10 09 08 07 06 05 04 03 02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        MOVE.L  #%0011000000000000,D2
-        BSR     EXTMSK
-        MOVE.B  D1,MSK_CD
-        RTS
-        
-EXTMSK_5        * 15 14 13 12 11 10 09 08 07 06[05]04 03 02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        MOVE.L  #%0000000000100000,D2
-        BSR     EXTMSK
-        MOVE.B  D1,MSK_5
-        RTS
-EXTMSK_8        * 15 14 13 12 11 10 09 [08] 07 06 05 04 03 02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        MOVE.L  #%0000000100000000,D2
-        BSR     EXTMSK
-        MOVE.B  D1,MSK_8
-        RTS        
-EXTMSK_012      * 15 14 13 12 11 10 09 08 07 06 05 04 03[02 01 00]
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        MOVE.L  #%0000000000000111,D2
-        BSR     EXTMSK
-        MOVE.B  D1,MSK_012
-        RTS
-        
-EXTMSK_345      * 15 14 13 12 11 10 09 08 07 06[05 04 03]02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        MOVE.L  #%0000000000111000,D2
-        BSR     EXTMSK
-        MOVE.B  D1,MSK_345
-        RTS
-        
-EXTMSK_9AB      * 15 14 13 12[11 10 09]08 07 06 05 04 03 02 01 00
-        MOVE.L  GBUFF,A0
-        MOVE.W  (A0),D0
-        MOVE.L  #%0000111000000000,D2
-        BSR     EXTMSK
-        MOVE.B  D1,MSK_9AB
-        RTS
-
-JMP_D0 
-            *ummm we can do a couple of things here
-            *we can add the print stuff directly in here
-            *or we can make seperate print functions
-        RTS
-JMP_D1 
-            *see JMP_D0
-        RTS
-JMP_D2 
-            *see JMP_D0
-        RTS
-JMP_D3 
-            *see JMP_D0
-        RTS
-JMP_D4 
-            *see JMP_D0
-        RTS
-JMP_D5
-            *see JMP_D0
-        RTS
-JMP_D6 
-            *see JMP_D0
-        RTS
-JMP_D7 
-            *see JMP_D0
-        RTS
-JMP_A0  
-            *see JMP_D0
-        RTS
-JMP_A1 
-            *see JMP_D0
-        RTS
-JMP_A2 
-            *see JMP_D0
-        RTS
-JMP_A3
-            *see JMP_D0
-        RTS
-JMP_A4 
-            *see JMP_D0
-        RTS
-JMP_A5 
-            *see JMP_D0
-        RTS
-JMP_A6 
-            *see JMP_D0
-        RTS
-JMP_A7
-            *see JMP_D0
-        RTS
-            
-JMP_M0
-        *Need to print a Data Register
-        *Call function to go to the data register to be printed
-        *Need to use reg table
-        BSR     DNMODE   
-        LEA     _M0,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-JMP_M1
-        *Need to print a Address Register
-        *Call function to go to the address register to be printed
-        BSR     ANMODE
-        LEA     _M1,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-JMP_M2
-        *Print (
-        BSR     ANMODE
-        *Print )
-        LEA     _M2,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-JMP_M3
-        *Call function to print a '(' paran
-        BSR     ANMODE
-        *Print )
-        *Print +
-        LEA     _M3,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-JMP_M4
-        *Print -
-        *Print (
-        BSR     ANMODE
-        *Print )
-        LEA     _M4,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-JMP_M5
-        LEA     _M5,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-JMP_M6 
-        LEA     _M6,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-JMP_M7 
-        *Call Print Pound Sign function
-        *Retrieve value from Memory
-        *Print value
-        LEA     _M7,A1
-        MOVE.B  #14, D0
-        *TRAP    #15
-        RTS
-
-*---------------------------
-*   TABLES:
-*   REGISTER:   (D0-D7 and A0-A7)
-*   OPmodes:    (Modes 000-111)
-*   EAmodes:    (Modes 000-111)
-*   MANIP:      (...)    
-
-*---------------------------
-*   DN Table
-*   0000-0111 = D0-D7
-*   1000-1111 = A0-A7
-*---------------------------
-
-DN_TBL
-        JMP     JMP_D0  000
-        JMP     JMP_D1  001
-        JMP     JMP_D2  010
-        JMP     JMP_D3  011
-        JMP     JMP_D4  100
-        JMP     JMP_D5  101
-        JMP     JMP_D6  110
-        JMP     JMP_D7  111
-            
-*-----------------------------
-*   MODE Table
-*   MODES (0000-0111)
-*-----------------------------
-MODE_TBL
-        JMP     JMP_M0  000
-        JMP     JMP_M1  001
-        JMP     JMP_M2  010
-        JMP     JMP_M3  011
-        JMP     JMP_M4  100
-        JMP     JMP_M5  101
-        JMP     JMP_M6  110
-        JMP     JMP_M7  111
-            
-*-----------------------------
-*   AN Table
-*   MODES (0000-0111)
-*-----------------------------
-AN_TBL
-        JMP     JMP_A0  000
-        JMP     JMP_A1  001
-        JMP     JMP_A2  010
-        JMP     JMP_A3  011
-        JMP     JMP_A4  100
-        JMP     JMP_A5  101
-        JMP     JMP_A6  110
-        JMP     JMP_A7  111
-
-        BRA     DONE
-     
         END     START
