@@ -63,6 +63,9 @@ OPNAME  DC.B    'MOVE',0        00      00
         DC.B    'RTS',0         131     83
         DC.B    'BAD',0         135     87
         DC.B    'MOVEQ',0       139     8B
+        DC.B    'LSL',0         145     91
+        DC.B    'ASR',0         149     95
+        DC.B    'ADDI',0        153     99
 
 IOOPSZ  DC.B    '.B',0          0       00
         DC.B    '.W',0          3       03
@@ -727,7 +730,10 @@ DISPD   MOVEM.L (SP)+,D0-D2         Restore D0-D2
 BRBAD   MOVE.B  (IOOPCD),(IOBDCD)   Move OPCODE to BAD OPCODE
         MOVE.B  #$87,(IOOPCD)       Set OPCODE to BAD
         ADD.L   #$2,(GBUFF)         Advance the buffer
-PRINT   CMP.B   #$FF,(IOOPCD)       Test if OP code exists
+PRINT   *----TODO----*
+        * If OP code exists as BAD and BAD OPCODE don't exist, assume that the last
+        * OP display was BAD, and display then next word as raw data
+        CMP.B   #$FF,(IOOPCD)       Test if OP code exists
         BEQ     BRBAD               If it does not, display BAD
 
         MOVE.L  (IOADDR),D0         Read memory location
@@ -868,242 +874,222 @@ DONE    LEA     MSSG5,A1            Display header
 *   OP
 *--------------------
 
+* Swap data registers: Swaps d0 and d1
+SWAPDR  MOVE.L  D0,-(SP)
+        MOVE.L  D1,D0
+        MOVE.L  (SP)+,D1
+        RTS
+
 OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
-        MOVE.W  (A0),D0         Transfer data to memory
+        MOVE.W  (A0)+,D0        Transfer word data to D0, post-increment location
+        MOVE.W  (A0),D1         Transfer next word data to D1
         MOVE.L  GBUFF,IOADDR    Set memory location for IO
 
 
         * Mask bits to determine OP-code and branch correspondingly-- high order bits are checked first
         
-        MOVE.W  #%1110000010001000,D2
-        BSR     TSTMSK
+        * LSL:    1110001111XXXXXX
+        MOVE.W  #%1110001111000000,D2
+        MOVE.W  #%0001110000000000,D3
+        BSR     CMPMSK
+        BEQ     BRLSL
+
+        * LSL:    1110XXX1XXX01XXX
+        MOVE.W  #%1110000100001000,D2
+        MOVE.W  #%0001000000010000,D3
+        BSR     CMPMSK
+        BEQ     BRLSL
+
+        * LSR:    1110001011XXXXXX
+        MOVE.W  #%1110001011000000,D2
+        MOVE.W  #%0001110100000000,D3
+        BSR     CMPMSK
         BEQ     BRLSR
 
-        MOVE.W  #%1110000001001000,D2
-        BSR     TSTMSK
-        BEQ     BRLSR
-
+        * LSR:    1110XXX0XXX01XXX
         MOVE.W  #%1110000000001000,D2
-        BSR     TSTMSK
+        MOVE.W  #%0001000100010000,D3
+        BSR     CMPMSK
         BEQ     BRLSR
 
-        MOVE.W  #%1110000010000000,D2
-        BSR     TSTMSK
+        * ASL:    1110000111XXXXXX
+        MOVE.W  #%1110000111000000,D2
+        MOVE.W  #%0001111000000000,D3
+        BSR     CMPMSK
         BEQ     BRASL
 
-        MOVE.W  #%1110000001000000,D2
-        BSR     TSTMSK
+        * ASL:    1110XXX1XXX00XXX
+        MOVE.W  #%1110000100000000,D2
+        MOVE.W  #%0001000000011000,D3
+        BSR     CMPMSK
         BEQ     BRASL
 
+        * ASR:    1110000011XXXXXX
+        MOVE.W  #%1110000011000000,D2
+        MOVE.W  #%0001111100000000,D3
+        BSR     CMPMSK
+        BEQ     BRASR
+
+        * ASR:    1110XXX0XXX00XXX
         MOVE.W  #%1110000000000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%0001000100011000,D3
+        BSR     CMPMSK
         BEQ     BRASL
 
-        MOVE.W  #%1101000110000000,D2
-        BSR     TSTMSK
-        BEQ     BRADD
-
-        MOVE.W  #%1101000101000000,D2
-        BSR     TSTMSK
-        BEQ     BRADD
-
-        MOVE.W  #%1101000100000000,D2
-        BSR     TSTMSK
-        BEQ     BRADD
-
-        MOVE.W  #%1101000010000000,D2
-        BSR     TSTMSK
-        BEQ     BRADD
-
-        MOVE.W  #%1101000001000000,D2
-        BSR     TSTMSK
-        BEQ     BRADD
-
+        * ADD:    1101XXXXXXXXXXXX
+        * ADDA
         MOVE.W  #%1101000000000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%0010000000000000,D3
+        BSR     CMPMSK
         BEQ     BRADD
 
-        MOVE.W  #%1100000110000000,D2
-        BSR     TSTMSK
-        BEQ     BRAND
+        * ADDI:   00000110XXXXXXXX
+        MOVE.W  #%0000011000000000,D2
+        MOVE.W  #%1111100100000000,D3
+        BSR     CMPMSK
+        BEQ     BRADDI
 
-        MOVE.W  #%1100000101000000,D2
-        BSR     TSTMSK
-        BEQ     BRAND
-
-        MOVE.W  #%1100000100000000,D2
-        BSR     TSTMSK
-        BEQ     BRAND
-
-        MOVE.W  #%1100000010000000,D2
-        BSR     TSTMSK
-        BEQ     BRAND
-
-        MOVE.W  #%1100000001000000,D2
-        BSR     TSTMSK
-        BEQ     BRAND
-
+        * AND:    1100XXXXXXXXXXXX
         MOVE.W  #%1100000000000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%0011000000000000,D3
+        BSR     CMPMSK
         BEQ     BRAND
 
-        MOVE.W  #%1100000011000000,D2
-        BSR     TSTMSK
+        * MULU:   0100110000XXXXXX
+        MOVE.W  #%0100110000000000,D2
+        MOVE.W  #%1011001111000000,D3
+        BSR     CMPMSK
+        BNE     *+26
+        BSR     SWAPDR
+        * nxt wrd 0XXX0X0000000XXX
+        MOVE.W  #%0000000000000000,D2
+        MOVE.W  #%1000101111111000,D3
+        BSR     CMPMSK
         BEQ     BRMULU
+        BSR     SWAPDR
 
-        MOVE.W  #%1011000111000000,D2
-        BSR     TSTMSK
-        BEQ     BRCMPA
-
-        MOVE.W  #%1011000011000000,D2
-        BSR     TSTMSK
-        BEQ     BRCMPA
-
-        MOVE.W  #%1011000010000000,D2
-        BSR     TSTMSK
-        BEQ     BRCMP
-
-        MOVE.W  #%1011000001000000,D2
-        BSR     TSTMSK
-        BEQ     BRCMP
-
+        * CMP:    1011XXXXXXXXXXXX
+        * CMPA
         MOVE.W  #%1011000000000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%0100000000000000,D3
+        BSR     CMPMSK
         BEQ     BRCMP
 
-        MOVE.W  #%1011000110000000,D2
-        BSR     TSTMSK
+        * CMPI:   00001100XXXXXXXX
+        MOVE.W  #%0000110000000000,D2
+        MOVE.W  #%1111001100000000,D3
+        BSR     CMPMSK
+        BEQ     BRCMPI
+
+        * EOR:    1011XXXXXXXXXXXX
+        MOVE.W  #%1011000000000000,D2
+        MOVE.W  #%0100000000000000,D3
+        BSR     CMPMSK
         BEQ     BREOR
 
-        MOVE.W  #%1011000101000000,D2
-        BSR     TSTMSK
-        BEQ     BREOR
+        * EORI:   00001010XXXXXXXX
+        MOVE.W  #%0000101000000000,D2
+        MOVE.W  #%1111010100000000,D3
+        BSR     CMPMSK
+        BEQ     BREORI
 
-        MOVE.W  #%1011000100000000,D2
-        BSR     TSTMSK
-        BEQ     BREOR
-
-        MOVE.W  #%1001000111000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUBA
-
-        MOVE.W  #%1001000011000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUBA
-
-        MOVE.W  #%1001000110000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUB
-
-        MOVE.W  #%1001000101000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUB
-
-        MOVE.W  #%1001000100000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUB
-
-        MOVE.W  #%1001000010000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUB
-
-        MOVE.W  #%1001000001000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUB
-
-        MOVE.W  #%1001000000000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUB
-
-        MOVE.W  #%1000000000000000,D2
-        BSR     TSTMSK
+        * DIVS:   0100110001XXXXXX
+        MOVE.W  #%0100110001000000,D2
+        MOVE.W  #%1011001110000000,D3
+        BSR     CMPMSK
+        BNE     *+26
+        BSR     SWAPDR
+        * nxt wrd 0XXX1X0000000XXX
+        MOVE.W  #%0000100000000000,D2
+        MOVE.W  #%1000001111111000,D3
+        BSR     CMPMSK
         BEQ     BRDIVS
+        BSR     SWAPDR
 
-        *0111XXX0XXXXXXXX
+        * MOVEQ:  0111XXX0XXXXXXXX
         MOVE.W  #%0111000000000000,D2
         MOVE.W  #%1000000100000000,D3
         BSR     CMPMSK
         BEQ     BRMOVEQ
 
+        * BCC:    01100000XXXXXXXX
         MOVE.W  #%0110000000000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%1001111100000000,D3
+        BSR     CMPMSK
         BEQ     BRBCC
 
+        * ADDQ:   0101XXXXXXXXXXXX
         MOVE.W  #%0101000000000000,D2
+        MOVE.W  #%1010000000000000,D3
         BSR     TSTMSK
         BEQ     BRADDQ
 
-        MOVE.W  #%0100111001000000,D2
-        BSR     TSTMSK
+        * RTS:    0100111001110101
+        CMP.W   #%0100111001000101,D0
         BEQ     BRRTS
 
+        * JSR:    0100111010XXXXXX
         MOVE.W  #%0100111010000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%1011000101000000,D3
+        BSR     CMPMSK
         BEQ     BRJSR
 
-        MOVE.W  #%0100110100000000,D2
-        BSR     TSTMSK
+        * NOT:    01000110XXXXXXXX
+        MOVE.W  #%0100011000000000,D2
+        MOVE.W  #%1011100100000000,D3
+        BSR     CMPMSK
         BEQ     BRNOT
 
-        MOVE.W  #%0100110010000000,D2
-        BSR     TSTMSK
-        BEQ     BRNOT
 
-        MOVE.W  #%0100110000000000,D2
-        BSR     TSTMSK
-        BEQ     BRNOT
-
+        * LEA:    0100XXX111XXXXXX
         MOVE.W  #%0100000111000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%1011000000000000,D3
+        BSR     CMPMSK
         BEQ     BRLEA
 
-        MOVE.W  #%0100110011000000,D2
-        BSR     TSTMSK
-        BEQ     BRMOVEM
-
-        MOVE.W  #%0100110010000000,D2
-        BSR     TSTMSK
-        BEQ     BRMOVEM
-
-        MOVE.W  #%0100100011000000,D2
-        BSR     TSTMSK
-        BEQ     BRMOVEM
-
+        * MOVEM:  01001X001XXXXXXX
         MOVE.W  #%0100100010000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%1011001100000000,D3
+        BSR     CMPMSK
         BEQ     BRMOVEM
 
-        MOVE.W  #%0011000000000000,D2
-        BSR     TSTMSK
+        * MOVE:   00XXXXXXXXXXXXXX
+        MOVE.W  #%0000000000000000,D2
+        MOVE.W  #%1100000000000000,D3
+        BSR     CMPMSK
         BEQ     BRMOVE
 
-        MOVE.W  #%0010000000000000,D2
-        BSR     TSTMSK
-        BEQ     BRMOVE
-
-        MOVE.W  #%0001000000000000,D2
-        BSR     TSTMSK
-        BEQ     BRMOVE
-
+        * CMPI:   00001100XXXXXXXX
         MOVE.W  #%0000110000000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%1111001100000000,D3
+        BSR     CMPMSK
         BEQ     BRCMPI
 
-        MOVE.W  #%0000000100000000,D2
-        BSR     TSTMSK
-        BEQ     BRBTST
-
-        MOVE.W  #%0000101000000000,D2
-        BSR     TSTMSK
-        BEQ     BREORI
-
+        * BTST:   0000100000XXXXXX
+        MOVE.W  #%0000100000000000,D2
+        MOVE.W  #%1111011111000000,D3
+        BSR     CMPMSK
+        BNE     *+26
+        BSR     SWAPDR
+        * nxt wrd 00000000XXXXXXXX
         MOVE.W  #%0000000000000000,D2
-        BSR     TSTMSK
+        MOVE.W  #%1111111100000000,D3
+        BSR     CMPMSK
+        BEQ     BRBTST
+        BSR     SWAPDR
+
+        * ORI:    00001010XXXXXXXX
+        MOVE.W  #%0000101000000000,D2
+        MOVE.W  #%1111010100000000,D3
+        BSR     CMPMSK
         BEQ     BRORI
 
-        MOVE.W  #%0000010000000000,D2
-        BSR     TSTMSK
-        BEQ     BRSUBI
+        * SUB:    1001XXXXXXXXXXXX
+        * SUBA, SUBI
+        MOVE.W  #%1001000000000000,D2
+        MOVE.W  #%0110000000000000,D3
+        BSR     CMPMSK
+        BEQ     BRSUB
      
         BRA     BRBAD           No mask matched, branch to BRBAD
 
@@ -1240,11 +1226,8 @@ EXSRC   MOVEM.L D0/D2,-(SP)     Push D0 and D2 to stack
 *
 
 BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
+
         MOVE.L  GBUFF,A0        Point A0 to GBUFF
-        MOVE.B  (A0),D0         Move instruction byte to D0
-        LSR.B   #4,D0           Byte -> Nibble
-        CMP.B   #%1101,D0       Test if the first nibble matches the ADD instruction
-        BNE     BRBAD           If bytes are not equal, branch to BAD
 
         BSR     EXSRC           Extract EA mode & register
         BSR     EXDST           Extract OP mode & register
@@ -1261,7 +1244,7 @@ BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
         BSR     OPSIZE          If size was not found, translate OP mode
         BNE     BRBAD           If size was not found, branch to BAD
 
-        *CMP.B   #1,D1           Compare destination mode to <EA>
+        *CMP.B   #1,D1          Compare destination mode to <EA>
 
         ADD.L   #$2,(GBUFF)     Advace buffer
         BRA     PRINT           Go to next instruction
@@ -1276,6 +1259,9 @@ BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
 
 BRADDQ  MOVE.B  #$1A,(IOOPCD)       Set OP-code name
         BRA     PRINT
+
+BRADDI  MOVE.B  #$99,(IOOPCD)       Set OP-code name
+        BRA     BRBAD               Not supported
 
 BRAND   MOVE.B  #$3B,(IOOPCD)       Set OP-code name
         BRA     PRINT
@@ -1336,17 +1322,14 @@ BRJSR   MOVE.B  #$7F,(IOOPCD)       Set OP-code name
 *
 
 BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
-        MOVE.L  GBUFF,A0        Point A0 to GBUFF
-        MOVE.B  (A0),D0         Move instruction byte to D0
-        LSR.B   #6,D0           Shift 6 bits right
-        TST.B   D0              Test if the first 2 bits match the MOVE instruction
-        BNE     BRBAD           If they are not 0, branch to BAD
 
         MOVE.L  #$3000,D2       Extract size at 0011000000000000
         BSR     EXTMSK          Get the size to D1
         MOVE.B  D1,D0           Move size to D0
         BSR     SSIZE           Translate size
         BNE     BRBAD           If size was not found, branch to BAD
+
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
 
         BSR     EXDST           Extract destination mode & register
         BSR     ADVBFR          Advance the buffer accordingly
@@ -1369,13 +1352,19 @@ BRMOVEM ADD.L   #$8,(GBUFF)
         BRA     PRINT
 
 BRMOVEQ MOVE.B  #$8B,(IOOPCD)       Set OP-code name
-        BRA     BRBAD
+        BRA     BRBAD               Not supported
 
 BRASL   MOVE.B  #$50,(IOOPCD)       Set OP-code name
         BRA     PRINT
 
+BRASR   MOVE.B  #$95,(IOOPCD)       Set OP-code name
+        BRA     BRBAD               Not supported
+
+BRLSL   MOVE.B  #$91,(IOOPCD)       Set OP-code name
+        BRA     BRBAD
+
 BRLSR   MOVE.B  #$54,(IOOPCD)       Set OP-code name
-        BRA     PRINT        
+        BRA     PRINT 
 
 BRMULU  MOVE.B  #$2D,(IOOPCD)       Set OP-code name
         BRA     PRINT
