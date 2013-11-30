@@ -97,7 +97,7 @@ MSSG2   DC.B    'Enter the ending location of the code to be disassembled:',0
 MSSG3   DC.B    'Enter the name of the file you wish to disassemble:',0
 MSSG4   DC.B    'Press any key for the next page.',0
 MSSG5   DC.B    'You have reached the end of the program.',0
-HEADR   DC.B    'Address      Code        Line',CR,LF,0
+HEADR   DC.B    'Address      OP-Code    Operand',CR,LF,0
 ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
 ERR3    DC.B    'That file does not exist. Please make sure it is located in the same directory,',CR,LF
@@ -557,6 +557,53 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         BSR     CMPRSS
         BRA     OP
 
+*
+* Display string: Displays string until NULL char
+* Input string at A1, output length of string at D1.B
+* Max length: 255
+*
+        
+DSPSTR  MOVEM.L D0-D2/A1,-(SP)  Push D0-D2, and A1 to stack
+        MOVE.L  #255,D2         Set count to 255
+DSPSTLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch to return
+        BRA     DSPSTRT         If count is <= 0, branch to return
+        MOVE.B  (A1)+,D0        Get HEX byte in D0, post-increment A1
+        CMP.B   #0,D0           Check if byte is NULL char
+        BEQ     DSPSTRT         If byte is NULL char, branch to return
+        BSR     HEX2ASCII       Else, get ASCII in D1
+        BSR     DSPAX           Display ASCII
+        BRA     DSPSTLP         Loop back
+DSPSTRT NEG.L   D2              Negate count
+        ADD.L   #254,D2         Add 254; effectively 255 - count - null byte
+        MOVEM.L (SP)+,D0/D1     Restore D0 and D1
+        MOVE.B  D2,D1           Move length to D1
+        MOVEM.L (SP)+,D2/A1     Restore D2 and A1
+        RTS                     Return to caller
+
+*
+* Display offset space: Display space according to offset length
+* Input offset length in D2.B
+*
+
+DSPOFS  MOVEM.L D0-D2,-(SP)     Push D0-D2 to stack
+        * Ensure count is strictly in one byte
+        CLR.L   D0
+        MOVE.B  D2,D0
+        MOVE.L  D0,D2
+DSPOFLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch to return
+        BRA     DSPOFRT         If count is <= 0, branch to return
+        MOVE.B  #6,D0           Display character
+        MOVE.B  #' ',D1         Read space
+        TRAP    #15
+        BRA     DSPOFLP         Loop back
+DSPOFRT MOVEM.L (SP)+,D0-D2     Restore D0-D2
+        RTS                     Return to callr
+
+*
+* Display operand: Displays operand according to mode and register
+* Input mode in D2.B, input reg in D3.B
+*
+
 DISPOP  MOVEM.L D0-D2,-(SP)         Push D0-D2 to stack
         MOVE.B  #6,D0               Display character
         MULU.W  #4,D2
@@ -743,14 +790,15 @@ PRINT   *----TODO----*
         TRAP    #15
 
         CLR.L   D0
+        CLR.L   D2
         LEA     OPNAME,A1           Read OP-code
         MOVE.B  (IOOPCD),D0         Get offset
         ADD.L   D0,A1               Add offset
-        MOVE.B  #14,D0              Display string until NULL char
-        TRAP    #15
+        BSR     DSPSTR              Display string until NULL char and get length in D1.B
+        MOVE.B  D1,D2               Store length in D2 to be used as space offset
     
         CMP.B   #$FF,(IOBDCD)       Test if BAD OP code exists
-        BEQ     *+50                If it doesn't exist, don't display it
+        BEQ     *+52                If it doesn't exist, don't display it
         MOVE.B  #6,D0               Display character
         MOVE.B  #' ',D1             Read space
         TRAP    #15
@@ -759,13 +807,14 @@ PRINT   *----TODO----*
         LEA     OPNAME,A1           Read OP-code
         MOVE.B  (IOBDCD),D0         Get offset
         ADD.L   D0,A1               Add offset
-        MOVE.B  #14,D0              Display string until NULL char
-        TRAP    #15
+        BSR     DSPSTR              Display string until NULL char and get length in D1.B
+        ADD.B   D1,D2               Add length to space offset
         MOVE.B  #6,D0               Display character
         MOVE.B  #'?',D1
         TRAP    #15                 Read ?
         MOVE.B  #')',D1             Read )
         TRAP    #15
+        ADD.B   #2,D2               Add 2 to space offset to account for ( and )
 
         LEA     IOOPSZ,A1           Read OP code size
         MOVE.B  #$03,D0             Set size to 3
@@ -774,12 +823,13 @@ PRINT   *----TODO----*
         MOVE.B  (IOSIZE),D0         If OP size exists, move it to D0
         MULU.W  #$3,D0              Multiply size by 3 for correct offset
         ADD.L   D0,A1               Add offset
-        MOVE.B  #14,D0              Display string until NULL char
-        TRAP    #15
+        BSR     DSPSTR              Display string until NULL char and get length in D1.B
+        
+        ADD.B   D1,D2               Add length to space offset
+        NEG.W   D2                  Negate space offset
+        ADD.W   #11,D2              Add 11 to space offset; effectively 11 - space offset
 
-        MOVE.B  #6,D0               Display character
-        MOVE.B  #TB,D1              Read tab
-        TRAP    #15
+        BSR     DSPOFS              Display space offset with tab
 
         ADD.L   #2,(IOADDR)         Move memory location past first word
 
