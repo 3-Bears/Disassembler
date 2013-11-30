@@ -99,13 +99,13 @@ MSSG5   DC.B    'You have reached the end of the program.',0
 HEADR   DC.B    'Address      OP-Code    Operand',CR,LF,0
 ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
-FILE    DC.B    'test.s68',0
 
 START   MOVE.B  #0,IOLC
         LEA     MSSG0,A1        Welcome message
         MOVE.B  #14,D0
         TRAP    #15
         BRA     PRMPT1
+
 *-----------------------------------
 *    Conversion & Comparison Methods
 *-----------------------------------
@@ -692,7 +692,13 @@ DISPD   MOVEM.L (SP)+,D0-D2         Restore D0-D2
         
 BRBAD   MOVE.B  (IOOPCD),(IOBDCD)   Move OPCODE to BAD OPCODE
         MOVE.B  #$87,(IOOPCD)       Set OPCODE to BAD
-        ADD.L   #$2,(GBUFF)         Advance the buffer
+        * Clear bad data
+        MOVE.B  #$FF,(SMD)
+        MOVE.B  #$FF,(SRG)
+        MOVE.B  #$FF,(DMD)
+        MOVE.B  #$FF,(DRG)
+        MOVE.B  #$FF,(IOSIZE)
+        
 PRINT   *----TODO----*
         * If OP code exists as BAD and BAD OPCODE don't exist, assume that the last
         * OP display was BAD, and display then next word as raw data
@@ -805,6 +811,7 @@ NODST   MOVE.B  #6,D0               Display character
         MOVE.B  #$FF,(IOOPCD)
         MOVE.B  #$FF,(IOBDCD)
         MOVE.B  #$FF,(IOSIZE)
+        ADD.L   #$2,(GBUFF)     Advance buffer
 
         BRA     OP                  Branch to OP for next instruction
 
@@ -847,11 +854,12 @@ SWAPDR  MOVE.L  D0,-(SP)
         RTS
 
 OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
-        CMP.L   #$FFFFFFFF,(A0) Check for end
-        BEQ     DONE            If end, branch to DONE
+        MOVE.B  #0,D2           Set NULL count to 0
+        CMP.L   #$FFFFFFFF,(A0) Check for NULL
+        BEQ     DONE            If NULL, branch to DONE
         MOVE.W  (A0)+,D0        Transfer word data to D0, post-increment location
-        MOVE.W  (A0),D1         Transfer next word data to D1
-        MOVE.L  GBUFF,IOADDR    Set memory location for IO
+        MOVE.W  (A0)+,D1        Transfer next word data to D1, post-increment location
+        MOVE.L   GBUFF,IOADDR   Set memory location for IO
 
 
         * Mask bits to determine OP-code and branch correspondingly-- high order bits are checked first
@@ -1097,7 +1105,7 @@ ADVRET  NEG.L   D2              Negate original buffer
 
 
 *
-* Standard Size: Test the standard size code
+* Standard Size: Test the standard 2 bit size code
 * Inputs size from D0.B, outputs size to IOSIZE (if found)
 * Set Z-flag if size was found, or clear Z-flag if size was not found
 *
@@ -1114,7 +1122,7 @@ SSIZE   MOVE.B  D1,-(SP)    Push D1 to stack
         BNE.S   *+6         Branch to next test
         MOVE.B  #$2,D1      Set size to long
         CMP.B   #$FF,D1     Test if size was found
-        BEQ     *+18        If it was not found, branch to clear flag      
+        BEQ     *+12        If it was not found, branch to clear flag      
         MOVE.B  D1,(IOSIZE) If it was found, store size in IOSIZE
         MOVE.B  (SP)+,D1    Restore D1
         BRA     FLAGST      Set flag & return to caller
@@ -1190,7 +1198,7 @@ EXSRC   MOVEM.L D0/D2,-(SP)     Push D0 and D2 to stack
         RTS                     Return to caller
 
 *
-* ADD: 1101|REG|OPM|EAM|EAR
+* ADD: 1101|REG|OPM|EMD|ERG
 *
 
 BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
@@ -1200,44 +1208,49 @@ BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
         BSR     EXSRC           Extract EA mode & register
         BSR     EXDST           Extract OP mode & register
         
-        CMP.B   #%011,(DMD)     Compare 011 to OP mode
-        BNE.S   *+8             Branch to next test
-        MOVE.B  #1,(IOSIZE)     Set size to word
-        CMP.B   #%111,(DMD)     Compare 111 to OP mode
-        BNE.S   *+8             Branch to next test
-        MOVE.B  #2,(IOSIZE)     Set size to long
-        CMP.B   #$FF,(IOSIZE)   Test if size was found
-        BNE     BRADDA          If size was found, branch to BRADDA        
+        BSR     OPSIZE          If size was not found, translate OP mode
+        BNE     BRBAD           If size was not found, branch to BAD
+
+        CMP.B   #1,D1           Compare destination mode to <EA>
+        BEQ     BRADDA          If ==, branch to ADDA
+
+        BRA     PRINT           Go to next instruction
+
+*
+* ADDA: 1101|REG|OPM|EMD|ERG
+*
+
+BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
+
+BRADDQ  MOVE.B  #$1A,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
+
+BRADDI  MOVE.B  #$99,(IOOPCD)   Set OP-code name
+        BRA     BRBAD           Not supported
+
+*
+* AND: 1100|REG|OPM|EMD|ERG
+*
+
+BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
+
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
+
+        BSR     EXSRC           Extract EA mode & register
+        BSR     EXDST           Extract OP mode & register     
 
         BSR     OPSIZE          If size was not found, translate OP mode
         BNE     BRBAD           If size was not found, branch to BAD
 
         *CMP.B   #1,D1          Compare destination mode to <EA>
 
-        ADD.L   #$2,(GBUFF)     Advace buffer
         BRA     PRINT           Go to next instruction
 
-*
-* ADDA: 1101|REG|OPM|EAM|EAR
-*
-
-BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
-        ADD.L   #$2,(GBUFF)     Advance buffer
+BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
         BRA     PRINT           Go to next instruction
 
-BRADDQ  MOVE.B  #$1A,(IOOPCD)       Set OP-code name
-        BRA     PRINT
-
-BRADDI  MOVE.B  #$99,(IOOPCD)       Set OP-code name
-        BRA     BRBAD               Not supported
-
-BRAND   MOVE.B  #$3B,(IOOPCD)       Set OP-code name
-        BRA     PRINT
-
-BRBTST  MOVE.B  #$58,(IOOPCD)       Set OP-code name
-        BRA     PRINT
-
-BRBCC   MOVE.B  #$6B,(IOOPCD)       Set OP-code name
+BRBCC   MOVE.B  #$6B,(IOOPCD)   Set OP-code name
         MOVE.L  GBUFF,A0
         MOVE.W  (A0),D0
         MOVE.L  #%11110000,D2
@@ -1255,35 +1268,46 @@ BRBCC   MOVE.B  #$6B,(IOOPCD)       Set OP-code name
        * BEQ     BRBHI
         BRA     PRINT
 
-BRBEQ   MOVE.B  #$6F,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRBEQ   MOVE.B  #$6F,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
         
-BRBLT   MOVE.B  #$73,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRBLT   MOVE.B  #$73,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRBNE   MOVE.B  #$77,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRBNE   MOVE.B  #$77,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRBHI   MOVE.B  #$7B,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRBHI   MOVE.B  #$7B,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRCMP   MOVE.B  #$5D,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRCMP   MOVE.B  #$5D,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
+
        
-BRCMPA  MOVE.B  #$61,(IOOPCD)       Set OP-code name
-        BRA     PRINT
-  
-BRCMPI  MOVE.B  #$66,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRCMPA  MOVE.B  #$61,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRRTS   MOVE.B  #$83,(IOOPCD)       Set OP-code name
-        BRA     PRINT               Next instruction
+BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRLEA   MOVE.B  #$37,(IOOPCD)       Set OP-code name
-        BRA     PRINT  
+BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRJSR   MOVE.B  #$7F,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
+
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
+
+        BSR     EXDST           Extract destination mode & register
+        BSR     ADVBFR          Advance the buffer accordingly
+
+        BSR     EXSRC           Extract source mode & register
+        BSR     ADVBFR          Advance the buffer accordingly
+
+        BRA     PRINT           Go to next instruction
+
+
+BRJSR   MOVE.B  #$7F,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
         
 *
 * Move: 00|SZ|DRG|DMD|SMD|SRG
@@ -1308,7 +1332,6 @@ BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
         CMP.B   #1,(DMD)        Test if the dest mode == 001
         BEQ     BRMOVEA         If the dest mode is equal, branch to BRMOVEA
 
-        ADD.L   #$2,(GBUFF)     Advance buffer
         BRA     PRINT           Go to next instruction
 
 BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
@@ -1316,52 +1339,83 @@ BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
         BRA     PRINT           Go to next instruction
 
 BRMOVEM ADD.L   #$8,(GBUFF)
-        MOVE.B  #$0B,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+        MOVE.B  #$0B,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRMOVEQ MOVE.B  #$8B,(IOOPCD)       Set OP-code name
-        BRA     BRBAD               Not supported
 
-BRASL   MOVE.B  #$50,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRMOVEQ MOVE.B  #$8B,(IOOPCD)   Set OP-code name
+        BRA     BRBAD           Not supported
 
-BRASR   MOVE.B  #$95,(IOOPCD)       Set OP-code name
-        BRA     BRBAD               Not supported
+BRASL   MOVE.B  #$50,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BRLSL   MOVE.B  #$91,(IOOPCD)       Set OP-code name
-        BRA     BRBAD
 
-BRLSR   MOVE.B  #$54,(IOOPCD)       Set OP-code name
-        BRA     PRINT 
+BRASR   MOVE.B  #$95,(IOOPCD)   Set OP-code name
+        BRA     BRBAD           Not supported
 
-BRMULU  MOVE.B  #$2D,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRLSL   MOVE.B  #$91,(IOOPCD)   Set OP-code name
+        BRA     BRBAD           Not supported
 
-BRDIVS  MOVE.B  #$32,(IOOPCD)       Set OP-code name     
-        BRA     PRINT
+BRLSR   MOVE.B  #$54,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BREOR   MOVE.B  #$43,(IOOPCD)       Set OP-code name
-        BRA     PRINT               Get next instruction
 
-BRORI   MOVE.B  #$3F,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
 
-BREORI  MOVE.B  #$47,(IOOPCD)       Set OP-code name
-        BRA     PRINT
 
-BRNOT   MOVE.B  #$4C,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
+        BRA     PRINT           Go to next instruction
 
-BRSUB   MOVE.B  #$1F,(IOOPCD)       Set OP-code name
-        BRA     PRINT        
 
-BRSUBA  MOVE.B  #$23,(IOOPCD)       Set OP-code name   
-        BRA     PRINT
+BREOR   MOVE.B  #$43,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Get next instruction
 
-BRSUBI  MOVE.B  #$28,(IOOPCD)       Set OP-code name
-        BRA     PRINT
+BRORI   MOVE.B  #$3F,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
+
+
+BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
+
+
+BRNOT   MOVE.B  #$4C,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
+
+
+BRSUB   MOVE.B  #$1F,(IOOPCD)   Set OP-code name
+
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
+
+        BSR     EXSRC           Extract EA mode & register
+        MOVE.B  D1,D2           Copy source mode & reg to D2
+        BSR     EXDST           Extract OP mode & register     
+
+        BSR     OPSIZE          If size was not found, translate OP mode
+        BNE     BRBAD           If size was not found, branch to BAD
+
+        CMP.B   #1,D1           Compare destination mode to <EA>
+        BEQ     BRSUBA          If ==, branch to SUBA
+
+        CMP.B   #%111000,D1     Compare source mode to immediate data
+        BEQ     BRSUBI          If ==, branch to SUBI
+
+        BRA     PRINT           Go to next instruction
+
+
+        BRA     PRINT           Go to next instruction
+
+
+BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name   
+        BRA     PRINT           Go to next instruction
+
+
+BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
+        BRA     PRINT           Go to next instruction
+
 
         END     START
+
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
