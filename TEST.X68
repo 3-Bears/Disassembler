@@ -17,33 +17,14 @@
 *               Absolute Long Address
 *               Absolute Word Address
 *-----------------------------------------------------------
-
+    ORG    $7000
 *Max Unsigned Values in Hex for Byte, Word, Long
 VHEX1   EQU $FA
 VHEX2   EQU $DADA
 VHEX3   EQU $ADADDADA
 VHEX4   EQU $45
 CBITS   EQU $00000000
-
-    ORG    $7000
-START:                  ; first instruction of program
-******************************************************
-*   8        8  8888888 8           8  888888888
-*   8 8    8 8  8     8  8         8   8
-*   8  8  8  8  8     8   8       8    8
-*   8   88   8  8     8    8     8     888888888
-*   8        8  8     8     8   8      8
-*   8        8  8     8      8 8       8 
-*   8        8  8888888       8        888888888
-******************************************************
-
-
-*****************************************************
-*    Source: <EA> = Dn
-*    Destination: Dn
-*    Valid Test Section for MOVE instruction 
-*    into Data Register
-***************************************************** 
+    ADD.B   D0,D1
     MOVE.L  #VHEX3, D0
     MOVE.B  D0, D1
     MOVE.W  D0, D1
@@ -547,9 +528,7 @@ START:                  ; first instruction of program
     MOVE.W  #VHEX2, $7000
     MOVE.L  #VHEX3, $7000
     MOVE.L  #CBITS, $7000   
-     
-    SIMHALT             ; halt simulator
-    END    START        ; last line of source
+
 
 
 

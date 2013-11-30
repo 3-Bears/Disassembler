@@ -1444,3 +1444,7 @@ BRSUBI  MOVE.B  #$28,(IOOPCD)       Set OP-code name
         BRA     PRINT
 
         END     START
+*~Font name~Courier New~
+*~Font size~10~
+*~Tab type~1~
+*~Tab size~4~
