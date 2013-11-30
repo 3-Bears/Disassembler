@@ -1,27 +1,27 @@
+        INCLUDE 'test.x68'
 *----------------------------------------------------------------------------
 * Title      : 3B Disassembler
 * Written by : The Three Bears: Joseph Schooley, Nguyen Tong, Terence Calhoun
-* Date       : 11/11/2013
+* Date       : 11/30/2013
 * Description: A Motorola MC68000 Microprocessor Disassembler 
 *----------------------------------------------------------------------------
-CR      EQU     $0D     ASCII: carriage return
-LF      EQU     $0A     ASCII: line feed
-TB      EQU     $09     ASCII: horizontal tab
+        ORG     $1000
+CR      EQU     $0D         ASCII: carriage return
+LF      EQU     $0A         ASCII: line feed
+TB      EQU     $09         ASCII: horizontal tab
+MNADDR  EQU     $7000       Min address
+MXADDR  EQU     $00FFFFFF   Max address
 
-OADDR   EQU     $1000   Org address
-MNADDR  EQU     $7000   Min address
-MXADDR  EQU     $FFFFF0 Max address
-BYTES   EQU     $8FFF   Number of bytes to read from file (max address - min address)
-GBUFF   DS.L    1       Pointer to next location in "Good buffer"
-SLOC    DS.B    4       Starting location storage
-ELOC    DS.B    4       Ending location storage
+GBUFF   DS.L    1           Pointer to next location in "Good buffer"
+SLOC    DS.B    4           Starting location storage
+ELOC    DS.B    4           Ending location storage
 
 *-----I/O Memory-----
-IOOPCD  DS.B    1       IO offset value for OPNAME
-IOBDCD  DS.B    1       IO offset value for BAD OPNAME
-IOSIZE  DS.B    1       IO size for OP code, or FF if none
-IOADDR  DS.L    1       IO address value for instruction memory location
-IOLC    DS.B    1       IO line counter for screen
+IOOPCD  DS.B    1           IO offset value for OPNAME, or FF if none
+IOBDCD  DS.B    1           IO offset value for BAD OPNAME, or FF if none
+IOSIZE  DS.B    1           IO size for OP code, or FF if none
+IOADDR  DS.L    1           IO address value for instruction memory location
+IOLC    DS.B    1           IO line counter for screen
 
 
 * OP code name memory
@@ -92,48 +92,20 @@ MSSG0   DC.B    '  _     _     _     _     _     _ ',CR,LF
         DC.B    ' \    I  /_  )   |   (  _\  I    /',CR,LF
         DC.B    '  \____)___)(___/ \___)(___(____/',CR,LF
         DC.B    'Welcome to 3B Disassembler. Enter 0 at any time to quit.',CR,LF,0
-MSSG1   DC.B    'Enter the starting location of the code to be disassembled:',0
-MSSG2   DC.B    'Enter the ending location of the code to be disassembled:',0
-MSSG3   DC.B    'Enter the name of the file you wish to disassemble:',0
+MSSG1   DC.B    'Enter the starting location of the code to be disassembled, or leave it blank',CR,LF,'for the starting address:',0
+MSSG2   DC.B    'Enter the ending location of the code to be disassembled, or leave it blank',CR,LF,'for the ending address:',0
 MSSG4   DC.B    'Press any key for the next page.',0
 MSSG5   DC.B    'You have reached the end of the program.',0
 HEADR   DC.B    'Address      OP-Code    Operand',CR,LF,0
 ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
-ERR3    DC.B    'That file does not exist. Please make sure it is located in the same directory,',CR,LF
-        DC.B    'and try again.',CR,LF,0
 FILE    DC.B    'test.s68',0
 
-        ORG     OADDR
-
 START   MOVE.B  #0,IOLC
-        JMP     DEBUG           Debug shortcut for dev team
         LEA     MSSG0,A1        Welcome message
         MOVE.B  #14,D0
         TRAP    #15
-        
-        BRA     PRMPT0
-        
-DEBUG   MOVE.L  #$7000,(SLOC)   Store starting location
-        MOVE.L  #$7000,(GBUFF)  Store good buffer
-        MOVE.L  #$7100,(ELOC)   Store ending location
-        LEA     FILE,A1         Set file
-        MOVE    #51,D0          Open file
-        TRAP    #15
-        
-        LEA     MNADDR,A1       Read file data from starting location
-        MOVE.L  #BYTES,D2       Set bytes to read
-        MOVE    #53,D0          Read from file
-        TRAP    #15
-        
-        BSR     CMPRSS          Manipulate data
-
-        LEA     HEADR,A1
-        MOVE.B  #14,D0
-        TRAP    #15
-
-        BRA     OP
-
+        BRA     PRMPT1
 *-----------------------------------
 *    Conversion & Comparison Methods
 *-----------------------------------
@@ -147,37 +119,6 @@ FLAGST  MOVE.W  #%100,CCR       Set the z-flag
 FLAGCL  MOVE.W  #%000,CCR       Clear the z-flg
         RTS                     Return to caller
 
-*
-* Return: Helper method for lazy programmers
-*
-
-RETURN  RTS
-
-*
-* Compress: Convert (and effectively, compress) data stored through TRAP to meaningful HEX data in the memory
-*
-
-CMPRSS  MOVEA.L #$7050,A0       Load address register past file header
-                                * ^ TODO?: (could save some cycles by setting it to (SLOC - MNADDR) * 2 + MNADDR)
-        MOVEA.L #MNADDR,A1      Set write location to minimum address
-        
-CMPADV  CMP.L   ELOC,A1         Compare ending location to write location
-                                * ^ (saves cycles by only manipulating necessary data instead of comparing to MXADDR)
-        BGE     RETURN          Branch to OP if <= to location
-        MOVE.L  (A0)+,D1        Transfer data to memory, post-increment location
-        CMP.W   #$0D0A,D1       Test if the data is not important (Easy68K specific data)
-        BEQ     CMPGRBG         If z-flag is set, then we don't care about that memory
-        
-        MOVE.L  D1,D0           Move data to D0
-        BSR     ASCII2HEX       Convert to HEX
-        MOVE.W  D1,(A1)         Move HEX to A1
-        ADD.W   #$2,A1          Advance A1 to next byte
-        BRA     CMPADV          Loop back
-        
-CMPGRBG * CMPRSS helper: If the data was garbage, advance to next useful data
-        ADD.L   #8,A0
-        BRA     CMPADV
-        
 *
 * ASCII2HEX: Convert ASCII into HEX.
 * Input ASCII from D0 output HEX to D1
@@ -448,39 +389,7 @@ DSPHXL  SWAP    D0              Swap first half to D0.W
         
 *--------------------
 *   I/O
-*--------------------
-
-ILL4    LEA     ERR3,A1         File does not exist
-        MOVE.B  #14,D0
-        TRAP    #15
-
-PRMPT0  LEA     MSSG3,A1        File name request message
-        MOVE.B  #14,D0
-        TRAP    #15
-        
-        LEA     FILE,A1         Set FILE as storage for string
-        
-        MOVE.B  #255,D1         Max bytes for file name
-                
-        MOVE.B  #2,D0           Input file name
-        TRAP    #15
-
-        MOVE    #51,D0          Open file
-        TRAP    #15
-        
-        CMP.L   #$FFFFFFFF,D1   Test if the file was opened successfully
-        BEQ     ILL4
-        
-        LEA     MNADDR,A1       Read file data from starting location
-        MOVE    #BYTES,D2       Set bytes to read (max)
-        MOVE    #53,D0          Read from file
-        TRAP    #15
-        
-        * TODO: Move read operations to the end of user location input operations to set BYTES accordingly
-        * OR, use the max bytes, scan for the end of the file, and add an extra error check to see if the ending address > than what exists
-        
-        BRA     PRMPT1
-                   
+*--------------------                   
 ILL0    LEA     ERR0,A1         Starting location was too small
         MOVE.B  #14,D0
         TRAP    #15
@@ -499,10 +408,14 @@ PRMPT1  LEA     MSSG1,A1        Starting location request message
         TRAP    #15
         
         MOVE.L  (SLOC),D0       Move input to D0
+
+        CMP.L   #$00FFFFFF,D0   Check if input was NULL
+        BNE     *+14            If the input was not null, branch to convert input
+        MOVE.L  #MNADDR,(SLOC)  If the input was null, move the min address to SLOC
+        BRA     PRMPT2          Branch to the next prompt
         
-        BSR     ASCII2HEX       Convert D0 to HEX
+        BSR     ASCII2HEX       Convert D0 to HEX in D1
         
-        CLR.L   (A1)            Clear SLOC storage
         MOVE.L  D1,(A1)         Set SLOC to HEX value
                         
         CMP.L   #0,D1           Compare starting location to 0
@@ -514,7 +427,7 @@ PRMPT1  LEA     MSSG1,A1        Starting location request message
         CMP.L   #MXADDR,D1      Compare ending location to max
         BHS     ILL1            Branch to ILL1 if >= max
                 
-        BRA     PRMPT2
+        BRA     PRMPT2          Branch to the next prompt
 
 ILL2    LEA     ERR0,A1         Ending location was too small
         MOVE.B  #14,D0
@@ -533,11 +446,15 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         MOVE.B  #2,D0           Input starting location (as string / hex)
         TRAP    #15
         
-        MOVE.L  (ELOC),D0       Move input to D1
+        MOVE.L  (ELOC),D0       Move input to D0
+
+        CMP.L   #$00FFFFFF,D0   Check if input was NULL
+        BNE     *+14            If the input was not null, branch to convert input
+        MOVE.L  #MXADDR,(ELOC)  If the input was null, move the max address to ELOC
+        BRA     PRMPTDN         Branch to prompt done
         
-        BSR     ASCII2HEX       Convert D0 to HEX and continue
+        BSR     ASCII2HEX       Convert D0 to HEX in D1
         
-        CLR.L   (A1)            Clear ELOC storage
         MOVE.L  D1,(A1)         Set ELOC to HEX value
 
         CMP.L   #0,D1           Compare ending location to 0
@@ -553,9 +470,8 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         CMP.L   D0,D1           Compare ending location to starting location
         BLS     ILL2            Branch to ILL3 if <= starting location
         
-        MOVE.L  SLOC,GBUFF      Store starting location in GBUFF for OP
-        BSR     CMPRSS
-        BRA     OP
+PRMPTDN MOVE.L  SLOC,GBUFF      Store starting location in GBUFF for OP
+        BRA     DSPHDR          Branch to display method
 
 *
 * Display string: Displays string until NULL char
@@ -905,7 +821,7 @@ PAUSE   LEA     MSSG4,A1            Display keypress prompt
         MOVE.B  #12,D0              Show keyboard input
         MOVE.B  #1,D1
         TRAP    #15
-        MOVE.B  #11,D0              Clear the screen
+DSPHDR  MOVE.B  #11,D0              Clear the screen
         MOVE.W  #$FF00,D1
         TRAP    #15
         LEA     HEADR,A1            Display header
@@ -914,7 +830,7 @@ PAUSE   LEA     MSSG4,A1            Display keypress prompt
         CLR.B   (IOLC)              Reset line counter
         BRA     OP
 
-DONE    LEA     MSSG5,A1            Display header
+DONE    LEA     MSSG5,A1            Display end message
         MOVE.B  #14,D0
         TRAP    #15
         MOVE.B  #9,D0
@@ -931,6 +847,8 @@ SWAPDR  MOVE.L  D0,-(SP)
         RTS
 
 OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
+        CMP.L   #$FFFFFFFF,(A0) Check for end
+        BEQ     DONE            If end, branch to DONE
         MOVE.W  (A0)+,D0        Transfer word data to D0, post-increment location
         MOVE.W  (A0),D1         Transfer next word data to D1
         MOVE.L  GBUFF,IOADDR    Set memory location for IO
