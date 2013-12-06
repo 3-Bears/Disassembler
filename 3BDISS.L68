@@ -1,6 +1,6 @@
 0000140E Starting Address
 Assembler used: EASy68K Editor/Assembler v5.13.01
-Created On: 12/5/2013 8:00:45 PM
+Created On: 12/5/2013 8:33:26 PM
 
 00000000                             1          INCLUDE 'TEST.x68'
 00007000                             2      ORG    $7000
@@ -962,7 +962,7 @@ Created On: 12/5/2013 8:00:45 PM
 00001666  2281                     958          MOVE.L  D1,(A1)         Set SLOC to HEX value
 00001668                           959                          
 00001668  B2BC 00000000            960          CMP.L   #0,D1           Compare starting location to 0
-0000166E  6700 0470                961          BEQ     DONE            End program if 0
+0000166E  6700 047A                961          BEQ     DONE            End program if 0
 00001672                           962          
 00001672  B2BC 00007000            963          CMP.L   #MNADDR,D1      Compare starting location to min
 00001678  65A4                     964          BLO     ILL0            Branch to ILL0 if < min
@@ -1001,7 +1001,7 @@ Created On: 12/5/2013 8:00:45 PM
 000016CE  2281                     997          MOVE.L  D1,(A1)         Set ELOC to HEX value
 000016D0                           998  
 000016D0  B2BC 00000000            999          CMP.L   #0,D1           Compare ending location to 0
-000016D6  6700 0408               1000          BEQ     DONE            End program if 0
+000016D6  6700 0412               1000          BEQ     DONE            End program if 0
 000016DA                          1001          
 000016DA  B2BC 00007000           1002          CMP.L   #MNADDR,D1      Compare min ending location to min
 000016E0  63A4                    1003          BLS     ILL2            Branch to ILL2 if <= min
@@ -1014,7 +1014,7 @@ Created On: 12/5/2013 8:00:45 PM
 000016F0  6394                    1010          BLS     ILL2            Branch to ILL3 if <= starting location
 000016F2                          1011          
 000016F2  21F8 1004 1000          1012  PRMPTDN MOVE.L  SLOC,GBUFF      Store starting location in GBUFF for OP
-000016F8  6000 03CA               1013          BRA     DSPHDR          Branch to display method
+000016F8  6000 03D4               1013          BRA     DSPHDR          Branch to display method
 000016FC                          1014  
 000016FC                          1015  *
 000016FC                          1016  * Display string: Displays string until NULL char
@@ -1080,13 +1080,13 @@ Created On: 12/5/2013 8:00:45 PM
 0000178E  4E4F                    1076          TRAP    #15
 00001790  2003                    1077          MOVE.L  D3,D0               Read reg from D3
 00001792  6100 FE46               1078          BSR     DSPHXN              Display as hex nibble
-00001796  6000 0188               1079          BRA     DISPD               Branch to return
+00001796  6000 0192               1079          BRA     DISPD               Branch to return
 0000179A                          1080  * An            001 XXX
 0000179A  123C 0041               1081  DISP1   MOVE.B  #'A',D1             Read A
 0000179E  4E4F                    1082          TRAP    #15
 000017A0  2003                    1083          MOVE.L  D3,D0               Read reg from D3
 000017A2  6100 FE36               1084          BSR     DSPHXN              Display as hex byte
-000017A6  6000 0178               1085          BRA     DISPD               Branch to return
+000017A6  6000 0182               1085          BRA     DISPD               Branch to return
 000017AA                          1086  * (An)          010 XXX
 000017AA  123C 0028               1087  DISP2   MOVE.B  #'(',D1             Read (
 000017AE  4E4F                    1088          TRAP    #15
@@ -1097,7 +1097,7 @@ Created On: 12/5/2013 8:00:45 PM
 000017BC  103C 0006               1093          MOVE.B  #6,D0               Display character
 000017C0  123C 0029               1094          MOVE.B  #')',D1             Read )
 000017C4  4E4F                    1095          TRAP    #15
-000017C6  6000 0158               1096          BRA     DISPD               Branch to return
+000017C6  6000 0162               1096          BRA     DISPD               Branch to return
 000017CA                          1097  * (An)+         011 XXX
 000017CA  123C 0028               1098  DISP3   MOVE.B  #'(',D1             Read (
 000017CE  4E4F                    1099          TRAP    #15
@@ -1110,7 +1110,7 @@ Created On: 12/5/2013 8:00:45 PM
 000017E4  4E4F                    1106          TRAP    #15
 000017E6  123C 002B               1107          MOVE.B  #'+',D1             Read +
 000017EA  4E4F                    1108          TRAP    #15
-000017EC  6000 0132               1109          BRA     DISPD               Branch to return
+000017EC  6000 013C               1109          BRA     DISPD               Branch to return
 000017F0                          1110  * -(An)         100 XXX
 000017F0  123C 002D               1111  DISP4   MOVE.B  #'-',D1             Read +
 000017F4  4E4F                    1112          TRAP    #15
@@ -1123,7 +1123,7 @@ Created On: 12/5/2013 8:00:45 PM
 00001808  103C 0006               1119          MOVE.B  #6,D0               Display character
 0000180C  123C 0029               1120          MOVE.B  #')',D1             Read )
 00001810  4E4F                    1121          TRAP    #15
-00001812  6000 010C               1122          BRA     DISPD               Branch to return
+00001812  6000 0116               1122          BRA     DISPD               Branch to return
 00001816                          1123  * (d,An)        101 XXX
 00001816  123C 0028               1124  DISP5   MOVE.B  #'(',D1             Read (
 0000181A  4E4F                    1125          TRAP    #15
@@ -1137,7 +1137,7 @@ Created On: 12/5/2013 8:00:45 PM
 00001828                          1133          * Display A *
 00001828  123C 0029               1134          MOVE.B  #')',D1             Read )
 0000182C  4E4F                    1135          TRAP    #15
-0000182E  6000 00F0               1136          BRA     DISPD               Branch to return
+0000182E  6000 00FA               1136          BRA     DISPD               Branch to return
 00001832                          1137  * (d,An,Xn)     110 XXX
 00001832  123C 0028               1138  DISP6   MOVE.B  #'(',D1             Read (
 00001836  4E4F                    1139          TRAP    #15
@@ -1157,7 +1157,7 @@ Created On: 12/5/2013 8:00:45 PM
 00001850                          1153          * Display X *
 00001850  123C 0029               1154          MOVE.B  #')',D1             Read )
 00001854  4E4F                    1155          TRAP    #15
-00001856  6000 00C8               1156          BRA     DISPD               Branch to return
+00001856  6000 00D2               1156          BRA     DISPD               Branch to return
 0000185A                          1157  * (XXX).W/(XXX).L/(d,PC)/(d,PC,Xn)/#data
 0000185A  C6FC 0004               1158  DISP7   MULU.W  #4,D3
 0000185E  4EFB 3002               1159          JMP     DRGTBL(PC,D3.W)     Jump to reg
@@ -1175,7 +1175,7 @@ Created On: 12/5/2013 8:00:45 PM
 00001882  143C 0002               1171          MOVE.B  #2,D2               Read word size to D2
 00001886  6100 FD2C               1172          BSR     DSPHXA              Display address
 0000188A  D5B8 1010               1173          ADD.L   D2,(IOADDR)         Advance IO address by word
-0000188E  6000 0090               1174          BRA     DISPD               Branch to return
+0000188E  6000 009A               1174          BRA     DISPD               Branch to return
 00001892                          1175  * (XXX.L)       111 001
 00001892  123C 0024               1176  DISP9   MOVE.B  #'$',D1             Read $
 00001896  4E4F                    1177          TRAP    #15
@@ -1184,7 +1184,7 @@ Created On: 12/5/2013 8:00:45 PM
 0000189E  143C 0004               1180          MOVE.B  #4,D2               Read long size to D2
 000018A2  6100 FD10               1181          BSR     DSPHXA              Display address
 000018A6  D5B8 1010               1182          ADD.L   D2,(IOADDR)         Advance IO address by long
-000018AA  6000 0074               1183          BRA     DISPD               Branch to return
+000018AA  6000 007E               1183          BRA     DISPD               Branch to return
 000018AE                          1184  * (d,PC)        111 010
 000018AE  123C 0028               1185  DISPA   MOVE.B  #'(',D1             Read (
 000018B2  4E4F                    1186          TRAP    #15
@@ -1198,7 +1198,7 @@ Created On: 12/5/2013 8:00:45 PM
 000018C4  4E4F                    1194          TRAP    #15
 000018C6  123C 0029               1195          MOVE.B  #')',D1             Read )
 000018CA  4E4F                    1196          TRAP    #15
-000018CC  6000 0052               1197          BRA     DISPD
+000018CC  6000 005C               1197          BRA     DISPD
 000018D0                          1198  * (d,PC,Xn)     111 011
 000018D0  123C 0028               1199  DISPB   MOVE.B  #'(',D1             Read (
 000018D4  4E4F                    1200          TRAP    #15
@@ -1218,908 +1218,911 @@ Created On: 12/5/2013 8:00:45 PM
 000018F4                          1214          * Display X *
 000018F4  123C 0029               1215          MOVE.B  #')',D1             Read )
 000018F8  4E4F                    1216          TRAP    #15
-000018FA  6000 0024               1217          BRA     DISPD               Branch to return
+000018FA  6000 002E               1217          BRA     DISPD               Branch to return
 000018FE                          1218  * #<data>       111 100
 000018FE  123C 0023               1219  DISPC   MOVE.B  #'#',D1             Read #
 00001902  4E4F                    1220          TRAP    #15
 00001904  2278 1010               1221          MOVEA.L IOADDR,A1           Point A1 to the instruction address
 00001908  4282                    1222          CLR.L   D2
 0000190A  1438 100E               1223          MOVE.B  (IOSIZE),D2         Read instruction size to D2
-0000190E  C4FC 0002               1224          MULU.W  #2,D2               Translate size to value
-00001912  6100 FCA0               1225          BSR     DSPHXA              Display address
-00001916  D3C2                    1226          ADD.L   D2,A1               Advance A1 by instruction size
-00001918  21C9 1010               1227          MOVE.L  A1,(IOADDR)         Move A1 to IOADDR
-0000191C  6000 0002               1228          BRA     DISPD               Branch to return
-00001920  4CDF 0007               1229  DISPD   MOVEM.L (SP)+,D0-D2         Restore D0-D2
-00001924  4E75                    1230          RTS                         Return to caller
-00001926                          1231          
-00001926  11F8 100C 100D          1232  BRBAD   MOVE.B  (IOOPCD),(IOBDCD)   Move OPCODE to BAD OPCODE
-0000192C  11FC 0087 100C          1233          MOVE.B  #$87,(IOOPCD)       Set OPCODE to BAD
-00001932                          1234          * Clear bad data
-00001932  11FC 00FF 10C2          1235          MOVE.B  #$FF,(SMD)
-00001938  11FC 00FF 10C3          1236          MOVE.B  #$FF,(SRG)
-0000193E  11FC 00FF 10C0          1237          MOVE.B  #$FF,(DMD)
-00001944  11FC 00FF 10C1          1238          MOVE.B  #$FF,(DRG)
-0000194A  11FC 00FF 100E          1239          MOVE.B  #$FF,(IOSIZE)
-00001950                          1240          
-00001950                          1241  PRINT   *----TODO----*
-00001950                          1242          * If OP code exists as BAD and BAD OPCODE don't exist, assume that the last
-00001950                          1243          * OP display was BAD, and display then next word as raw data
-00001950  0C38 00FF 100C          1244          CMP.B   #$FF,(IOOPCD)       Test if OP code exists
-00001956  67CE                    1245          BEQ     BRBAD               If it does not, display BAD
-00001958                          1246  
-00001958  2038 1010               1247          MOVE.L  (IOADDR),D0         Read memory location
-0000195C  6100 FCB6               1248          BSR     DSPHXL              Display as hex long
-00001960  103C 0006               1249          MOVE.B  #6,D0               Display character
-00001964  123C 0009               1250          MOVE.B  #TB,D1              Read tab
-00001968  4E4F                    1251          TRAP    #15
-0000196A                          1252  
-0000196A  4280                    1253          CLR.L   D0
-0000196C  4282                    1254          CLR.L   D2
-0000196E  43F8 1016               1255          LEA     OPNAME,A1           Read OP-code
-00001972  1038 100C               1256          MOVE.B  (IOOPCD),D0         Get offset
-00001976  D3C0                    1257          ADD.L   D0,A1               Add offset
-00001978  6100 FD82               1258          BSR     DSPSTR              Display string until NULL char and get length in D1.B
-0000197C  1401                    1259          MOVE.B  D1,D2               Store length in D2 to be used as space offset
-0000197E                          1260      
-0000197E  0C38 00FF 100D          1261          CMP.B   #$FF,(IOBDCD)       Test if BAD OP code exists
-00001984  6732                    1262          BEQ     *+52                If it doesn't exist, don't display it
-00001986  103C 0006               1263          MOVE.B  #6,D0               Display character
-0000198A  123C 0020               1264          MOVE.B  #' ',D1             Read space
-0000198E  4E4F                    1265          TRAP    #15
-00001990  123C 0028               1266          MOVE.B  #'(',D1             Read (
-00001994  4E4F                    1267          TRAP    #15
-00001996  43F8 1016               1268          LEA     OPNAME,A1           Read OP-code
-0000199A  1038 100D               1269          MOVE.B  (IOBDCD),D0         Get offset
-0000199E  D3C0                    1270          ADD.L   D0,A1               Add offset
-000019A0  6100 FD5A               1271          BSR     DSPSTR              Display string until NULL char and get length in D1.B
-000019A4  D401                    1272          ADD.B   D1,D2               Add length to space offset
-000019A6  103C 0006               1273          MOVE.B  #6,D0               Display character
-000019AA  123C 003F               1274          MOVE.B  #'?',D1
-000019AE  4E4F                    1275          TRAP    #15                 Read ?
-000019B0  123C 0029               1276          MOVE.B  #')',D1             Read )
-000019B4  4E4F                    1277          TRAP    #15
-000019B6  5402                    1278          ADD.B   #2,D2               Add 2 to space offset to account for ( and )
-000019B8                          1279  
-000019B8  43F8 10B4               1280          LEA     IOOPSZ,A1           Read OP code size
-000019BC  103C 0003               1281          MOVE.B  #$03,D0             Set size to 3
-000019C0  0C38 00FF 100E          1282          CMP.B   #$FF,(IOSIZE)       Test if OP size exists
-000019C6  6704                    1283          BEQ     *+6                 If OP size doesn't exist, skip the next line
-000019C8  1038 100E               1284          MOVE.B  (IOSIZE),D0         If OP size exists, move it to D0
-000019CC  C0FC 0003               1285          MULU.W  #$3,D0              Multiply size by 3 for correct offset
-000019D0  D3C0                    1286          ADD.L   D0,A1               Add offset
-000019D2  6100 FD28               1287          BSR     DSPSTR              Display string until NULL char and get length in D1.B
-000019D6                          1288          
-000019D6  D401                    1289          ADD.B   D1,D2               Add length to space offset
-000019D8  4442                    1290          NEG.W   D2                  Negate space offset
-000019DA  0642 000B               1291          ADD.W   #11,D2              Add 11 to space offset; effectively 11 - space offset
-000019DE                          1292  
-000019DE  6100 FD56               1293          BSR     DSPOFS              Display space offset with tab
-000019E2                          1294  
-000019E2  54B8 1010               1295          ADD.L   #2,(IOADDR)         Move memory location past first word
-000019E6                          1296  
-000019E6  4204                    1297          CLR.B   D4                  Set source to false
-000019E8  4242                    1298          CLR.W   D2
-000019EA  4243                    1299          CLR.W   D3
-000019EC  1438 10C2               1300          MOVE.B  (SMD),D2            Read source mode to D2
-000019F0  B43C 00FF               1301          CMP.B   #$FF,D2             Test if it exists
-000019F4  6700 0016               1302          BEQ     NOSRC               If it does not exist, do not display source
-000019F8  1638 10C3               1303          MOVE.B  (SRG),D3            Read source reg to D3
-000019FC  B63C 00FF               1304          CMP.B   #$FF,D3             Test if it exists
-00001A00  6700 000A               1305          BEQ     NOSRC               If it does not exist, do not display source
-00001A04  6100 FD54               1306          BSR     DISPOP              If both mode & register exist, display accordingly
-00001A08  183C 0001               1307          MOVE.B  #1,D4               Set source to true
-00001A0C                          1308  
-00001A0C  4242                    1309  NOSRC   CLR.W   D2
-00001A0E  4243                    1310          CLR.W   D3
-00001A10  1438 10C0               1311          MOVE.B  (DMD),D2            Read dest mode to D2
-00001A14  B43C 00FF               1312          CMP.B   #$FF,D2             Test if it exists
-00001A18  6700 0024               1313          BEQ     NODST               If it does not exist, do not display dest
-00001A1C  1638 10C1               1314          MOVE.B  (DRG),D3            Read dest reg to D3
-00001A20  B63C 00FF               1315          CMP.B   #$FF,D3             Test if it exists
-00001A24  6700 0018               1316          BEQ     NODST               If it does not exist, do not display dest
-00001A28                          1317  
-00001A28  103C 0006               1318          MOVE.B  #6,D0               Display character
-00001A2C  123C 002C               1319          MOVE.B  #',',D1             Read comma
-00001A30  B83C 0001               1320          CMP.B   #1,D4               Test if source was displayed
-00001A34  6600 0000               1321          BNE     *+2                 If it was not displayed, don't display a comma
-00001A38  4E4F                    1322          TRAP    #15                 If it was displayed, display a comma
-00001A3A                          1323  
-00001A3A  6100 FD1E               1324          BSR     DISPOP              If both mode & register exist, display accordingly
-00001A3E                          1325  
-00001A3E  103C 0006               1326  NODST   MOVE.B  #6,D0               Display character
-00001A42  123C 0009               1327          MOVE.B  #TB,D1              Read tab
-00001A46  4E4F                    1328          TRAP    #15
-00001A48                          1329  
-00001A48  123C 000D               1330          MOVE.B  #CR,D1
-00001A4C  4E4F                    1331          TRAP    #15
-00001A4E  123C 000A               1332          MOVE.B  #LF,D1
-00001A52  4E4F                    1333          TRAP    #15
-00001A54                          1334  
-00001A54                          1335          *DISPLAY IO OPERAND
-00001A54                          1336          
-00001A54  2078 1000               1337          MOVE.L  GBUFF,A0            Set A0 to ELOC location
-00001A58  B1F8 1008               1338          CMPA.L  ELOC,A0             Compare next buffer to ending location
-00001A5C  6C00 0082               1339          BGE     DONE                Branch to DONE if >= ending location
-00001A60                          1340  
-00001A60  5238 1014               1341          ADD.B   #1,IOLC
-00001A64  0C38 001E 1014          1342          CMP.B   #30,IOLC            Compare #30 to line counter
-00001A6A  6700 0034               1343          BEQ     PAUSE               If ==, branch to PAUSE
-00001A6E                          1344  
-00001A6E                          1345          * Reset IO instruction values
-00001A6E  11FC 00FF 10C2          1346          MOVE.B  #$FF,(SMD)
-00001A74  11FC 00FF 10C3          1347          MOVE.B  #$FF,(SRG)
-00001A7A  11FC 00FF 10C0          1348          MOVE.B  #$FF,(DMD)
-00001A80  11FC 00FF 10C1          1349          MOVE.B  #$FF,(DRG)
-00001A86  11FC 00FF 100C          1350          MOVE.B  #$FF,(IOOPCD)
-00001A8C  11FC 00FF 100D          1351          MOVE.B  #$FF,(IOBDCD)
-00001A92  11FC 00FF 100E          1352          MOVE.B  #$FF,(IOSIZE)
-00001A98  54B8 1000               1353          ADD.L   #$2,(GBUFF)     Advance buffer
-00001A9C                          1354  
-00001A9C  6000 006A               1355          BRA     OP                  Branch to OP for next instruction
-00001AA0                          1356  
-00001AA0  43F8 135E               1357  PAUSE   LEA     MSSG4,A1            Display keypress prompt
-00001AA4  103C 000E               1358          MOVE.B  #14,D0
-00001AA8  4E4F                    1359          TRAP    #15
-00001AAA  103C 000C               1360          MOVE.B  #12,D0              Hide keyboard input
-00001AAE  123C 0000               1361          MOVE.B  #0,D1
+0000190E  B43C 0000               1224          CMP.B   #0,D2               Test if size is byte
+00001912  6604                    1225          BNE     *+6                 If !=, skip next line
+00001914  143C 0001               1226          MOVE.B  #1,D2               If ==, change byte to word
+00001918  C4FC 0002               1227          MULU.W  #2,D2               Translate size to value
+0000191C  6100 FC96               1228          BSR     DSPHXA              Display address
+00001920  D3C2                    1229          ADD.L   D2,A1               Advance A1 by instruction size
+00001922  21C9 1010               1230          MOVE.L  A1,(IOADDR)         Move A1 to IOADDR
+00001926  6000 0002               1231          BRA     DISPD               Branch to return
+0000192A  4CDF 0007               1232  DISPD   MOVEM.L (SP)+,D0-D2         Restore D0-D2
+0000192E  4E75                    1233          RTS                         Return to caller
+00001930                          1234          
+00001930  11F8 100C 100D          1235  BRBAD   MOVE.B  (IOOPCD),(IOBDCD)   Move OPCODE to BAD OPCODE
+00001936  11FC 0087 100C          1236          MOVE.B  #$87,(IOOPCD)       Set OPCODE to BAD
+0000193C                          1237          * Clear bad data
+0000193C  11FC 00FF 10C2          1238          MOVE.B  #$FF,(SMD)
+00001942  11FC 00FF 10C3          1239          MOVE.B  #$FF,(SRG)
+00001948  11FC 00FF 10C0          1240          MOVE.B  #$FF,(DMD)
+0000194E  11FC 00FF 10C1          1241          MOVE.B  #$FF,(DRG)
+00001954  11FC 00FF 100E          1242          MOVE.B  #$FF,(IOSIZE)
+0000195A                          1243          
+0000195A                          1244  PRINT   *----TODO----*
+0000195A                          1245          * If OP code exists as BAD and BAD OPCODE don't exist, assume that the last
+0000195A                          1246          * OP display was BAD, and display then next word as raw data
+0000195A  0C38 00FF 100C          1247          CMP.B   #$FF,(IOOPCD)       Test if OP code exists
+00001960  67CE                    1248          BEQ     BRBAD               If it does not, display BAD
+00001962                          1249  
+00001962  2038 1010               1250          MOVE.L  (IOADDR),D0         Read memory location
+00001966  6100 FCAC               1251          BSR     DSPHXL              Display as hex long
+0000196A  103C 0006               1252          MOVE.B  #6,D0               Display character
+0000196E  123C 0009               1253          MOVE.B  #TB,D1              Read tab
+00001972  4E4F                    1254          TRAP    #15
+00001974                          1255  
+00001974  4280                    1256          CLR.L   D0
+00001976  4282                    1257          CLR.L   D2
+00001978  43F8 1016               1258          LEA     OPNAME,A1           Read OP-code
+0000197C  1038 100C               1259          MOVE.B  (IOOPCD),D0         Get offset
+00001980  D3C0                    1260          ADD.L   D0,A1               Add offset
+00001982  6100 FD78               1261          BSR     DSPSTR              Display string until NULL char and get length in D1.B
+00001986  1401                    1262          MOVE.B  D1,D2               Store length in D2 to be used as space offset
+00001988                          1263      
+00001988  0C38 00FF 100D          1264          CMP.B   #$FF,(IOBDCD)       Test if BAD OP code exists
+0000198E  6732                    1265          BEQ     *+52                If it doesn't exist, don't display it
+00001990  103C 0006               1266          MOVE.B  #6,D0               Display character
+00001994  123C 0020               1267          MOVE.B  #' ',D1             Read space
+00001998  4E4F                    1268          TRAP    #15
+0000199A  123C 0028               1269          MOVE.B  #'(',D1             Read (
+0000199E  4E4F                    1270          TRAP    #15
+000019A0  43F8 1016               1271          LEA     OPNAME,A1           Read OP-code
+000019A4  1038 100D               1272          MOVE.B  (IOBDCD),D0         Get offset
+000019A8  D3C0                    1273          ADD.L   D0,A1               Add offset
+000019AA  6100 FD50               1274          BSR     DSPSTR              Display string until NULL char and get length in D1.B
+000019AE  D401                    1275          ADD.B   D1,D2               Add length to space offset
+000019B0  103C 0006               1276          MOVE.B  #6,D0               Display character
+000019B4  123C 003F               1277          MOVE.B  #'?',D1
+000019B8  4E4F                    1278          TRAP    #15                 Read ?
+000019BA  123C 0029               1279          MOVE.B  #')',D1             Read )
+000019BE  4E4F                    1280          TRAP    #15
+000019C0  5402                    1281          ADD.B   #2,D2               Add 2 to space offset to account for ( and )
+000019C2                          1282  
+000019C2  43F8 10B4               1283          LEA     IOOPSZ,A1           Read OP code size
+000019C6  103C 0003               1284          MOVE.B  #$03,D0             Set size to 3
+000019CA  0C38 00FF 100E          1285          CMP.B   #$FF,(IOSIZE)       Test if OP size exists
+000019D0  6704                    1286          BEQ     *+6                 If OP size doesn't exist, skip the next line
+000019D2  1038 100E               1287          MOVE.B  (IOSIZE),D0         If OP size exists, move it to D0
+000019D6  C0FC 0003               1288          MULU.W  #$3,D0              Multiply size by 3 for correct offset
+000019DA  D3C0                    1289          ADD.L   D0,A1               Add offset
+000019DC  6100 FD1E               1290          BSR     DSPSTR              Display string until NULL char and get length in D1.B
+000019E0                          1291          
+000019E0  D401                    1292          ADD.B   D1,D2               Add length to space offset
+000019E2  4442                    1293          NEG.W   D2                  Negate space offset
+000019E4  0642 000B               1294          ADD.W   #11,D2              Add 11 to space offset; effectively 11 - space offset
+000019E8                          1295  
+000019E8  6100 FD4C               1296          BSR     DSPOFS              Display space offset with tab
+000019EC                          1297  
+000019EC  54B8 1010               1298          ADD.L   #2,(IOADDR)         Move memory location past first word
+000019F0                          1299  
+000019F0  4204                    1300          CLR.B   D4                  Set source to false
+000019F2  4242                    1301          CLR.W   D2
+000019F4  4243                    1302          CLR.W   D3
+000019F6  1438 10C2               1303          MOVE.B  (SMD),D2            Read source mode to D2
+000019FA  B43C 00FF               1304          CMP.B   #$FF,D2             Test if it exists
+000019FE  6700 0016               1305          BEQ     NOSRC               If it does not exist, do not display source
+00001A02  1638 10C3               1306          MOVE.B  (SRG),D3            Read source reg to D3
+00001A06  B63C 00FF               1307          CMP.B   #$FF,D3             Test if it exists
+00001A0A  6700 000A               1308          BEQ     NOSRC               If it does not exist, do not display source
+00001A0E  6100 FD4A               1309          BSR     DISPOP              If both mode & register exist, display accordingly
+00001A12  183C 0001               1310          MOVE.B  #1,D4               Set source to true
+00001A16                          1311  
+00001A16  4242                    1312  NOSRC   CLR.W   D2
+00001A18  4243                    1313          CLR.W   D3
+00001A1A  1438 10C0               1314          MOVE.B  (DMD),D2            Read dest mode to D2
+00001A1E  B43C 00FF               1315          CMP.B   #$FF,D2             Test if it exists
+00001A22  6700 0024               1316          BEQ     NODST               If it does not exist, do not display dest
+00001A26  1638 10C1               1317          MOVE.B  (DRG),D3            Read dest reg to D3
+00001A2A  B63C 00FF               1318          CMP.B   #$FF,D3             Test if it exists
+00001A2E  6700 0018               1319          BEQ     NODST               If it does not exist, do not display dest
+00001A32                          1320  
+00001A32  103C 0006               1321          MOVE.B  #6,D0               Display character
+00001A36  123C 002C               1322          MOVE.B  #',',D1             Read comma
+00001A3A  B83C 0001               1323          CMP.B   #1,D4               Test if source was displayed
+00001A3E  6600 0000               1324          BNE     *+2                 If it was not displayed, don't display a comma
+00001A42  4E4F                    1325          TRAP    #15                 If it was displayed, display a comma
+00001A44                          1326  
+00001A44  6100 FD14               1327          BSR     DISPOP              If both mode & register exist, display accordingly
+00001A48                          1328  
+00001A48  103C 0006               1329  NODST   MOVE.B  #6,D0               Display character
+00001A4C  123C 0009               1330          MOVE.B  #TB,D1              Read tab
+00001A50  4E4F                    1331          TRAP    #15
+00001A52                          1332  
+00001A52  123C 000D               1333          MOVE.B  #CR,D1
+00001A56  4E4F                    1334          TRAP    #15
+00001A58  123C 000A               1335          MOVE.B  #LF,D1
+00001A5C  4E4F                    1336          TRAP    #15
+00001A5E                          1337  
+00001A5E                          1338          *DISPLAY IO OPERAND
+00001A5E                          1339          
+00001A5E  2078 1000               1340          MOVE.L  GBUFF,A0            Set A0 to ELOC location
+00001A62  B1F8 1008               1341          CMPA.L  ELOC,A0             Compare next buffer to ending location
+00001A66  6C00 0082               1342          BGE     DONE                Branch to DONE if >= ending location
+00001A6A                          1343  
+00001A6A  5238 1014               1344          ADD.B   #1,IOLC
+00001A6E  0C38 001E 1014          1345          CMP.B   #30,IOLC            Compare #30 to line counter
+00001A74  6700 0034               1346          BEQ     PAUSE               If ==, branch to PAUSE
+00001A78                          1347  
+00001A78                          1348          * Reset IO instruction values
+00001A78  11FC 00FF 10C2          1349          MOVE.B  #$FF,(SMD)
+00001A7E  11FC 00FF 10C3          1350          MOVE.B  #$FF,(SRG)
+00001A84  11FC 00FF 10C0          1351          MOVE.B  #$FF,(DMD)
+00001A8A  11FC 00FF 10C1          1352          MOVE.B  #$FF,(DRG)
+00001A90  11FC 00FF 100C          1353          MOVE.B  #$FF,(IOOPCD)
+00001A96  11FC 00FF 100D          1354          MOVE.B  #$FF,(IOBDCD)
+00001A9C  11FC 00FF 100E          1355          MOVE.B  #$FF,(IOSIZE)
+00001AA2  54B8 1000               1356          ADD.L   #$2,(GBUFF)     Advance buffer
+00001AA6                          1357  
+00001AA6  6000 006A               1358          BRA     OP                  Branch to OP for next instruction
+00001AAA                          1359  
+00001AAA  43F8 135E               1360  PAUSE   LEA     MSSG4,A1            Display keypress prompt
+00001AAE  103C 000E               1361          MOVE.B  #14,D0
 00001AB2  4E4F                    1362          TRAP    #15
-00001AB4  103C 0005               1363          MOVE.B  #5,D0               Request keyboard input
-00001AB8  4E4F                    1364          TRAP    #15
-00001ABA                          1365  *----TODO----*
-00001ABA                          1366  * Test if keycode was for ENTER
-00001ABA  103C 000C               1367          MOVE.B  #12,D0              Show keyboard input
-00001ABE  123C 0001               1368          MOVE.B  #1,D1
-00001AC2  4E4F                    1369          TRAP    #15
-00001AC4  103C 000B               1370  DSPHDR  MOVE.B  #11,D0              Clear the screen
-00001AC8  323C FF00               1371          MOVE.W  #$FF00,D1
+00001AB4  103C 000C               1363          MOVE.B  #12,D0              Hide keyboard input
+00001AB8  123C 0000               1364          MOVE.B  #0,D1
+00001ABC  4E4F                    1365          TRAP    #15
+00001ABE  103C 0005               1366          MOVE.B  #5,D0               Request keyboard input
+00001AC2  4E4F                    1367          TRAP    #15
+00001AC4                          1368  *----TODO----*
+00001AC4                          1369  * Test if keycode was for ENTER
+00001AC4  103C 000C               1370          MOVE.B  #12,D0              Show keyboard input
+00001AC8  123C 0001               1371          MOVE.B  #1,D1
 00001ACC  4E4F                    1372          TRAP    #15
-00001ACE  43F8 13A8               1373          LEA     HEADR,A1            Display header
-00001AD2  103C 000E               1374          MOVE.B  #14,D0
+00001ACE  103C 000B               1373  DSPHDR  MOVE.B  #11,D0              Clear the screen
+00001AD2  323C FF00               1374          MOVE.W  #$FF00,D1
 00001AD6  4E4F                    1375          TRAP    #15
-00001AD8  4238 1014               1376          CLR.B   (IOLC)              Reset line counter
-00001ADC  6000 002A               1377          BRA     OP
-00001AE0                          1378  
-00001AE0  43F8 137F               1379  DONE    LEA     MSSG5,A1            Display end message
-00001AE4  103C 000E               1380          MOVE.B  #14,D0
-00001AE8  4E4F                    1381          TRAP    #15
-00001AEA  103C 0009               1382          MOVE.B  #9,D0
-00001AEE  4E4F                    1383          TRAP    #15
-00001AF0                          1384  
-00001AF0                          1385  *--------------------
-00001AF0                          1386  *   OP
-00001AF0                          1387  *--------------------
-00001AF0                          1388  
-00001AF0                          1389  *
-00001AF0                          1390  * Jump Mask: Use CMPMSK, and jumps to the OP branch if it returns true
-00001AF0                          1391  * Input CMPMSK inputs, input A0 for OP branch
-00001AF0                          1392  *
-00001AF0                          1393  
-00001AF0  6100 FA72               1394  JMPMSK  BSR     CMPMSK          Branch to CMPMSK
-00001AF4  6610                    1395          BNE.S   *+18            If the bits did not match, return to caller
-00001AF6  4E90                    1396          JSR     (A0)            If the bits matched, branch to the OP address
-00001AF8  660A                    1397          BNE     *+12            If the OP address was read ybsuccessful, skip the next two lines
-00001AFA  21C9 1000               1398          MOVE.L  A1,GBUFF        The buffer was good, move it to GBUFF
-00001AFE  6000 FE50               1399          BRA     PRINT           Branch to PRINT     
-00001B02  2278 1000               1400          MOVE.L  GBUFF,A1        The buffer was bad, restore A1
-00001B06  4E75                    1401          RTS                     Return to caller for next instruction
-00001B08                          1402  
-00001B08  2078 1000               1403  OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
-00001B0C  2278 1000               1404          MOVE.L  GBUFF,A1        Set A1 to GBUFF location for sub-routines
-00001B10  143C 0000               1405          MOVE.B  #0,D2           Set NULL count to 0
-00001B14  0C90 FFFFFFFF           1406          CMP.L   #$FFFFFFFF,(A0) Check for NULL
-00001B1A  67C4                    1407          BEQ     DONE            If NULL, branch to DONE
-00001B1C  3018                    1408          MOVE.W  (A0)+,D0        Transfer word data to D0, post-increment location
-00001B1E  3210                    1409          MOVE.W  (A0),D1         Transfer next word data to D1
-00001B20  21F8 1000 1010          1410          MOVE.L   GBUFF,IOADDR   Set memory location for IO
-00001B26                          1411  *-----
-00001B26                          1412  * 0000
-00001B26                          1413  *-----
-00001B26                          1414          * ORI:    00000000XXXXXXXX
-00001B26  343C 0000               1415          MOVE.W  #%0000000000000000,D2
-00001B2A  363C FF00               1416          MOVE.W  #%1111111100000000,D3
-00001B2E  207C 000020A0           1417          MOVE.L  #BRORI,A0
-00001B34  61BA                    1418          BSR     JMPMSK
-00001B36                          1419  
-00001B36                          1420          * SUBI:   00000100XXXXXXXX
-00001B36  343C 0400               1421          MOVE.W  #%0000010000000000,D2
-00001B3A  363C FB00               1422          MOVE.W  #%1111101100000000,D3
-00001B3E  207C 000020D2           1423          MOVE.L  #BRSUBI,A0
-00001B44  61AA                    1424          BSR     JMPMSK
-00001B46                          1425  
-00001B46                          1426          * ADDI:   00000110XXXXXXXX
-00001B46  343C 0600               1427          MOVE.W  #%0000011000000000,D2
-00001B4A  363C F900               1428          MOVE.W  #%1111100100000000,D3
-00001B4E  207C 00001F38           1429          MOVE.L  #BRADDI,A0
-00001B54  619A                    1430          BSR     JMPMSK
-00001B56                          1431  
-00001B56                          1432          * BTST:   0000100000XXXXXX
-00001B56  343C 0800               1433          MOVE.W  #%0000100000000000,D2
-00001B5A  363C F7C0               1434          MOVE.W  #%1111011111000000,D3
-00001B5E  207C 00001F4C           1435          MOVE.L  #BRBTST,A0
-00001B64  618A                    1436          BSR     JMPMSK
-00001B66                          1437  
-00001B66                          1438          * EORI:   00001010XXXXXXXX
-00001B66  343C 0A00               1439          MOVE.W  #%0000101000000000,D2
-00001B6A  363C F500               1440          MOVE.W  #%1111010100000000,D3
-00001B6E  207C 000020AA           1441          MOVE.L  #BREORI,A0
-00001B74  6100 FF7A               1442          BSR     JMPMSK
-00001B78                          1443  
-00001B78                          1444          * CMPI:   00001100XXXXXXXX
-00001B78  343C 0C00               1445          MOVE.W  #%0000110000000000,D2
-00001B7C  363C F300               1446          MOVE.W  #%1111001100000000,D3
-00001B80  207C 00001F9C           1447          MOVE.L  #BRCMPI,A0
-00001B86  6100 FF68               1448          BSR     JMPMSK
-00001B8A                          1449  *-----
-00001B8A                          1450  * 0001
-00001B8A                          1451  *-----
-00001B8A                          1452          * MOVE.B: 0001XXXXXXXXXXXX
-00001B8A  343C 1000               1453          MOVE.W  #%0001000000000000,D2
-00001B8E  363C E000               1454          MOVE.W  #%1110000000000000,D3
-00001B92  207C 00001FD4           1455          MOVE.L  #BRMOVE,A0
-00001B98  6100 FF56               1456          BSR     JMPMSK
-00001B9C                          1457  *-----
-00001B9C                          1458  * 0010
-00001B9C                          1459  *-----
-00001B9C                          1460          * MOVE.L: 0010XXXXXXXXXXXX
-00001B9C  343C 2000               1461          MOVE.W  #%0010000000000000,D2
-00001BA0  363C D000               1462          MOVE.W  #%1101000000000000,D3
-00001BA4  6100 FF4A               1463          BSR     JMPMSK
-00001BA8                          1464  *-----
-00001BA8                          1465  * 0011
-00001BA8                          1466  *-----
-00001BA8                          1467          * MOVE.W: 0011XXXXXXXXXXXX 
-00001BA8  343C 3000               1468          MOVE.W  #%0011000000000000,D2
-00001BAC  363C C000               1469          MOVE.W  #%1100000000000000,D3
-00001BB0  6100 FF3E               1470          BSR     JMPMSK
-00001BB4                          1471  *-----
-00001BB4                          1472  * 0100
-00001BB4                          1473  *-----
-00001BB4                          1474          * NOT:    01000110XXXXXXXX
-00001BB4  343C 4600               1475          MOVE.W  #%0100011000000000,D2
-00001BB8  363C B900               1476          MOVE.W  #%1011100100000000,D3
-00001BBC  207C 000020B4           1477          MOVE.L  #BRNOT,A0
-00001BC2  6100 FF2C               1478          BSR     JMPMSK
-00001BC6                          1479  
-00001BC6                          1480          * MULU:   0100110000XXXXXX
-00001BC6  343C 4C00               1481          MOVE.W  #%0100110000000000,D2
-00001BCA  363C B3C0               1482          MOVE.W  #%1011001111000000,D3
-00001BCE  207C 00002082           1483          MOVE.L  #BRMULU,A0
-00001BD4  6100 FF1A               1484          BSR     JMPMSK
-00001BD8                          1485  
-00001BD8                          1486          * DIVS:   0100110001XXXXXX
-00001BD8  343C 4C40               1487          MOVE.W  #%0100110001000000,D2
-00001BDC  363C B380               1488          MOVE.W  #%1011001110000000,D3
-00001BE0  207C 0000208C           1489          MOVE.L  #BRDIVS,A0
-00001BE6  6100 FF08               1490          BSR     JMPMSK
-00001BEA                          1491  
-00001BEA                          1492          * MOVEM:  01001X001XXXXXXX
-00001BEA  343C 4880               1493          MOVE.W  #%0100100010000000,D2
-00001BEE  363C B300               1494          MOVE.W  #%1011001100000000,D3
-00001BF2  207C 00002066           1495          MOVE.L  #BRMOVEM,A0
-00001BF8  6100 FEF6               1496          BSR     JMPMSK
-00001BFC                          1497  
-00001BFC                          1498          * RTS:    0100111001110101
-00001BFC  343C 4E75               1499          MOVE.W  #%0100111001110101,D2
-00001C00  363C B18A               1500          MOVE.W  #%1011000110001010,D3
-00001C04  207C 00001FA6           1501          MOVE.L  #BRRTS,A0
-00001C0A  6100 FEE4               1502          BSR     JMPMSK
-00001C0E                          1503  
-00001C0E                          1504          * JSR:    0100111010XXXXXX
-00001C0E  343C 4E80               1505          MOVE.W  #%0100111010000000,D2
-00001C12  363C B140               1506          MOVE.W  #%1011000101000000,D3
-00001C16  207C 00001FCA           1507          MOVE.L  #BRJSR,A0
-00001C1C  6100 FED2               1508          BSR     JMPMSK
-00001C20                          1509  
-00001C20                          1510          * LEA:    0100XXX111XXXXXX
-00001C20  343C 41C0               1511          MOVE.W  #%0100000111000000,D2
-00001C24  363C B000               1512          MOVE.W  #%1011000000000000,D3
-00001C28  207C 00001FB0           1513          MOVE.L  #BRLEA,A0
-00001C2E  6100 FEC0               1514          BSR     JMPMSK
-00001C32                          1515  *-----
-00001C32                          1516  * 0101
-00001C32                          1517  *-----
-00001C32                          1518          * ADDQ:   0101XXX0XXXXXXXX
-00001C32  343C 5000               1519          MOVE.W  #%0101000000000000,D2
-00001C36  363C A100               1520          MOVE.W  #%1010000100000000,D3
-00001C3A  207C 00001F2E           1521          MOVE.L  #BRADDQ,A0
-00001C40  6100 FEAE               1522          BSR     JMPMSK
-00001C44                          1523  *-----
-00001C44                          1524  * 0110
-00001C44                          1525  *-----
-00001C44                          1526          * BCC:    01100000XXXXXXXX
-00001C44  343C 6000               1527          MOVE.W  #%0110000000000000,D2
-00001C48  363C 9F00               1528          MOVE.W  #%1001111100000000,D3
-00001C4C  207C 00001F56           1529          MOVE.L  #BRBCC,A0
-00001C52  6100 FE9C               1530          BSR     JMPMSK
-00001C56                          1531  *-----
-00001C56                          1532  * 0111
-00001C56                          1533  *-----
-00001C56                          1534          * MOVEQ:  0111XXX0XXXXXXXX
-00001C56  343C 7000               1535          MOVE.W  #%0111000000000000,D2
-00001C5A  363C 8100               1536          MOVE.W  #%1000000100000000,D3
-00001C5E  207C 00002070           1537          MOVE.L  #BRMOVEQ,A0
-00001C64  6100 FE8A               1538          BSR     JMPMSK
-00001C68                          1539  *-----
-00001C68                          1540  * 1000
-00001C68                          1541  *-----
-00001C68                          1542          * DIVS:   1000XXX111XXXXXX
-00001C68  343C 81C0               1543          MOVE.W  #%1000000111000000,D2
-00001C6C  363C 7000               1544          MOVE.W  #%0111000000000000,D3
-00001C70  207C 0000208C           1545          MOVE.L  #BRDIVS,A0
-00001C76  6100 FE78               1546          BSR     JMPMSK
-00001C7A                          1547  *-----
-00001C7A                          1548  * 1001
-00001C7A                          1549  *-----
-00001C7A                          1550          * SUB:    1001XXXXXXXXXXXX
-00001C7A  343C 9000               1551          MOVE.W  #%1001000000000000,D2
-00001C7E  363C 6000               1552          MOVE.W  #%0110000000000000,D3
-00001C82  207C 000020BE           1553          MOVE.L  #BRSUB,A0
-00001C88  6100 FE66               1554          BSR     JMPMSK
-00001C8C                          1555  *-----
-00001C8C                          1556  * 1010
-00001C8C                          1557  *-----
-00001C8C                          1558  *-----
-00001C8C                          1559  * 1011
-00001C8C                          1560  *-----
-00001C8C                          1561          * CMP:    1011XXXXXXXXXXXX
-00001C8C  343C B000               1562          MOVE.W  #%1011000000000000,D2
-00001C90  363C 4000               1563          MOVE.W  #%0100000000000000,D3
-00001C94  207C 00001F88           1564          MOVE.L  #BRCMP,A0
-00001C9A  6100 FE54               1565          BSR     JMPMSK
-00001C9E                          1566  
-00001C9E                          1567          * EOR:    1011XXXXXXXXXXXX
-00001C9E  207C 00002096           1568          MOVE.L  #BREOR,A0
-00001CA4  6100 FE4A               1569          BSR     JMPMSK
-00001CA8                          1570  *-----
-00001CA8                          1571  * 1100
-00001CA8                          1572  *-----
-00001CA8                          1573          * AND:    1100XXXXXXXXXXXX
-00001CA8  343C C000               1574          MOVE.W  #%1100000000000000,D2
-00001CAC  363C 3000               1575          MOVE.W  #%0011000000000000,D3
-00001CB0  207C 00001F42           1576          MOVE.L  #BRAND,A0
-00001CB6  6100 FE38               1577          BSR     JMPMSK
-00001CBA                          1578  
-00001CBA                          1579          * MULU:   1100XXX011XXXXXX
-00001CBA  343C C0C0               1580          MOVE.W  #%1100000011000000,D2
-00001CBE  363C 3100               1581          MOVE.W  #%0011000100000000,D3
-00001CC2  207C 00002082           1582          MOVE.L  #BRMULU,A0
-00001CC8  6100 FE26               1583          BSR     JMPMSK
-00001CCC                          1584  *-----
-00001CCC                          1585  * 1101
-00001CCC                          1586  *-----
-00001CCC                          1587          * ADD:    1101XXXXXXXXXXXX
-00001CCC  343C D000               1588          MOVE.W  #%1101000000000000,D2
-00001CD0  363C 2000               1589          MOVE.W  #%0010000000000000,D3
-00001CD4  207C 00001EE8           1590          MOVE.L  #BRADD,A0
-00001CDA  6100 FE14               1591          BSR     JMPMSK
-00001CDE                          1592  *-----
-00001CDE                          1593  * 1110
-00001CDE                          1594  *-----
-00001CDE                          1595          * ASL/ASR:1110XXXXXXX00XXX
-00001CDE  343C E000               1596          MOVE.W  #%1110000000000000,D2
-00001CE2  363C 1018               1597          MOVE.W  #%0001000000011000,D3
-00001CE6  207C 0000207A           1598          MOVE.L  #BRASd,A0
-00001CEC  6100 FE02               1599          BSR     JMPMSK
-00001CF0                          1600  
-00001CF0                          1601          * LSL/LSR:1110XXXXXXX01XXX
-00001CF0  343C E008               1602          MOVE.W  #%1110000000001000,D2
-00001CF4  363C 1010               1603          MOVE.W  #%0001000000010000,D3
-00001CF8  207C 0000207E           1604          MOVE.L  #BRLSd,A0
-00001CFE  6100 FDF0               1605          BSR     JMPMSK
-00001D02                          1606  
-00001D02                          1607          * ASL/ASR:1110000X11XXXXXX
-00001D02  343C E0C0               1608          MOVE.W  #%1110000011000000,D2
-00001D06  363C 1E00               1609          MOVE.W  #%0001111000000000,D3
-00001D0A  207C 0000207A           1610          MOVE.L  #BRASd,A0
-00001D10  6100 FDDE               1611          BSR     JMPMSK
-00001D14                          1612  
-00001D14                          1613          * LSL/LSR:1110001X11XXXXXX
-00001D14  343C E2C0               1614          MOVE.W  #%1110001011000000,D2
-00001D18  363C 1C00               1615          MOVE.W  #%0001110000000000,D3
-00001D1C  207C 0000207E           1616          MOVE.L  #BRLSd,A0
-00001D22  6100 FDCC               1617          BSR     JMPMSK
-00001D26                          1618  *-----
-00001D26                          1619  * 1111
-00001D26                          1620  *-----     
-00001D26  6000 FBFE               1621          BRA     BRBAD           No mask matched, branch to BRBAD
-00001D2A                          1622  
-00001D2A                          1623  *--------------------------
-00001D2A                          1624  *  Instruction Subroutines
-00001D2A                          1625  *--------------------------
-00001D2A                          1626  
-00001D2A                          1627  *
-00001D2A                          1628  * Test Addressing Modes: Tests last register and mode for valid addressing modes
-00001D2A                          1629  * Input valid modes in D0.W, output found addressing mode to D1.B, or FF if not found
-00001D2A                          1630  * Set Z-flag if mode was valid, or clear Z-flag if mode was invalid
-00001D2A                          1631  *
-00001D2A                          1632  * D0.W addressing modes (set to 0 for invalid, 1 for valid):
-00001D2A                          1633  *   0   Dn
-00001D2A                          1634  *   1   An
-00001D2A                          1635  *   2   (An)
-00001D2A                          1636  *   3   (An)+
-00001D2A                          1637  *   4   -(An)
-00001D2A                          1638  *   5   (d,An)
-00001D2A                          1639  *   6   (d,An,Xn)
-00001D2A                          1640  *   7   (xxx).W
-00001D2A                          1641  *   8   (xxx).L
-00001D2A                          1642  *   9   (d,PC)
-00001D2A                          1643  *   A   (d,PC,Xn)
-00001D2A                          1644  *   B   #<data>
-00001D2A                          1645  *
-00001D2A                          1646  * Modes         %XXXXBA9876543210
-00001D2A  =00000FFF               1647  M_ALL   EQU     %0000111111111111   All modes
-00001D2A  =00000FFD               1648  M_DAT   EQU     %0000111111111101   Data modes
-00001D2A  =00000FFC               1649  M_MEM   EQU     %0000111111111100   Memory modes
-00001D2A  =000007E4               1650  M_CTR   EQU     %0000011111100100   Control modes
-00001D2A  =0000007F               1651  M_ALT   EQU     %0000000001111111   Alterable modes
-00001D2A  =000001FC               1652  M_MALT  EQU     %0000000111111100   Memory alterable modes
-00001D2A  =000001FD               1653  M_DALT  EQU     %0000000111111101   Data alterable modes
-00001D2A                          1654  
-00001D2A  1F02                    1655  TSTAM   MOVE.B  D2,-(SP)        Push D2 to stack
-00001D2C  4281                    1656          CLR.L   D1
-00001D2E  1238 10C4               1657          MOVE.B  (RGMD),D1       Move REGMOD to D1
-00001D32  1401                    1658          MOVE.B  D1,D2           Copy REGMOD to D2
-00001D34  EB09                    1659          LSL.B   #5,D1
-00001D36  EA09                    1660          LSR.B   #5,D1           D1 = Mode
-00001D38  E60A                    1661          LSR.B   #3,D2           D2 = Register
-00001D3A  B23C 0007               1662          CMP.B   #%111,D1        Test mode to 111
-00001D3E  6602                    1663          BNE     *+4             If !=, skip next line
-00001D40  D202                    1664          ADD.B   D2,D1           Add register to mode-- effectively creating a 4 bit mode
-00001D42  0300                    1665          BTST    D1,D0           Test mode for validity
-00001D44  6706                    1666          BEQ     *+8             If it is invalid, skip to clear flag
-00001D46  141F                    1667          MOVE.B  (SP)+,D2        If it is valid, restore D2
-00001D48  6000 F6D8               1668          BRA     FLAGST          Set flag & return to caller
-00001D4C  141F                    1669          MOVE.B  (SP)+,D2        Restore D2
-00001D4E  6000 F6D8               1670          BRA     FLAGCL          Clear flag & return to caller
-00001D52                          1671  
-00001D52                          1672  *
-00001D52                          1673  * Advance Buffer: Advances buffer based on last register and mode
-00001D52                          1674  * Input buffer in A1, reg & mode in RGMD, output displacement to DIS
-00001D52                          1675  *
-00001D52                          1676  
-00001D52  48E7 6000               1677  ADVBFR  MOVEM.L D1/D2,-(SP)     Push D1 & D2 to the stack
-00001D56  11FC 00FF 10C5          1678          MOVE.B  #$FF,(DIS)      Set displacement to NULL
-00001D5C  1238 10C4               1679          MOVE.B  (RGMD),D1       Move Reg & Mod to D1
-00001D60  2409                    1680          MOVE.L  A1,D2           Copy buffer to D2
-00001D62  B23C 0007               1681          CMP.B   #$07,D1         Test 000 111 = Address (Word)
-00001D66  6602                    1682          BNE.S   *+4             Skip next line
-00001D68  5489                    1683          ADD.L   #$2,A1          Advance buffer by word
-00001D6A  B23C 000F               1684          CMP.B   #$0F,D1         Test 001 111 = Address (Long)
-00001D6E  6602                    1685          BNE.S   *+4             Skip next line
-00001D70  5889                    1686          ADD.L   #$4,A1          Advance buffer by long
-00001D72  B23C 0027               1687          CMP.B   #$27,D1         Test 100 111 = Immediate (OP code size)
-00001D76  6700 0010               1688          BEQ     ADVBSZ          If ==, branch to Advance Buffer by Size
-00001D7A  4482                    1689          NEG.L   D2              Else, negate original buffer
-00001D7C  D489                    1690          ADD.L   A1,D2           Add buffer to get difference
-00001D7E  11C2 10C5               1691          MOVE.B  D2,(DIS)        Store displacement in DIS
-00001D82  4CDF 0006               1692          MOVEM.L (SP)+,D1/D2     Restore D1 & D2
-00001D86  4E75                    1693          RTS                     Return to caller
-00001D88                          1694  
-00001D88                          1695  *
-00001D88                          1696  * Advance Buffer by Size: Advances buffer based on instruction size
-00001D88                          1697  * Input buffer in A1, input size from (IOSIZE), output displacement to DIS
-00001D88                          1698  *
-00001D88                          1699  
-00001D88  0C38 00FF 10C5          1700  ADVBSZ  CMP.B   #$FF,(DIS)      Check if DIS is NULL (255 is odd so displacement should never be FF)
-00001D8E  6704                    1701          BEQ     *+6             If it is null, values have already been pushed to the stack, skip the next line
-00001D90  48E7 6000               1702          MOVEM.L D1/D2,-(SP)     Else, push D1 & D2 to the stack
-00001D94  1238 100E               1703          MOVE.B  (IOSIZE),D1     Read size to D1
-00001D98  2409                    1704          MOVE.L  A1,D2           Copy buffer to D2
-00001D9A  B03C 0001               1705          CMP.B   #$1,D0          Test 0 = Byte
-00001D9E  6602                    1706          BNE.S   *+4             Skip next line
-00001DA0  5489                    1707          ADD.L   #$2,A1          Advance buffer by word (00BB)
-00001DA2  B23C 0001               1708          CMP.B   #$1,D1          Test 1 = Word
-00001DA6  6602                    1709          BNE.S   *+4             Skip next line
-00001DA8  5489                    1710          ADD.L   #$2,A1          Advance buffer by word        
-00001DAA  B23C 0002               1711          CMP.B   #$2,D1          Test 2 = Long
-00001DAE  6602                    1712          BNE.S   *+4             Skip next line
-00001DB0  5889                    1713          ADD.L   #$4,A1          Advance buffer by long
-00001DB2  4442                    1714          NEG     D2              Negate original buffer
-00001DB4  D489                    1715          ADD.L   A1,D2           Add buffer to get difference
-00001DB6  11C2 10C5               1716          MOVE.B  D2,(DIS)        Store displacement in DIS
-00001DBA  4CDF 0006               1717          MOVEM.L (SP)+,D2/D1     Restore D1 and D2
-00001DBE  4E75                    1718          RTS                     Return to caller
-00001DC0                          1719  
-00001DC0                          1720  *
-00001DC0                          1721  * OP Size: Test the standard OP size code
-00001DC0                          1722  * Inputs size from (DMD), outputs size to IOSIZE, operation to D2.B, correct mode to DMD
-00001DC0                          1723  * OPM (OP-MODE):  Byte | Word | Long | Operation | D2.B
-00001DC0                          1724  *                  000 |  001 |  010 |   <ea>,Dn |    0
-00001DC0                          1725  *                  100 |  101 |  110 |   Dn,<ea> |    1
-00001DC0                          1726  *                         011 |  111 |   <ea>,An |    2
-00001DC0                          1727  *
-00001DC0                          1728  
-00001DC0  48E7 C000               1729  OPSIZE  MOVEM.L D0/D1,-(SP)     Push D0 & D1 to stack
-00001DC4  4241                    1730          CLR.W   D1              Ensure displacement will be <= 7
-00001DC6  1238 10C0               1731          MOVE.B  (DMD),D1        Get destination mode in D1
-00001DCA  C2FC 0004               1732          MULU.W  #4,D1           Convert to displacement
-00001DCE  4EFB 1002               1733          JMP     OPTBL(PC,D1.W)  Jump to OP mode
-00001DD2  6000 001E               1734  OPTBL   BRA     OP0             000
-00001DD6  6000 002C               1735          BRA     OP1             001
-00001DDA  6000 003A               1736          BRA     OP2             010
-00001DDE  6000 0048               1737          BRA     OP3             011
-00001DE2  6000 0056               1738          BRA     OP4             100
-00001DE6  6000 0064               1739          BRA     OP5             101
-00001DEA  6000 0072               1740          BRA     OP6             110
-00001DEE  6000 0080               1741          BRA     OP7             111
-00001DF2  143C 0000               1742  OP0     MOVE.B  #0,D2           Set OP to 0 for Dn
-00001DF6  11FC 0000 10C0          1743          MOVE.B  #0,(DMD)        Set mode to Dn
-00001DFC  103C 0000               1744          MOVE.B  #0,D0           Set size to byte
-00001E00  6000 0080               1745          BRA     OP8             Branch to end
-00001E04  143C 0000               1746  OP1     MOVE.B  #0,D2           Set OP to 0 for Dn
-00001E08  11FC 0000 10C0          1747          MOVE.B  #0,(DMD)        Set mode to Dn
-00001E0E  103C 0001               1748          MOVE.B  #1,D0           Set size to word
-00001E12  6000 006E               1749          BRA     OP8             Branch to end
-00001E16  143C 0000               1750  OP2     MOVE.B  #0,D2           Set OP to 0 for Dn
-00001E1A  11FC 0000 10C0          1751          MOVE.B  #0,(DMD)        Set mode to Dn
-00001E20  103C 0002               1752          MOVE.B  #2,D0           Set size to long
-00001E24  6000 005C               1753          BRA     OP8             Branch to end
-00001E28  143C 0002               1754  OP3     MOVE.B  #2,D2           Set OP to 2 for An
-00001E2C  11FC 0001 10C0          1755          MOVE.B  #1,(DMD)        Set mode to An
-00001E32  103C 0001               1756          MOVE.B  #1,D0           Set size to word
-00001E36  6000 004A               1757          BRA     OP8             Branch to end
-00001E3A  143C 0001               1758  OP4     MOVE.B  #1,D2           Set OP to 1 for <ea>
-00001E3E  11FC 0000 10C0          1759          MOVE.B  #0,(DMD)        Set mode to Dn
-00001E44  103C 0000               1760          MOVE.B  #0,D0           Set size to byte
-00001E48  6000 0038               1761          BRA     OP8             Branch to end
-00001E4C  143C 0001               1762  OP5     MOVE.B  #1,D2           Set OP to 1 for <ea>
-00001E50  11FC 0000 10C0          1763          MOVE.B  #0,(DMD)        Set mode to Dn
-00001E56  103C 0001               1764          MOVE.B  #1,D0           Set size to word
-00001E5A  6000 0026               1765          BRA     OP8             Branch to end
-00001E5E  143C 0001               1766  OP6     MOVE.B  #1,D2           Set OP to 1 for <ea>
-00001E62  11FC 0000 10C0          1767          MOVE.B  #0,(DMD)        Set mode to Dn
-00001E68  103C 0002               1768          MOVE.B  #2,D0           Set size to long
-00001E6C  6000 0014               1769          BRA     OP8             Branch to end
-00001E70  143C 0002               1770  OP7     MOVE.B  #2,D2           Set OP to 2 for An
-00001E74  11FC 0001 10C0          1771          MOVE.B  #1,(DMD)        Set mode to An
-00001E7A  103C 0002               1772          MOVE.B  #2,D0           Set size to long
-00001E7E  6000 0002               1773          BRA     OP8             Branch to end
-00001E82  11C0 100E               1774  OP8     MOVE.B  D0,(IOSIZE)     Store size in IOSIZE
-00001E86  4CDF 0003               1775          MOVEM.L (SP)+,D0/D1     Restore D0 & D1
-00001E8A  4E75                    1776          RTS                     Return to caller
-00001E8C                          1777  
-00001E8C                          1778  *
-00001E8C                          1779  * Extract destination: Extracts destination mode to DMD and destination register to DRG from instruction
-00001E8C                          1780  * Input instruction from A1, output a combination of reg & mode in RGMD
-00001E8C                          1781  *
-00001E8C                          1782  
-00001E8C  48E7 E000               1783  EXDST   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
-00001E90  3011                    1784          MOVE.W  (A1),D0         Move instruction to D0
-00001E92  243C 000001C0           1785          MOVE.L  #$1C0,D2        Extract dest mode at 0000000111000000
-00001E98  6100 F6F8               1786          BSR     EXTMSK          Get dest mode to D1
-00001E9C  11C1 10C0               1787          MOVE.B  D1,(DMD)        Move dest mode to DMD
-00001EA0  243C 00000E00           1788          MOVE.L  #$E00,D2        Extract dest reg at 0000111000000000
-00001EA6  6100 F6EA               1789          BSR     EXTMSK          Get dest reg to D1
-00001EAA  11C1 10C1               1790          MOVE.B  D1,(DRG)        Move dest reg to (DRG)
-00001EAE  E709                    1791          LSL.B   #3,D1           Shift the reg 3 bits left
-00001EB0  8238 10C0               1792          OR.B    (DMD),D1        Add mode after reg
-00001EB4  11C1 10C4               1793          MOVE.B  D1,(RGMD)       Store D1 in RGMD
-00001EB8  4CDF 0007               1794          MOVEM.L (SP)+,D0-D2     Restore D0 - D2
-00001EBC  4E75                    1795          RTS                     Return to caller
-00001EBE                          1796  
-00001EBE                          1797  *
-00001EBE                          1798  * Extract source: Extracts source mode to SMD and source register to SRG from instruction
-00001EBE                          1799  * Inputs instruction from GBUFF, output a combination of reg & mode in RGMD
-00001EBE                          1800  *
-00001EBE                          1801  
-00001EBE  48E7 E000               1802  EXSRC   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
-00001EC2  3011                    1803          MOVE.W  (A1),D0         Move instruction to D0
-00001EC4  7438                    1804          MOVE.L  #$38,D2         Extract src mode at 0000000000111000
-00001EC6  6100 F6CA               1805          BSR     EXTMSK          Get src mode to D1
-00001ECA  11C1 10C2               1806          MOVE.B  D1,(SMD)        Move src mode to (OMD)
-00001ECE  7407                    1807          MOVE.L  #$7,D2          Extract src reg at 0000000000000111
-00001ED0  6100 F6C0               1808          BSR     EXTMSK          Get src reg to D1
-00001ED4  11C1 10C3               1809          MOVE.B  D1,(SRG)        Move src reg to (ORG)
-00001ED8  E709                    1810          LSL.B   #3,D1           Shift the reg 3 bits left
-00001EDA  8238 10C2               1811          OR.B    (SMD),D1        Add mode after reg
-00001EDE  11C1 10C4               1812          MOVE.B  D1,(RGMD)       Store D1 in RGMD
-00001EE2  4CDF 0007               1813          MOVEM.L (SP)+,D0-D2     Restore D0 - D2
-00001EE6  4E75                    1814          RTS                     Return to caller
-00001EE8                          1815  
-00001EE8                          1816  * ----------------
-00001EE8                          1817  * OP Mode Branches
-00001EE8                          1818  * ----------------
-00001EE8                          1819  * A1 reserved for tentative good buffer
-00001EE8                          1820  
-00001EE8                          1821  
-00001EE8                          1822  * ADD: 1101|REG|OPM|EMD|ERG
-00001EE8                          1823  * Syntax: ADD       <ea>,Dn
-00001EE8                          1824  *         ADD       Dn,<ea>
-00001EE8                          1825  * Note: The Dn mode is used when the destination is a data register;
-00001EE8                          1826  *       the destination <ea> mode is invalid for a data register. 
-00001EE8                          1827  *       ADDA is used when the destination is an address register.
-00001EE8                          1828  *       ADDI and ADDQ are used when the source is immediate data.
-00001EE8                          1829  *       Most assemblers automatically make this distinction.  
-00001EE8                          1830  
-00001EE8  11FC 0011 100C          1831  BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
-00001EEE  619C                    1832          BSR     EXDST           Extract OP mode & register
-00001EF0  6100 FECE               1833          BSR     OPSIZE          Translate OP mode from DMD, get operation in D2.B
-00001EF4                          1834          * "If the location specified is a destination operand,
-00001EF4                          1835          * only memory alterable addressing modes can be used [...]."
-00001EF4  B43C 0000               1836          CMP.B   #0,D2           Compare operation to Dn
-00001EF8  6604                    1837          BNE.S   *+6             If !=, skip next line
-00001EFA  303C 01FC               1838          MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
-00001EFE                          1839          * "If the location specified is a source operand,
-00001EFE                          1840          * all addressing modes can be used [...]."
-00001EFE  B43C 0001               1841          CMP.B   #1,D2           Compare operation to <ea>
-00001F02  6604                    1842          BNE.S   *+6             If !=, skip next line
-00001F04  303C 0FFF               1843          MOVE.W  #M_ALL,D0       Set all modes as valid
-00001F08                          1844          * "ADDA is used when the destination is an address register."
-00001F08  B43C 0002               1845          CMP.B   #2,D2           Compare operation to An
-00001F0C  6700 000C               1846          BEQ     BRADDA          If ==, branch to BRADDA
-00001F10                          1847  
-00001F10  61AC                    1848          BSR     EXSRC           Extract EA mode & register
-00001F12                          1849          *BSR     TSTAM           Test modes for validity
-00001F12                          1850          *BNE     FLAGCL          If not valid, return unsuccessful
-00001F12  6100 FE3E               1851          BSR     ADVBFR          Else, advance the buffer accordingly
-00001F16  6000 F50A               1852          BRA     FLAGST          Return return successful
-00001F1A                          1853  
-00001F1A                          1854  
-00001F1A                          1855  * ADDA: 1101|REG|OPM|EMD|ERG
-00001F1A                          1856  * Syntax: ADDA      <ea>,An
-00001F1A                          1857  
-00001F1A  11FC 0015 100C          1858  BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
-00001F20                          1859          * "All addressing modes can be used [...]."
-00001F20  303C 0FFF               1860          MOVE.W  #M_ALL,D0       Set all modes as valid
-00001F24  6198                    1861          BSR     EXSRC           Extract EA mode & register
-00001F26                          1862          *BSR     TSTAM           Test modes for validity
-00001F26                          1863          *BNE     FLAGCL          If not valid, return unsuccessful
-00001F26  6100 FE2A               1864          BSR     ADVBFR          Else, advance the buffer accordingly
-00001F2A  6000 F4F6               1865          BRA     FLAGST          Return successful
-00001F2E                          1866  
-00001F2E                          1867  * ADDQ: 0101|DAT|0|SZ|EMD|ERG
-00001F2E                          1868  * Syntax: ADDQ      #<data>,<ea>
-00001F2E                          1869  
-00001F2E  11FC 001A 100C          1870  BRADDQ  MOVE.B  #$1A,(IOOPCD)   Set OP-code name
-00001F34  6000 F4EC               1871          BRA     FLAGST          Return successful
+00001AD8  43F8 13A8               1376          LEA     HEADR,A1            Display header
+00001ADC  103C 000E               1377          MOVE.B  #14,D0
+00001AE0  4E4F                    1378          TRAP    #15
+00001AE2  4238 1014               1379          CLR.B   (IOLC)              Reset line counter
+00001AE6  6000 002A               1380          BRA     OP
+00001AEA                          1381  
+00001AEA  43F8 137F               1382  DONE    LEA     MSSG5,A1            Display end message
+00001AEE  103C 000E               1383          MOVE.B  #14,D0
+00001AF2  4E4F                    1384          TRAP    #15
+00001AF4  103C 0009               1385          MOVE.B  #9,D0
+00001AF8  4E4F                    1386          TRAP    #15
+00001AFA                          1387  
+00001AFA                          1388  *--------------------
+00001AFA                          1389  *   OP
+00001AFA                          1390  *--------------------
+00001AFA                          1391  
+00001AFA                          1392  *
+00001AFA                          1393  * Jump Mask: Use CMPMSK, and jumps to the OP branch if it returns true
+00001AFA                          1394  * Input CMPMSK inputs, input A0 for OP branch
+00001AFA                          1395  *
+00001AFA                          1396  
+00001AFA  6100 FA68               1397  JMPMSK  BSR     CMPMSK          Branch to CMPMSK
+00001AFE  6610                    1398          BNE.S   *+18            If the bits did not match, return to caller
+00001B00  4E90                    1399          JSR     (A0)            If the bits matched, branch to the OP address
+00001B02  660A                    1400          BNE     *+12            If the OP address was read ybsuccessful, skip the next two lines
+00001B04  21C9 1000               1401          MOVE.L  A1,GBUFF        The buffer was good, move it to GBUFF
+00001B08  6000 FE50               1402          BRA     PRINT           Branch to PRINT     
+00001B0C  2278 1000               1403          MOVE.L  GBUFF,A1        The buffer was bad, restore A1
+00001B10  4E75                    1404          RTS                     Return to caller for next instruction
+00001B12                          1405  
+00001B12  2078 1000               1406  OP      MOVE.L  GBUFF,A0        Set A0 to GBUFF location
+00001B16  2278 1000               1407          MOVE.L  GBUFF,A1        Set A1 to GBUFF location for sub-routines
+00001B1A  143C 0000               1408          MOVE.B  #0,D2           Set NULL count to 0
+00001B1E  0C90 FFFFFFFF           1409          CMP.L   #$FFFFFFFF,(A0) Check for NULL
+00001B24  67C4                    1410          BEQ     DONE            If NULL, branch to DONE
+00001B26  3018                    1411          MOVE.W  (A0)+,D0        Transfer word data to D0, post-increment location
+00001B28  3210                    1412          MOVE.W  (A0),D1         Transfer next word data to D1
+00001B2A  21F8 1000 1010          1413          MOVE.L   GBUFF,IOADDR   Set memory location for IO
+00001B30                          1414  *-----
+00001B30                          1415  * 0000
+00001B30                          1416  *-----
+00001B30                          1417          * ORI:    00000000XXXXXXXX
+00001B30  343C 0000               1418          MOVE.W  #%0000000000000000,D2
+00001B34  363C FF00               1419          MOVE.W  #%1111111100000000,D3
+00001B38  207C 000020AA           1420          MOVE.L  #BRORI,A0
+00001B3E  61BA                    1421          BSR     JMPMSK
+00001B40                          1422  
+00001B40                          1423          * SUBI:   00000100XXXXXXXX
+00001B40  343C 0400               1424          MOVE.W  #%0000010000000000,D2
+00001B44  363C FB00               1425          MOVE.W  #%1111101100000000,D3
+00001B48  207C 000020DC           1426          MOVE.L  #BRSUBI,A0
+00001B4E  61AA                    1427          BSR     JMPMSK
+00001B50                          1428  
+00001B50                          1429          * ADDI:   00000110XXXXXXXX
+00001B50  343C 0600               1430          MOVE.W  #%0000011000000000,D2
+00001B54  363C F900               1431          MOVE.W  #%1111100100000000,D3
+00001B58  207C 00001F42           1432          MOVE.L  #BRADDI,A0
+00001B5E  619A                    1433          BSR     JMPMSK
+00001B60                          1434  
+00001B60                          1435          * BTST:   0000100000XXXXXX
+00001B60  343C 0800               1436          MOVE.W  #%0000100000000000,D2
+00001B64  363C F7C0               1437          MOVE.W  #%1111011111000000,D3
+00001B68  207C 00001F56           1438          MOVE.L  #BRBTST,A0
+00001B6E  618A                    1439          BSR     JMPMSK
+00001B70                          1440  
+00001B70                          1441          * EORI:   00001010XXXXXXXX
+00001B70  343C 0A00               1442          MOVE.W  #%0000101000000000,D2
+00001B74  363C F500               1443          MOVE.W  #%1111010100000000,D3
+00001B78  207C 000020B4           1444          MOVE.L  #BREORI,A0
+00001B7E  6100 FF7A               1445          BSR     JMPMSK
+00001B82                          1446  
+00001B82                          1447          * CMPI:   00001100XXXXXXXX
+00001B82  343C 0C00               1448          MOVE.W  #%0000110000000000,D2
+00001B86  363C F300               1449          MOVE.W  #%1111001100000000,D3
+00001B8A  207C 00001FA6           1450          MOVE.L  #BRCMPI,A0
+00001B90  6100 FF68               1451          BSR     JMPMSK
+00001B94                          1452  *-----
+00001B94                          1453  * 0001
+00001B94                          1454  *-----
+00001B94                          1455          * MOVE.B: 0001XXXXXXXXXXXX
+00001B94  343C 1000               1456          MOVE.W  #%0001000000000000,D2
+00001B98  363C E000               1457          MOVE.W  #%1110000000000000,D3
+00001B9C  207C 00001FDE           1458          MOVE.L  #BRMOVE,A0
+00001BA2  6100 FF56               1459          BSR     JMPMSK
+00001BA6                          1460  *-----
+00001BA6                          1461  * 0010
+00001BA6                          1462  *-----
+00001BA6                          1463          * MOVE.L: 0010XXXXXXXXXXXX
+00001BA6  343C 2000               1464          MOVE.W  #%0010000000000000,D2
+00001BAA  363C D000               1465          MOVE.W  #%1101000000000000,D3
+00001BAE  6100 FF4A               1466          BSR     JMPMSK
+00001BB2                          1467  *-----
+00001BB2                          1468  * 0011
+00001BB2                          1469  *-----
+00001BB2                          1470          * MOVE.W: 0011XXXXXXXXXXXX 
+00001BB2  343C 3000               1471          MOVE.W  #%0011000000000000,D2
+00001BB6  363C C000               1472          MOVE.W  #%1100000000000000,D3
+00001BBA  6100 FF3E               1473          BSR     JMPMSK
+00001BBE                          1474  *-----
+00001BBE                          1475  * 0100
+00001BBE                          1476  *-----
+00001BBE                          1477          * NOT:    01000110XXXXXXXX
+00001BBE  343C 4600               1478          MOVE.W  #%0100011000000000,D2
+00001BC2  363C B900               1479          MOVE.W  #%1011100100000000,D3
+00001BC6  207C 000020BE           1480          MOVE.L  #BRNOT,A0
+00001BCC  6100 FF2C               1481          BSR     JMPMSK
+00001BD0                          1482  
+00001BD0                          1483          * MULU:   0100110000XXXXXX
+00001BD0  343C 4C00               1484          MOVE.W  #%0100110000000000,D2
+00001BD4  363C B3C0               1485          MOVE.W  #%1011001111000000,D3
+00001BD8  207C 0000208C           1486          MOVE.L  #BRMULU,A0
+00001BDE  6100 FF1A               1487          BSR     JMPMSK
+00001BE2                          1488  
+00001BE2                          1489          * DIVS:   0100110001XXXXXX
+00001BE2  343C 4C40               1490          MOVE.W  #%0100110001000000,D2
+00001BE6  363C B380               1491          MOVE.W  #%1011001110000000,D3
+00001BEA  207C 00002096           1492          MOVE.L  #BRDIVS,A0
+00001BF0  6100 FF08               1493          BSR     JMPMSK
+00001BF4                          1494  
+00001BF4                          1495          * MOVEM:  01001X001XXXXXXX
+00001BF4  343C 4880               1496          MOVE.W  #%0100100010000000,D2
+00001BF8  363C B300               1497          MOVE.W  #%1011001100000000,D3
+00001BFC  207C 00002070           1498          MOVE.L  #BRMOVEM,A0
+00001C02  6100 FEF6               1499          BSR     JMPMSK
+00001C06                          1500  
+00001C06                          1501          * RTS:    0100111001110101
+00001C06  343C 4E75               1502          MOVE.W  #%0100111001110101,D2
+00001C0A  363C B18A               1503          MOVE.W  #%1011000110001010,D3
+00001C0E  207C 00001FB0           1504          MOVE.L  #BRRTS,A0
+00001C14  6100 FEE4               1505          BSR     JMPMSK
+00001C18                          1506  
+00001C18                          1507          * JSR:    0100111010XXXXXX
+00001C18  343C 4E80               1508          MOVE.W  #%0100111010000000,D2
+00001C1C  363C B140               1509          MOVE.W  #%1011000101000000,D3
+00001C20  207C 00001FD4           1510          MOVE.L  #BRJSR,A0
+00001C26  6100 FED2               1511          BSR     JMPMSK
+00001C2A                          1512  
+00001C2A                          1513          * LEA:    0100XXX111XXXXXX
+00001C2A  343C 41C0               1514          MOVE.W  #%0100000111000000,D2
+00001C2E  363C B000               1515          MOVE.W  #%1011000000000000,D3
+00001C32  207C 00001FBA           1516          MOVE.L  #BRLEA,A0
+00001C38  6100 FEC0               1517          BSR     JMPMSK
+00001C3C                          1518  *-----
+00001C3C                          1519  * 0101
+00001C3C                          1520  *-----
+00001C3C                          1521          * ADDQ:   0101XXX0XXXXXXXX
+00001C3C  343C 5000               1522          MOVE.W  #%0101000000000000,D2
+00001C40  363C A100               1523          MOVE.W  #%1010000100000000,D3
+00001C44  207C 00001F38           1524          MOVE.L  #BRADDQ,A0
+00001C4A  6100 FEAE               1525          BSR     JMPMSK
+00001C4E                          1526  *-----
+00001C4E                          1527  * 0110
+00001C4E                          1528  *-----
+00001C4E                          1529          * BCC:    01100000XXXXXXXX
+00001C4E  343C 6000               1530          MOVE.W  #%0110000000000000,D2
+00001C52  363C 9F00               1531          MOVE.W  #%1001111100000000,D3
+00001C56  207C 00001F60           1532          MOVE.L  #BRBCC,A0
+00001C5C  6100 FE9C               1533          BSR     JMPMSK
+00001C60                          1534  *-----
+00001C60                          1535  * 0111
+00001C60                          1536  *-----
+00001C60                          1537          * MOVEQ:  0111XXX0XXXXXXXX
+00001C60  343C 7000               1538          MOVE.W  #%0111000000000000,D2
+00001C64  363C 8100               1539          MOVE.W  #%1000000100000000,D3
+00001C68  207C 0000207A           1540          MOVE.L  #BRMOVEQ,A0
+00001C6E  6100 FE8A               1541          BSR     JMPMSK
+00001C72                          1542  *-----
+00001C72                          1543  * 1000
+00001C72                          1544  *-----
+00001C72                          1545          * DIVS:   1000XXX111XXXXXX
+00001C72  343C 81C0               1546          MOVE.W  #%1000000111000000,D2
+00001C76  363C 7000               1547          MOVE.W  #%0111000000000000,D3
+00001C7A  207C 00002096           1548          MOVE.L  #BRDIVS,A0
+00001C80  6100 FE78               1549          BSR     JMPMSK
+00001C84                          1550  *-----
+00001C84                          1551  * 1001
+00001C84                          1552  *-----
+00001C84                          1553          * SUB:    1001XXXXXXXXXXXX
+00001C84  343C 9000               1554          MOVE.W  #%1001000000000000,D2
+00001C88  363C 6000               1555          MOVE.W  #%0110000000000000,D3
+00001C8C  207C 000020C8           1556          MOVE.L  #BRSUB,A0
+00001C92  6100 FE66               1557          BSR     JMPMSK
+00001C96                          1558  *-----
+00001C96                          1559  * 1010
+00001C96                          1560  *-----
+00001C96                          1561  *-----
+00001C96                          1562  * 1011
+00001C96                          1563  *-----
+00001C96                          1564          * CMP:    1011XXXXXXXXXXXX
+00001C96  343C B000               1565          MOVE.W  #%1011000000000000,D2
+00001C9A  363C 4000               1566          MOVE.W  #%0100000000000000,D3
+00001C9E  207C 00001F92           1567          MOVE.L  #BRCMP,A0
+00001CA4  6100 FE54               1568          BSR     JMPMSK
+00001CA8                          1569  
+00001CA8                          1570          * EOR:    1011XXXXXXXXXXXX
+00001CA8  207C 000020A0           1571          MOVE.L  #BREOR,A0
+00001CAE  6100 FE4A               1572          BSR     JMPMSK
+00001CB2                          1573  *-----
+00001CB2                          1574  * 1100
+00001CB2                          1575  *-----
+00001CB2                          1576          * AND:    1100XXXXXXXXXXXX
+00001CB2  343C C000               1577          MOVE.W  #%1100000000000000,D2
+00001CB6  363C 3000               1578          MOVE.W  #%0011000000000000,D3
+00001CBA  207C 00001F4C           1579          MOVE.L  #BRAND,A0
+00001CC0  6100 FE38               1580          BSR     JMPMSK
+00001CC4                          1581  
+00001CC4                          1582          * MULU:   1100XXX011XXXXXX
+00001CC4  343C C0C0               1583          MOVE.W  #%1100000011000000,D2
+00001CC8  363C 3100               1584          MOVE.W  #%0011000100000000,D3
+00001CCC  207C 0000208C           1585          MOVE.L  #BRMULU,A0
+00001CD2  6100 FE26               1586          BSR     JMPMSK
+00001CD6                          1587  *-----
+00001CD6                          1588  * 1101
+00001CD6                          1589  *-----
+00001CD6                          1590          * ADD:    1101XXXXXXXXXXXX
+00001CD6  343C D000               1591          MOVE.W  #%1101000000000000,D2
+00001CDA  363C 2000               1592          MOVE.W  #%0010000000000000,D3
+00001CDE  207C 00001EF2           1593          MOVE.L  #BRADD,A0
+00001CE4  6100 FE14               1594          BSR     JMPMSK
+00001CE8                          1595  *-----
+00001CE8                          1596  * 1110
+00001CE8                          1597  *-----
+00001CE8                          1598          * ASL/ASR:1110XXXXXXX00XXX
+00001CE8  343C E000               1599          MOVE.W  #%1110000000000000,D2
+00001CEC  363C 1018               1600          MOVE.W  #%0001000000011000,D3
+00001CF0  207C 00002084           1601          MOVE.L  #BRASd,A0
+00001CF6  6100 FE02               1602          BSR     JMPMSK
+00001CFA                          1603  
+00001CFA                          1604          * LSL/LSR:1110XXXXXXX01XXX
+00001CFA  343C E008               1605          MOVE.W  #%1110000000001000,D2
+00001CFE  363C 1010               1606          MOVE.W  #%0001000000010000,D3
+00001D02  207C 00002088           1607          MOVE.L  #BRLSd,A0
+00001D08  6100 FDF0               1608          BSR     JMPMSK
+00001D0C                          1609  
+00001D0C                          1610          * ASL/ASR:1110000X11XXXXXX
+00001D0C  343C E0C0               1611          MOVE.W  #%1110000011000000,D2
+00001D10  363C 1E00               1612          MOVE.W  #%0001111000000000,D3
+00001D14  207C 00002084           1613          MOVE.L  #BRASd,A0
+00001D1A  6100 FDDE               1614          BSR     JMPMSK
+00001D1E                          1615  
+00001D1E                          1616          * LSL/LSR:1110001X11XXXXXX
+00001D1E  343C E2C0               1617          MOVE.W  #%1110001011000000,D2
+00001D22  363C 1C00               1618          MOVE.W  #%0001110000000000,D3
+00001D26  207C 00002088           1619          MOVE.L  #BRLSd,A0
+00001D2C  6100 FDCC               1620          BSR     JMPMSK
+00001D30                          1621  *-----
+00001D30                          1622  * 1111
+00001D30                          1623  *-----     
+00001D30  6000 FBFE               1624          BRA     BRBAD           No mask matched, branch to BRBAD
+00001D34                          1625  
+00001D34                          1626  *--------------------------
+00001D34                          1627  *  Instruction Subroutines
+00001D34                          1628  *--------------------------
+00001D34                          1629  
+00001D34                          1630  *
+00001D34                          1631  * Test Addressing Modes: Tests last register and mode for valid addressing modes
+00001D34                          1632  * Input valid modes in D0.W, output found addressing mode to D1.B, or FF if not found
+00001D34                          1633  * Set Z-flag if mode was valid, or clear Z-flag if mode was invalid
+00001D34                          1634  *
+00001D34                          1635  * D0.W addressing modes (set to 0 for invalid, 1 for valid):
+00001D34                          1636  *   0   Dn
+00001D34                          1637  *   1   An
+00001D34                          1638  *   2   (An)
+00001D34                          1639  *   3   (An)+
+00001D34                          1640  *   4   -(An)
+00001D34                          1641  *   5   (d,An)
+00001D34                          1642  *   6   (d,An,Xn)
+00001D34                          1643  *   7   (xxx).W
+00001D34                          1644  *   8   (xxx).L
+00001D34                          1645  *   9   (d,PC)
+00001D34                          1646  *   A   (d,PC,Xn)
+00001D34                          1647  *   B   #<data>
+00001D34                          1648  *
+00001D34                          1649  * Modes         %XXXXBA9876543210
+00001D34  =00000FFF               1650  M_ALL   EQU     %0000111111111111   All modes
+00001D34  =00000FFD               1651  M_DAT   EQU     %0000111111111101   Data modes
+00001D34  =00000FFC               1652  M_MEM   EQU     %0000111111111100   Memory modes
+00001D34  =000007E4               1653  M_CTR   EQU     %0000011111100100   Control modes
+00001D34  =0000007F               1654  M_ALT   EQU     %0000000001111111   Alterable modes
+00001D34  =000001FC               1655  M_MALT  EQU     %0000000111111100   Memory alterable modes
+00001D34  =000001FD               1656  M_DALT  EQU     %0000000111111101   Data alterable modes
+00001D34                          1657  
+00001D34  1F02                    1658  TSTAM   MOVE.B  D2,-(SP)        Push D2 to stack
+00001D36  4281                    1659          CLR.L   D1
+00001D38  1238 10C4               1660          MOVE.B  (RGMD),D1       Move REGMOD to D1
+00001D3C  1401                    1661          MOVE.B  D1,D2           Copy REGMOD to D2
+00001D3E  EB09                    1662          LSL.B   #5,D1
+00001D40  EA09                    1663          LSR.B   #5,D1           D1 = Mode
+00001D42  E60A                    1664          LSR.B   #3,D2           D2 = Register
+00001D44  B23C 0007               1665          CMP.B   #%111,D1        Test mode to 111
+00001D48  6602                    1666          BNE     *+4             If !=, skip next line
+00001D4A  D202                    1667          ADD.B   D2,D1           Add register to mode-- effectively creating a 4 bit mode
+00001D4C  0300                    1668          BTST    D1,D0           Test mode for validity
+00001D4E  6706                    1669          BEQ     *+8             If it is invalid, skip to clear flag
+00001D50  141F                    1670          MOVE.B  (SP)+,D2        If it is valid, restore D2
+00001D52  6000 F6CE               1671          BRA     FLAGST          Set flag & return to caller
+00001D56  141F                    1672          MOVE.B  (SP)+,D2        Restore D2
+00001D58  6000 F6CE               1673          BRA     FLAGCL          Clear flag & return to caller
+00001D5C                          1674  
+00001D5C                          1675  *
+00001D5C                          1676  * Advance Buffer: Advances buffer based on last register and mode
+00001D5C                          1677  * Input buffer in A1, reg & mode in RGMD, output displacement to DIS
+00001D5C                          1678  *
+00001D5C                          1679  
+00001D5C  48E7 6000               1680  ADVBFR  MOVEM.L D1/D2,-(SP)     Push D1 & D2 to the stack
+00001D60  11FC 00FF 10C5          1681          MOVE.B  #$FF,(DIS)      Set displacement to NULL
+00001D66  1238 10C4               1682          MOVE.B  (RGMD),D1       Move Reg & Mod to D1
+00001D6A  2409                    1683          MOVE.L  A1,D2           Copy buffer to D2
+00001D6C  B23C 0007               1684          CMP.B   #$07,D1         Test 000 111 = Address (Word)
+00001D70  6602                    1685          BNE.S   *+4             Skip next line
+00001D72  5489                    1686          ADD.L   #$2,A1          Advance buffer by word
+00001D74  B23C 000F               1687          CMP.B   #$0F,D1         Test 001 111 = Address (Long)
+00001D78  6602                    1688          BNE.S   *+4             Skip next line
+00001D7A  5889                    1689          ADD.L   #$4,A1          Advance buffer by long
+00001D7C  B23C 0027               1690          CMP.B   #$27,D1         Test 100 111 = Immediate (OP code size)
+00001D80  6700 0010               1691          BEQ     ADVBSZ          If ==, branch to Advance Buffer by Size
+00001D84  4482                    1692          NEG.L   D2              Else, negate original buffer
+00001D86  D489                    1693          ADD.L   A1,D2           Add buffer to get difference
+00001D88  11C2 10C5               1694          MOVE.B  D2,(DIS)        Store displacement in DIS
+00001D8C  4CDF 0006               1695          MOVEM.L (SP)+,D1/D2     Restore D1 & D2
+00001D90  4E75                    1696          RTS                     Return to caller
+00001D92                          1697  
+00001D92                          1698  *
+00001D92                          1699  * Advance Buffer by Size: Advances buffer based on instruction size
+00001D92                          1700  * Input buffer in A1, input size from (IOSIZE), output displacement to DIS
+00001D92                          1701  *
+00001D92                          1702  
+00001D92  0C38 00FF 10C5          1703  ADVBSZ  CMP.B   #$FF,(DIS)      Check if DIS is NULL (255 is odd so displacement should never be FF)
+00001D98  6704                    1704          BEQ     *+6             If it is null, values have already been pushed to the stack, skip the next line
+00001D9A  48E7 6000               1705          MOVEM.L D1/D2,-(SP)     Else, push D1 & D2 to the stack
+00001D9E  1238 100E               1706          MOVE.B  (IOSIZE),D1     Read size to D1
+00001DA2  2409                    1707          MOVE.L  A1,D2           Copy buffer to D2
+00001DA4  B03C 0001               1708          CMP.B   #$1,D0          Test 0 = Byte
+00001DA8  6602                    1709          BNE.S   *+4             Skip next line
+00001DAA  5489                    1710          ADD.L   #$2,A1          Advance buffer by word (00BB)
+00001DAC  B23C 0001               1711          CMP.B   #$1,D1          Test 1 = Word
+00001DB0  6602                    1712          BNE.S   *+4             Skip next line
+00001DB2  5489                    1713          ADD.L   #$2,A1          Advance buffer by word        
+00001DB4  B23C 0002               1714          CMP.B   #$2,D1          Test 2 = Long
+00001DB8  6602                    1715          BNE.S   *+4             Skip next line
+00001DBA  5889                    1716          ADD.L   #$4,A1          Advance buffer by long
+00001DBC  4442                    1717          NEG     D2              Negate original buffer
+00001DBE  D489                    1718          ADD.L   A1,D2           Add buffer to get difference
+00001DC0  11C2 10C5               1719          MOVE.B  D2,(DIS)        Store displacement in DIS
+00001DC4  4CDF 0006               1720          MOVEM.L (SP)+,D2/D1     Restore D1 and D2
+00001DC8  4E75                    1721          RTS                     Return to caller
+00001DCA                          1722  
+00001DCA                          1723  *
+00001DCA                          1724  * OP Size: Test the standard OP size code
+00001DCA                          1725  * Inputs size from (DMD), outputs size to IOSIZE, operation to D2.B, correct mode to DMD
+00001DCA                          1726  * OPM (OP-MODE):  Byte | Word | Long | Operation | D2.B
+00001DCA                          1727  *                  000 |  001 |  010 |   <ea>,Dn |    0
+00001DCA                          1728  *                  100 |  101 |  110 |   Dn,<ea> |    1
+00001DCA                          1729  *                         011 |  111 |   <ea>,An |    2
+00001DCA                          1730  *
+00001DCA                          1731  
+00001DCA  48E7 C000               1732  OPSIZE  MOVEM.L D0/D1,-(SP)     Push D0 & D1 to stack
+00001DCE  4241                    1733          CLR.W   D1              Ensure displacement will be <= 7
+00001DD0  1238 10C0               1734          MOVE.B  (DMD),D1        Get destination mode in D1
+00001DD4  C2FC 0004               1735          MULU.W  #4,D1           Convert to displacement
+00001DD8  4EFB 1002               1736          JMP     OPTBL(PC,D1.W)  Jump to OP mode
+00001DDC  6000 001E               1737  OPTBL   BRA     OP0             000
+00001DE0  6000 002C               1738          BRA     OP1             001
+00001DE4  6000 003A               1739          BRA     OP2             010
+00001DE8  6000 0048               1740          BRA     OP3             011
+00001DEC  6000 0056               1741          BRA     OP4             100
+00001DF0  6000 0064               1742          BRA     OP5             101
+00001DF4  6000 0072               1743          BRA     OP6             110
+00001DF8  6000 0080               1744          BRA     OP7             111
+00001DFC  143C 0000               1745  OP0     MOVE.B  #0,D2           Set OP to 0 for Dn
+00001E00  11FC 0000 10C0          1746          MOVE.B  #0,(DMD)        Set mode to Dn
+00001E06  103C 0000               1747          MOVE.B  #0,D0           Set size to byte
+00001E0A  6000 0080               1748          BRA     OP8             Branch to end
+00001E0E  143C 0000               1749  OP1     MOVE.B  #0,D2           Set OP to 0 for Dn
+00001E12  11FC 0000 10C0          1750          MOVE.B  #0,(DMD)        Set mode to Dn
+00001E18  103C 0001               1751          MOVE.B  #1,D0           Set size to word
+00001E1C  6000 006E               1752          BRA     OP8             Branch to end
+00001E20  143C 0000               1753  OP2     MOVE.B  #0,D2           Set OP to 0 for Dn
+00001E24  11FC 0000 10C0          1754          MOVE.B  #0,(DMD)        Set mode to Dn
+00001E2A  103C 0002               1755          MOVE.B  #2,D0           Set size to long
+00001E2E  6000 005C               1756          BRA     OP8             Branch to end
+00001E32  143C 0002               1757  OP3     MOVE.B  #2,D2           Set OP to 2 for An
+00001E36  11FC 0001 10C0          1758          MOVE.B  #1,(DMD)        Set mode to An
+00001E3C  103C 0001               1759          MOVE.B  #1,D0           Set size to word
+00001E40  6000 004A               1760          BRA     OP8             Branch to end
+00001E44  143C 0001               1761  OP4     MOVE.B  #1,D2           Set OP to 1 for <ea>
+00001E48  11FC 0000 10C0          1762          MOVE.B  #0,(DMD)        Set mode to Dn
+00001E4E  103C 0000               1763          MOVE.B  #0,D0           Set size to byte
+00001E52  6000 0038               1764          BRA     OP8             Branch to end
+00001E56  143C 0001               1765  OP5     MOVE.B  #1,D2           Set OP to 1 for <ea>
+00001E5A  11FC 0000 10C0          1766          MOVE.B  #0,(DMD)        Set mode to Dn
+00001E60  103C 0001               1767          MOVE.B  #1,D0           Set size to word
+00001E64  6000 0026               1768          BRA     OP8             Branch to end
+00001E68  143C 0001               1769  OP6     MOVE.B  #1,D2           Set OP to 1 for <ea>
+00001E6C  11FC 0000 10C0          1770          MOVE.B  #0,(DMD)        Set mode to Dn
+00001E72  103C 0002               1771          MOVE.B  #2,D0           Set size to long
+00001E76  6000 0014               1772          BRA     OP8             Branch to end
+00001E7A  143C 0002               1773  OP7     MOVE.B  #2,D2           Set OP to 2 for An
+00001E7E  11FC 0001 10C0          1774          MOVE.B  #1,(DMD)        Set mode to An
+00001E84  103C 0002               1775          MOVE.B  #2,D0           Set size to long
+00001E88  6000 0002               1776          BRA     OP8             Branch to end
+00001E8C  11C0 100E               1777  OP8     MOVE.B  D0,(IOSIZE)     Store size in IOSIZE
+00001E90  4CDF 0003               1778          MOVEM.L (SP)+,D0/D1     Restore D0 & D1
+00001E94  4E75                    1779          RTS                     Return to caller
+00001E96                          1780  
+00001E96                          1781  *
+00001E96                          1782  * Extract destination: Extracts destination mode to DMD and destination register to DRG from instruction
+00001E96                          1783  * Input instruction from A1, output a combination of reg & mode in RGMD
+00001E96                          1784  *
+00001E96                          1785  
+00001E96  48E7 E000               1786  EXDST   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
+00001E9A  3011                    1787          MOVE.W  (A1),D0         Move instruction to D0
+00001E9C  243C 000001C0           1788          MOVE.L  #$1C0,D2        Extract dest mode at 0000000111000000
+00001EA2  6100 F6EE               1789          BSR     EXTMSK          Get dest mode to D1
+00001EA6  11C1 10C0               1790          MOVE.B  D1,(DMD)        Move dest mode to DMD
+00001EAA  243C 00000E00           1791          MOVE.L  #$E00,D2        Extract dest reg at 0000111000000000
+00001EB0  6100 F6E0               1792          BSR     EXTMSK          Get dest reg to D1
+00001EB4  11C1 10C1               1793          MOVE.B  D1,(DRG)        Move dest reg to (DRG)
+00001EB8  E709                    1794          LSL.B   #3,D1           Shift the reg 3 bits left
+00001EBA  8238 10C0               1795          OR.B    (DMD),D1        Add mode after reg
+00001EBE  11C1 10C4               1796          MOVE.B  D1,(RGMD)       Store D1 in RGMD
+00001EC2  4CDF 0007               1797          MOVEM.L (SP)+,D0-D2     Restore D0 - D2
+00001EC6  4E75                    1798          RTS                     Return to caller
+00001EC8                          1799  
+00001EC8                          1800  *
+00001EC8                          1801  * Extract source: Extracts source mode to SMD and source register to SRG from instruction
+00001EC8                          1802  * Inputs instruction from GBUFF, output a combination of reg & mode in RGMD
+00001EC8                          1803  *
+00001EC8                          1804  
+00001EC8  48E7 E000               1805  EXSRC   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
+00001ECC  3011                    1806          MOVE.W  (A1),D0         Move instruction to D0
+00001ECE  7438                    1807          MOVE.L  #$38,D2         Extract src mode at 0000000000111000
+00001ED0  6100 F6C0               1808          BSR     EXTMSK          Get src mode to D1
+00001ED4  11C1 10C2               1809          MOVE.B  D1,(SMD)        Move src mode to (OMD)
+00001ED8  7407                    1810          MOVE.L  #$7,D2          Extract src reg at 0000000000000111
+00001EDA  6100 F6B6               1811          BSR     EXTMSK          Get src reg to D1
+00001EDE  11C1 10C3               1812          MOVE.B  D1,(SRG)        Move src reg to (ORG)
+00001EE2  E709                    1813          LSL.B   #3,D1           Shift the reg 3 bits left
+00001EE4  8238 10C2               1814          OR.B    (SMD),D1        Add mode after reg
+00001EE8  11C1 10C4               1815          MOVE.B  D1,(RGMD)       Store D1 in RGMD
+00001EEC  4CDF 0007               1816          MOVEM.L (SP)+,D0-D2     Restore D0 - D2
+00001EF0  4E75                    1817          RTS                     Return to caller
+00001EF2                          1818  
+00001EF2                          1819  * ----------------
+00001EF2                          1820  * OP Mode Branches
+00001EF2                          1821  * ----------------
+00001EF2                          1822  * A1 reserved for tentative good buffer
+00001EF2                          1823  
+00001EF2                          1824  
+00001EF2                          1825  * ADD: 1101|REG|OPM|EMD|ERG
+00001EF2                          1826  * Syntax: ADD       <ea>,Dn
+00001EF2                          1827  *         ADD       Dn,<ea>
+00001EF2                          1828  * Note: The Dn mode is used when the destination is a data register;
+00001EF2                          1829  *       the destination <ea> mode is invalid for a data register. 
+00001EF2                          1830  *       ADDA is used when the destination is an address register.
+00001EF2                          1831  *       ADDI and ADDQ are used when the source is immediate data.
+00001EF2                          1832  *       Most assemblers automatically make this distinction.  
+00001EF2                          1833  
+00001EF2  11FC 0011 100C          1834  BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
+00001EF8  619C                    1835          BSR     EXDST           Extract OP mode & register
+00001EFA  6100 FECE               1836          BSR     OPSIZE          Translate OP mode from DMD, get operation in D2.B
+00001EFE                          1837          * "If the location specified is a destination operand,
+00001EFE                          1838          * only memory alterable addressing modes can be used [...]."
+00001EFE  B43C 0000               1839          CMP.B   #0,D2           Compare operation to Dn
+00001F02  6604                    1840          BNE.S   *+6             If !=, skip next line
+00001F04  303C 01FC               1841          MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
+00001F08                          1842          * "If the location specified is a source operand,
+00001F08                          1843          * all addressing modes can be used [...]."
+00001F08  B43C 0001               1844          CMP.B   #1,D2           Compare operation to <ea>
+00001F0C  6604                    1845          BNE.S   *+6             If !=, skip next line
+00001F0E  303C 0FFF               1846          MOVE.W  #M_ALL,D0       Set all modes as valid
+00001F12                          1847          * "ADDA is used when the destination is an address register."
+00001F12  B43C 0002               1848          CMP.B   #2,D2           Compare operation to An
+00001F16  6700 000C               1849          BEQ     BRADDA          If ==, branch to BRADDA
+00001F1A                          1850  
+00001F1A  61AC                    1851          BSR     EXSRC           Extract EA mode & register
+00001F1C                          1852          *BSR     TSTAM           Test modes for validity
+00001F1C                          1853          *BNE     FLAGCL          If not valid, return unsuccessful
+00001F1C  6100 FE3E               1854          BSR     ADVBFR          Else, advance the buffer accordingly
+00001F20  6000 F500               1855          BRA     FLAGST          Return return successful
+00001F24                          1856  
+00001F24                          1857  
+00001F24                          1858  * ADDA: 1101|REG|OPM|EMD|ERG
+00001F24                          1859  * Syntax: ADDA      <ea>,An
+00001F24                          1860  
+00001F24  11FC 0015 100C          1861  BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
+00001F2A                          1862          * "All addressing modes can be used [...]."
+00001F2A  303C 0FFF               1863          MOVE.W  #M_ALL,D0       Set all modes as valid
+00001F2E  6198                    1864          BSR     EXSRC           Extract EA mode & register
+00001F30                          1865          *BSR     TSTAM           Test modes for validity
+00001F30                          1866          *BNE     FLAGCL          If not valid, return unsuccessful
+00001F30  6100 FE2A               1867          BSR     ADVBFR          Else, advance the buffer accordingly
+00001F34  6000 F4EC               1868          BRA     FLAGST          Return successful
+00001F38                          1869  
+00001F38                          1870  * ADDQ: 0101|DAT|0|SZ|EMD|ERG
+00001F38                          1871  * Syntax: ADDQ      #<data>,<ea>
 00001F38                          1872  
-00001F38                          1873  * ADDI: 000000110|SZ|EMD|ERG
-00001F38                          1874  * Syntax: ADDI      #<data>,<ea>
-00001F38                          1875  
-00001F38  11FC 0099 100C          1876  BRADDI  MOVE.B  #$99,(IOOPCD)   Set OP-code name
-00001F3E  6000 F4E2               1877          BRA     FLAGST          Return successful
+00001F38  11FC 001A 100C          1873  BRADDQ  MOVE.B  #$1A,(IOOPCD)   Set OP-code name
+00001F3E  6000 F4E2               1874          BRA     FLAGST          Return successful
+00001F42                          1875  
+00001F42                          1876  * ADDI: 000000110|SZ|EMD|ERG
+00001F42                          1877  * Syntax: ADDI      #<data>,<ea>
 00001F42                          1878  
-00001F42                          1879  * AND: 1100|REG|OPM|EMD|ERG
-00001F42                          1880  * Syntax: AND       <ea>,Dn
-00001F42                          1881  *         AND       Dn,<ea>
-00001F42                          1882  * Note: The Dn mode is used when the destination is a data register;
-00001F42                          1883  *       the destination < ea > mode is invalid for a data register. 
-00001F42                          1884  *       Most assemblers use ANDI when the source is immediate data.
-00001F42                          1885  
-00001F42  11FC 003B 100C          1886  BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
-00001F48  6000 F4D8               1887          BRA     FLAGST          Return successful
+00001F42  11FC 0099 100C          1879  BRADDI  MOVE.B  #$99,(IOOPCD)   Set OP-code name
+00001F48  6000 F4D8               1880          BRA     FLAGST          Return successful
+00001F4C                          1881  
+00001F4C                          1882  * AND: 1100|REG|OPM|EMD|ERG
+00001F4C                          1883  * Syntax: AND       <ea>,Dn
+00001F4C                          1884  *         AND       Dn,<ea>
+00001F4C                          1885  * Note: The Dn mode is used when the destination is a data register;
+00001F4C                          1886  *       the destination < ea > mode is invalid for a data register. 
+00001F4C                          1887  *       Most assemblers use ANDI when the source is immediate data.
 00001F4C                          1888  
-00001F4C                          1889  * BTST: 0000|REG|100|EMD|ERG (BIT NUMBER DYNAMIC, SPECIFIED IN A REGISTER)
-00001F4C                          1890  *       0000100000|EMD|ERG  00000000|_BITNUM_ (BIT NUMBER STATIC, SPECIFIED AS IMMEDIATE DATA)
-00001F4C                          1891  * Syntax: BTST      Dn,<ea>
-00001F4C                          1892  *         BTST      #<data>,<ea>
-00001F4C                          1893  
-00001F4C  11FC 0058 100C          1894  BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
-00001F52  6000 F4CE               1895          BRA     FLAGST          Return successful
+00001F4C  11FC 003B 100C          1889  BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
+00001F52  6000 F4CE               1890          BRA     FLAGST          Return successful
+00001F56                          1891  
+00001F56                          1892  * BTST: 0000|REG|100|EMD|ERG (BIT NUMBER DYNAMIC, SPECIFIED IN A REGISTER)
+00001F56                          1893  *       0000100000|EMD|ERG  00000000|_BITNUM_ (BIT NUMBER STATIC, SPECIFIED AS IMMEDIATE DATA)
+00001F56                          1894  * Syntax: BTST      Dn,<ea>
+00001F56                          1895  *         BTST      #<data>,<ea>
 00001F56                          1896  
-00001F56                          1897  * BCC: 0110|COND|_8BTDSP_
-00001F56                          1898  * Syntax: BCC       <label>
-00001F56                          1899  
-00001F56  11FC 006B 100C          1900  BRBCC   MOVE.B  #$6B,(IOOPCD)   Set OP-code name
-00001F5C  6000 F4C4               1901          BRA     FLAGST          Return successful
+00001F56  11FC 0058 100C          1897  BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
+00001F5C  6000 F4C4               1898          BRA     FLAGST          Return successful
+00001F60                          1899  
+00001F60                          1900  * BCC: 0110|COND|_8BTDSP_
+00001F60                          1901  * Syntax: BCC       <label>
 00001F60                          1902  
-00001F60  11FC 006F 100C          1903  BRBEQ   MOVE.B  #$6F,(IOOPCD)   Set OP-code name
+00001F60  11FC 006B 100C          1903  BRBCC   MOVE.B  #$6B,(IOOPCD)   Set OP-code name
 00001F66  6000 F4BA               1904          BRA     FLAGST          Return successful
-00001F6A                          1905          
-00001F6A  11FC 0073 100C          1906  BRBLT   MOVE.B  #$73,(IOOPCD)   Set OP-code name
+00001F6A                          1905  
+00001F6A  11FC 006F 100C          1906  BRBEQ   MOVE.B  #$6F,(IOOPCD)   Set OP-code name
 00001F70  6000 F4B0               1907          BRA     FLAGST          Return successful
-00001F74                          1908  
-00001F74  11FC 0077 100C          1909  BRBNE   MOVE.B  #$77,(IOOPCD)   Set OP-code name
+00001F74                          1908          
+00001F74  11FC 0073 100C          1909  BRBLT   MOVE.B  #$73,(IOOPCD)   Set OP-code name
 00001F7A  6000 F4A6               1910          BRA     FLAGST          Return successful
 00001F7E                          1911  
-00001F7E  11FC 007B 100C          1912  BRBHI   MOVE.B  #$7B,(IOOPCD)   Set OP-code name
+00001F7E  11FC 0077 100C          1912  BRBNE   MOVE.B  #$77,(IOOPCD)   Set OP-code name
 00001F84  6000 F49C               1913          BRA     FLAGST          Return successful
 00001F88                          1914  
-00001F88                          1915  * CMP: 1011|REG|OPM|EMD|ERG
-00001F88                          1916  * Syntax: CMP       <ea>,Dn
-00001F88                          1917  * Note: CMPA is used when the destination is an address register.
-00001F88                          1918  *       CMPI is used when the source is immediate data.
-00001F88                          1919  *       CMPM is used for memory-to-memory compares.
-00001F88                          1920  *       Most assemblers automatically make the distinction.
-00001F88                          1921  
-00001F88  11FC 005D 100C          1922  BRCMP   MOVE.B  #$5D,(IOOPCD)   Set OP-code name
-00001F8E  6000 F492               1923          BRA     FLAGST          Return successful
+00001F88  11FC 007B 100C          1915  BRBHI   MOVE.B  #$7B,(IOOPCD)   Set OP-code name
+00001F8E  6000 F492               1916          BRA     FLAGST          Return successful
+00001F92                          1917  
+00001F92                          1918  * CMP: 1011|REG|OPM|EMD|ERG
+00001F92                          1919  * Syntax: CMP       <ea>,Dn
+00001F92                          1920  * Note: CMPA is used when the destination is an address register.
+00001F92                          1921  *       CMPI is used when the source is immediate data.
+00001F92                          1922  *       CMPM is used for memory-to-memory compares.
+00001F92                          1923  *       Most assemblers automatically make the distinction.
 00001F92                          1924  
-00001F92                          1925  * CMPA: 1011|REG|OPM|EMD|ERG
-00001F92                          1926  * Syntax: CMPA      <ea>,An       
-00001F92                          1927  
-00001F92  11FC 0061 100C          1928  BRCMPA  MOVE.B  #$61,(IOOPCD)   Set OP-code name
-00001F98  6000 F488               1929          BRA     FLAGST          Return successful
+00001F92  11FC 005D 100C          1925  BRCMP   MOVE.B  #$5D,(IOOPCD)   Set OP-code name
+00001F98  6000 F488               1926          BRA     FLAGST          Return successful
+00001F9C                          1927  
+00001F9C                          1928  * CMPA: 1011|REG|OPM|EMD|ERG
+00001F9C                          1929  * Syntax: CMPA      <ea>,An       
 00001F9C                          1930  
-00001F9C                          1931  * CMPI: 00001100|SZ|EMD|ERG
-00001F9C                          1932  * Syntax: CMPI      #<data>,<ea>
-00001F9C                          1933  
-00001F9C  11FC 0066 100C          1934  BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
-00001FA2  6000 F47E               1935          BRA     FLAGST          Return successful
+00001F9C  11FC 0061 100C          1931  BRCMPA  MOVE.B  #$61,(IOOPCD)   Set OP-code name
+00001FA2  6000 F47E               1932          BRA     FLAGST          Return successful
+00001FA6                          1933  
+00001FA6                          1934  * CMPI: 00001100|SZ|EMD|ERG
+00001FA6                          1935  * Syntax: CMPI      #<data>,<ea>
 00001FA6                          1936  
-00001FA6                          1937  * RTS: 0100111001110101
-00001FA6                          1938  * Syntax: RTS
-00001FA6                          1939  
-00001FA6  11FC 0083 100C          1940  BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
-00001FAC  6000 F474               1941          BRA     FLAGST          Return successful
+00001FA6  11FC 0066 100C          1937  BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
+00001FAC  6000 F474               1938          BRA     FLAGST          Return successful
+00001FB0                          1939  
+00001FB0                          1940  * RTS: 0100111001110101
+00001FB0                          1941  * Syntax: RTS
 00001FB0                          1942  
-00001FB0                          1943  * LEA: 0100|REG|111|EMD|ERG
-00001FB0                          1944  * Syntax: LEA       <ea>,An
-00001FB0                          1945  
-00001FB0  11FC 0037 100C          1946  BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
-00001FB6  6100 FED4               1947          BSR     EXDST           Extract destination mode & register
-00001FBA  6100 FD96               1948          BSR     ADVBFR          Advance the buffer accordingly
-00001FBE  6100 FEFE               1949          BSR     EXSRC           Extract source mode & register
-00001FC2  6100 FD8E               1950          BSR     ADVBFR          Advance the buffer accordingly
-00001FC6  6000 F45A               1951          BRA     FLAGST          Return successful
-00001FCA                          1952  
-00001FCA                          1953  * JSR: 0100111010|EMD|ERG
-00001FCA                          1954  * Syntax: JSR       <ea>
-00001FCA                          1955  
-00001FCA  11FC 007F 100C          1956  BRJSR   MOVE.B  #$7F,(IOOPCD)   Set OP-code name
-00001FD0  6000 F450               1957          BRA     FLAGST          Return successful
-00001FD4                          1958          
-00001FD4                          1959  * MOVE: 00|SZ|DRG|DMD|SMD|SRG
-00001FD4                          1960  * Syntax: MOVE      <ea>,<ea>
-00001FD4                          1961  * Note: Most assemblers use MOVEA when the destination is an address register. 
-00001FD4                          1962  *       MOVEQ can be used to move an immediate 8-bit value to a data register. 
-00001FD4                          1963  
-00001FD4  11FC 0000 100C          1964  BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
-00001FDA  3011                    1965          MOVE.W  (A1),D0         Move instruction to D0
-00001FDC  243C 00003000           1966          MOVE.L  #$3000,D2       Extract size at 0011000000000000
-00001FE2  6100 F5AE               1967          BSR     EXTMSK          Get the size to D1
-00001FE6                          1968  
-00001FE6  103C 00FF               1969          MOVE.B  #$FF,D0         Set size to null
-00001FEA  B23C 0001               1970          CMP.B   #%01,D1         01 = Byte
-00001FEE  6604                    1971          BNE.S   *+6             Branch to next test
-00001FF0  103C 0000               1972          MOVE.B  #$0,D0          Set size to byte
-00001FF4  B23C 0003               1973          CMP.B   #%11,D1         11 = Word
+00001FB0  11FC 0083 100C          1943  BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
+00001FB6  6000 F46A               1944          BRA     FLAGST          Return successful
+00001FBA                          1945  
+00001FBA                          1946  * LEA: 0100|REG|111|EMD|ERG
+00001FBA                          1947  * Syntax: LEA       <ea>,An
+00001FBA                          1948  
+00001FBA  11FC 0037 100C          1949  BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
+00001FC0  6100 FED4               1950          BSR     EXDST           Extract destination mode & register
+00001FC4  6100 FD96               1951          BSR     ADVBFR          Advance the buffer accordingly
+00001FC8  6100 FEFE               1952          BSR     EXSRC           Extract source mode & register
+00001FCC  6100 FD8E               1953          BSR     ADVBFR          Advance the buffer accordingly
+00001FD0  6000 F450               1954          BRA     FLAGST          Return successful
+00001FD4                          1955  
+00001FD4                          1956  * JSR: 0100111010|EMD|ERG
+00001FD4                          1957  * Syntax: JSR       <ea>
+00001FD4                          1958  
+00001FD4  11FC 007F 100C          1959  BRJSR   MOVE.B  #$7F,(IOOPCD)   Set OP-code name
+00001FDA  6000 F446               1960          BRA     FLAGST          Return successful
+00001FDE                          1961          
+00001FDE                          1962  * MOVE: 00|SZ|DRG|DMD|SMD|SRG
+00001FDE                          1963  * Syntax: MOVE      <ea>,<ea>
+00001FDE                          1964  * Note: Most assemblers use MOVEA when the destination is an address register. 
+00001FDE                          1965  *       MOVEQ can be used to move an immediate 8-bit value to a data register. 
+00001FDE                          1966  
+00001FDE  11FC 0000 100C          1967  BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
+00001FE4  3011                    1968          MOVE.W  (A1),D0         Move instruction to D0
+00001FE6  243C 00003000           1969          MOVE.L  #$3000,D2       Extract size at 0011000000000000
+00001FEC  6100 F5A4               1970          BSR     EXTMSK          Get the size to D1
+00001FF0                          1971  
+00001FF0  103C 00FF               1972          MOVE.B  #$FF,D0         Set size to null
+00001FF4  B23C 0001               1973          CMP.B   #%01,D1         01 = Byte
 00001FF8  6604                    1974          BNE.S   *+6             Branch to next test
-00001FFA  103C 0001               1975          MOVE.B  #$1,D0          Set size to word
-00001FFE  B23C 0002               1976          CMP.B   #%10,D1         10 = Long
+00001FFA  103C 0000               1975          MOVE.B  #$0,D0          Set size to byte
+00001FFE  B23C 0003               1976          CMP.B   #%11,D1         11 = Word
 00002002  6604                    1977          BNE.S   *+6             Branch to next test
-00002004  103C 0002               1978          MOVE.B  #$2,D0          Set size to long
-00002008  B03C 00FF               1979          CMP.B   #$FF,D0         Test if size was found
-0000200C  6700 F41A               1980          BEQ     FLAGCL          If it was not found, branch to clear flag      
-00002010  11C0 100E               1981          MOVE.B  D0,(IOSIZE)     If it was found, store size in IOSIZE
-00002014                          1982  
-00002014  6100 FE76               1983          BSR     EXDST           Extract dest EA mode & register
-00002018  0C38 0001 10C0          1984          CMP.B   #1,(DMD)        Compare mode to An
-0000201E  6700 001A               1985          BEQ     BRMOVEA         If ==, branch to BRMOVEA
-00002022                          1986          * Dest EA field: "Only data alterable addressing modes can be used [...]."
-00002022  303C 01FD               1987          MOVE.W  #M_DALT,D0      Set data alterable modes as valid
-00002026                          1988          *BSR     TSTAM           Test modes for validity
-00002026                          1989          *BNE     FLAGCL          If not valid, return unsuccessful
-00002026  6100 FD2A               1990          BSR     ADVBFR          Else, advance the buffer accordingly
-0000202A  6100 FE92               1991          BSR     EXSRC           Extract source EA mode & register
-0000202E                          1992          * Source EA field: "All addressing modes can be used [...]."
-0000202E  303C 0FFF               1993          MOVE.W  #M_ALL,D0       Set all modes as valid
-00002032                          1994          *BSR     TSTAM           Test modes for validity
-00002032                          1995          *BNE     FLAGCL          If not valid, return unsuccessful
-00002032  6100 FD1E               1996          BSR     ADVBFR          Else, advance the buffer accordingly
-00002036                          1997  
-00002036  6000 F3EA               1998          BRA     FLAGST          Return successful
-0000203A                          1999  
-0000203A                          2000  
-0000203A                          2001  * MOVEA: 00|SZ|DRG|001|SMD|SRG
-0000203A                          2002  * Syntax: MOVEA     <ea>,An
-0000203A                          2003  
-0000203A  11FC 0005 100C          2004  BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
-00002040  0C38 0000 100E          2005          CMP.B   #0,(IOSIZE)     Compare size to byte
-00002046  6700 F3E0               2006          BEQ     FLAGCL          If ==, size is not valid, return unsuccessful
-0000204A  6100 FD06               2007          BSR     ADVBFR          Else, advance the buffer accordingly
-0000204E  6100 FE6E               2008          BSR     EXSRC           Extract source EA mode & register
-00002052                          2009          * Source EA field: "All addressing modes can be used [...]."
-00002052  303C 0FFF               2010          MOVE.W  #M_ALL,D0       Set all modes as valid (0000011111111111)
-00002056  6100 FCD2               2011          BSR     TSTAM           Test modes for validity
-0000205A  6600 F3CC               2012          BNE     FLAGCL          If not valid, return unsuccessful
-0000205E  6100 FCF2               2013          BSR     ADVBFR          Advance the buffer accordingly
-00002062  6000 F3BE               2014          BRA     FLAGST          Return successful
-00002066                          2015  
-00002066                          2016  * MOVEM: 01001|D|001|S|EMD|ERG
-00002066                          2017  * Syntax: MOVEM     <list>,<ea>
-00002066                          2018  *         MOVEM     <ea>,<list>
-00002066                          2019  
-00002066  11FC 000B 100C          2020  BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
-0000206C  6000 F3B4               2021          BRA     FLAGST          Return successful
+00002004  103C 0001               1978          MOVE.B  #$1,D0          Set size to word
+00002008  B23C 0002               1979          CMP.B   #%10,D1         10 = Long
+0000200C  6604                    1980          BNE.S   *+6             Branch to next test
+0000200E  103C 0002               1981          MOVE.B  #$2,D0          Set size to long
+00002012  B03C 00FF               1982          CMP.B   #$FF,D0         Test if size was found
+00002016  6700 F410               1983          BEQ     FLAGCL          If it was not found, branch to clear flag      
+0000201A  11C0 100E               1984          MOVE.B  D0,(IOSIZE)     If it was found, store size in IOSIZE
+0000201E                          1985  
+0000201E  6100 FE76               1986          BSR     EXDST           Extract dest EA mode & register
+00002022  0C38 0001 10C0          1987          CMP.B   #1,(DMD)        Compare mode to An
+00002028  6700 001A               1988          BEQ     BRMOVEA         If ==, branch to BRMOVEA
+0000202C                          1989          * Dest EA field: "Only data alterable addressing modes can be used [...]."
+0000202C  303C 01FD               1990          MOVE.W  #M_DALT,D0      Set data alterable modes as valid
+00002030                          1991          *BSR     TSTAM           Test modes for validity
+00002030                          1992          *BNE     FLAGCL          If not valid, return unsuccessful
+00002030  6100 FD2A               1993          BSR     ADVBFR          Else, advance the buffer accordingly
+00002034  6100 FE92               1994          BSR     EXSRC           Extract source EA mode & register
+00002038                          1995          * Source EA field: "All addressing modes can be used [...]."
+00002038  303C 0FFF               1996          MOVE.W  #M_ALL,D0       Set all modes as valid
+0000203C                          1997          *BSR     TSTAM           Test modes for validity
+0000203C                          1998          *BNE     FLAGCL          If not valid, return unsuccessful
+0000203C  6100 FD1E               1999          BSR     ADVBFR          Else, advance the buffer accordingly
+00002040                          2000  
+00002040  6000 F3E0               2001          BRA     FLAGST          Return successful
+00002044                          2002  
+00002044                          2003  
+00002044                          2004  * MOVEA: 00|SZ|DRG|001|SMD|SRG
+00002044                          2005  * Syntax: MOVEA     <ea>,An
+00002044                          2006  
+00002044  11FC 0005 100C          2007  BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
+0000204A  0C38 0000 100E          2008          CMP.B   #0,(IOSIZE)     Compare size to byte
+00002050  6700 F3D6               2009          BEQ     FLAGCL          If ==, size is not valid, return unsuccessful
+00002054  6100 FD06               2010          BSR     ADVBFR          Else, advance the buffer accordingly
+00002058  6100 FE6E               2011          BSR     EXSRC           Extract source EA mode & register
+0000205C                          2012          * Source EA field: "All addressing modes can be used [...]."
+0000205C  303C 0FFF               2013          MOVE.W  #M_ALL,D0       Set all modes as valid (0000011111111111)
+00002060  6100 FCD2               2014          BSR     TSTAM           Test modes for validity
+00002064  6600 F3C2               2015          BNE     FLAGCL          If not valid, return unsuccessful
+00002068  6100 FCF2               2016          BSR     ADVBFR          Advance the buffer accordingly
+0000206C  6000 F3B4               2017          BRA     FLAGST          Return successful
+00002070                          2018  
+00002070                          2019  * MOVEM: 01001|D|001|S|EMD|ERG
+00002070                          2020  * Syntax: MOVEM     <list>,<ea>
+00002070                          2021  *         MOVEM     <ea>,<list>
 00002070                          2022  
-00002070                          2023  * MOVEQ: 0111|REG|0|__DATA__
-00002070                          2024  * Syntax: MOVEQ     #<data>,Dn
-00002070                          2025  
-00002070  11FC 008B 100C          2026  BRMOVEQ MOVE.B  #$8B,(IOOPCD)   Set OP-code name
-00002076  6600 F3AA               2027          BNE     FLAGST          Return unsuccessful
+00002070  11FC 000B 100C          2023  BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
+00002076  6000 F3AA               2024          BRA     FLAGST          Return successful
+0000207A                          2025  
+0000207A                          2026  * MOVEQ: 0111|REG|0|__DATA__
+0000207A                          2027  * Syntax: MOVEQ     #<data>,Dn
 0000207A                          2028  
-0000207A                          2029  * ASd: 1110000|d|11|EMD|ERG (memory shifts)
-0000207A                          2030  *      1110|CRG|d|SZ|i|00|REG (register shifts)
-0000207A                          2031  * Syntax: ASd       Dx,Dy
-0000207A                          2032  *         ASd       #<data>,Dy
-0000207A                          2033  *         ASd       <ea>
-0000207A                          2034  
-0000207A                          2035  BRASd   *MOVE.B  #$50,(IOOPCD)   ASL
-0000207A                          2036          *MOVE.B  #$95,(IOOPCD)   ASR
-0000207A  6000 F3A6               2037          BRA     FLAGST          Return successful
-0000207E                          2038  
-0000207E                          2039  * LSd: 1110001|d|11|EMD|ERG (memory shifts)
-0000207E                          2040  *      1110|CRG|d|SZ|i|01|REG (register shifts)
-0000207E                          2041  * Syntax: LSd       Dx,Dy
-0000207E                          2042  *         LSd       #<data>,Dy
-0000207E                          2043  *         LSd       <ea>
-0000207E                          2044  
-0000207E                          2045  BRLSd   *MOVE.B  #$91,(IOOPCD)   LSL
-0000207E                          2046          *MOVE.B  #$54,(IOOPCD)   LSR
-0000207E  6000 F3A2               2047          BRA     FLAGST          Return successful
-00002082                          2048  
-00002082                          2049  * MULU: 1100|REG|011|EMD|ERG (WORD)
-00002082                          2050  *       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
-00002082                          2051  * Syntax: MULU.W    <ea>,Dn    16x16 -> 32
-00002082                          2052  *         MULU.L    <ea>,Dl    32x32 -> 32
-00002082                          2053  *         MULU.L    <ea>,Dh–Dl 32x32 -> 64 
-00002082                          2054  
-00002082  11FC 002D 100C          2055  BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
-00002088  6000 F398               2056          BRA     FLAGST          Return successful
+0000207A  11FC 008B 100C          2029  BRMOVEQ MOVE.B  #$8B,(IOOPCD)   Set OP-code name
+00002080  6600 F3A0               2030          BNE     FLAGST          Return unsuccessful
+00002084                          2031  
+00002084                          2032  * ASd: 1110000|d|11|EMD|ERG (memory shifts)
+00002084                          2033  *      1110|CRG|d|SZ|i|00|REG (register shifts)
+00002084                          2034  * Syntax: ASd       Dx,Dy
+00002084                          2035  *         ASd       #<data>,Dy
+00002084                          2036  *         ASd       <ea>
+00002084                          2037  
+00002084                          2038  BRASd   *MOVE.B  #$50,(IOOPCD)   ASL
+00002084                          2039          *MOVE.B  #$95,(IOOPCD)   ASR
+00002084  6000 F39C               2040          BRA     FLAGST          Return successful
+00002088                          2041  
+00002088                          2042  * LSd: 1110001|d|11|EMD|ERG (memory shifts)
+00002088                          2043  *      1110|CRG|d|SZ|i|01|REG (register shifts)
+00002088                          2044  * Syntax: LSd       Dx,Dy
+00002088                          2045  *         LSd       #<data>,Dy
+00002088                          2046  *         LSd       <ea>
+00002088                          2047  
+00002088                          2048  BRLSd   *MOVE.B  #$91,(IOOPCD)   LSL
+00002088                          2049          *MOVE.B  #$54,(IOOPCD)   LSR
+00002088  6000 F398               2050          BRA     FLAGST          Return successful
+0000208C                          2051  
+0000208C                          2052  * MULU: 1100|REG|011|EMD|ERG (WORD)
+0000208C                          2053  *       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
+0000208C                          2054  * Syntax: MULU.W    <ea>,Dn    16x16 -> 32
+0000208C                          2055  *         MULU.L    <ea>,Dl    32x32 -> 32
+0000208C                          2056  *         MULU.L    <ea>,Dh–Dl 32x32 -> 64 
 0000208C                          2057  
-0000208C                          2058  * DIVS: 1000|REG|111|EMD|ERG (WORD)
-0000208C                          2059  *       0100110001|EMD|ERG  0|RDQ|1|S|0000000|RDR (LONG)
-0000208C                          2060  * Synax: DIVS.W     <ea>,Dn     32/16 -> 16r – 16q
-0000208C                          2061  *        DIVS.L     <ea>,Dq     32/32 -> 32q
-0000208C                          2062  *        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r – 32q
-0000208C                          2063  *        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r – 32q
-0000208C                          2064  
-0000208C  11FC 0032 100C          2065  BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
-00002092  6000 F38E               2066          BRA     FLAGST          Return successful
+0000208C  11FC 002D 100C          2058  BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
+00002092  6000 F38E               2059          BRA     FLAGST          Return successful
+00002096                          2060  
+00002096                          2061  * DIVS: 1000|REG|111|EMD|ERG (WORD)
+00002096                          2062  *       0100110001|EMD|ERG  0|RDQ|1|S|0000000|RDR (LONG)
+00002096                          2063  * Synax: DIVS.W     <ea>,Dn     32/16 -> 16r – 16q
+00002096                          2064  *        DIVS.L     <ea>,Dq     32/32 -> 32q
+00002096                          2065  *        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r – 32q
+00002096                          2066  *        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r – 32q
 00002096                          2067  
-00002096                          2068  * EOR: 1011|REG|OPM|EMD|ERG
-00002096                          2069  * Syntax: EOR       Dn,<ea>
-00002096                          2070  * Note: Memory-to-data-register operations are not allowed.
-00002096                          2071  *       Most assemblers use EORI when the source is immediate data.
-00002096                          2072  
-00002096  11FC 0043 100C          2073  BREOR   MOVE.B  #$43,(IOOPCD)   Set OP-code name
-0000209C  6000 F384               2074          BRA     FLAGST          Return successful
+00002096  11FC 0032 100C          2068  BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
+0000209C  6000 F384               2069          BRA     FLAGST          Return successful
+000020A0                          2070  
+000020A0                          2071  * EOR: 1011|REG|OPM|EMD|ERG
+000020A0                          2072  * Syntax: EOR       Dn,<ea>
+000020A0                          2073  * Note: Memory-to-data-register operations are not allowed.
+000020A0                          2074  *       Most assemblers use EORI when the source is immediate data.
 000020A0                          2075  
-000020A0                          2076  * ORI: 00000000|SZ|EMD|ERG
-000020A0                          2077  * Syntax: ORI       #<data>,<ea>
-000020A0                          2078  
-000020A0  11FC 003F 100C          2079  BRORI   MOVE.B  #$3F,(IOOPCD)   Set OP-code name
-000020A6  6000 F37A               2080          BRA     FLAGST          Return successful
+000020A0  11FC 0043 100C          2076  BREOR   MOVE.B  #$43,(IOOPCD)   Set OP-code name
+000020A6  6000 F37A               2077          BRA     FLAGST          Return successful
+000020AA                          2078  
+000020AA                          2079  * ORI: 00000000|SZ|EMD|ERG
+000020AA                          2080  * Syntax: ORI       #<data>,<ea>
 000020AA                          2081  
-000020AA                          2082  * EORI: 00001010|SZ|EMD|ERG
-000020AA                          2083  * Syntax: EORI      #<data>,<ea>
-000020AA                          2084  
-000020AA  11FC 0047 100C          2085  BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
-000020B0  6000 F370               2086          BRA     FLAGST          Return successful
+000020AA  11FC 003F 100C          2082  BRORI   MOVE.B  #$3F,(IOOPCD)   Set OP-code name
+000020B0  6000 F370               2083          BRA     FLAGST          Return successful
+000020B4                          2084  
+000020B4                          2085  * EORI: 00001010|SZ|EMD|ERG
+000020B4                          2086  * Syntax: EORI      #<data>,<ea>
 000020B4                          2087  
-000020B4                          2088  * NOT: 01000110|SZ|EMD|ERG
-000020B4                          2089  * Syntax:  NOT      <ea>
-000020B4                          2090  
-000020B4  11FC 004C 100C          2091  BRNOT   MOVE.B  #$4C,(IOOPCD)   Set OP-code name
-000020BA  6000 F366               2092          BRA     FLAGST          Return successful
+000020B4  11FC 0047 100C          2088  BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
+000020BA  6000 F366               2089          BRA     FLAGST          Return successful
+000020BE                          2090  
+000020BE                          2091  * NOT: 01000110|SZ|EMD|ERG
+000020BE                          2092  * Syntax:  NOT      <ea>
 000020BE                          2093  
-000020BE                          2094  * SUB: 1001|REG|OPM|EMD|ERG
-000020BE                          2095  * Syntax: SUB       <ea>,Dn
-000020BE                          2096  *         SUB       Dn,<ea>
-000020BE                          2097  * Note: Most assemblers use SUBA when the destination is an address register
-000020BE                          2098  *       and SUBI or SUBQ when the source is immediate data.
-000020BE                          2099  
-000020BE  11FC 001F 100C          2100  BRSUB   MOVE.B  #$1F,(IOOPCD)   Set OP-code name
-000020C4  6000 F35C               2101          BRA     FLAGST          Else, return successful
+000020BE  11FC 004C 100C          2094  BRNOT   MOVE.B  #$4C,(IOOPCD)   Set OP-code name
+000020C4  6000 F35C               2095          BRA     FLAGST          Return successful
+000020C8                          2096  
+000020C8                          2097  * SUB: 1001|REG|OPM|EMD|ERG
+000020C8                          2098  * Syntax: SUB       <ea>,Dn
+000020C8                          2099  *         SUB       Dn,<ea>
+000020C8                          2100  * Note: Most assemblers use SUBA when the destination is an address register
+000020C8                          2101  *       and SUBI or SUBQ when the source is immediate data.
 000020C8                          2102  
-000020C8                          2103  * SUBA: 1001|REG|OPM|EMD|ERG
-000020C8                          2104  * Syntax: SUBA      <ea>,An
-000020C8                          2105  
-000020C8  11FC 0023 100C          2106  BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name 
-000020CE  6000 F352               2107          BRA     FLAGST          Else, return successful
+000020C8  11FC 001F 100C          2103  BRSUB   MOVE.B  #$1F,(IOOPCD)   Set OP-code name
+000020CE  6000 F352               2104          BRA     FLAGST          Else, return successful
+000020D2                          2105  
+000020D2                          2106  * SUBA: 1001|REG|OPM|EMD|ERG
+000020D2                          2107  * Syntax: SUBA      <ea>,An
 000020D2                          2108  
-000020D2                          2109  * SUBI: 0000|0100|SZ|EMD|ERG
-000020D2                          2110  * Syntax: SUBI      #<data>,<ea> 
-000020D2                          2111  
-000020D2  11FC 0028 100C          2112  BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
-000020D8  6000 F348               2113          BRA     FLAGST          Else, return successful
+000020D2  11FC 0023 100C          2109  BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name 
+000020D8  6000 F348               2110          BRA     FLAGST          Else, return successful
+000020DC                          2111  
+000020DC                          2112  * SUBI: 0000|0100|SZ|EMD|ERG
+000020DC                          2113  * Syntax: SUBI      #<data>,<ea> 
 000020DC                          2114  
-000020DC                          2115  * SUBQ: 0101|DAT|1|SZ|EMD|ERG
-000020DC                          2116  * Syntax: SUBQ      #<data>,<ea>
-000020DC                          2117  
-000020DC                          2118          END     START
+000020DC  11FC 0028 100C          2115  BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
+000020E2  6000 F33E               2116          BRA     FLAGST          Else, return successful
+000020E6                          2117  
+000020E6                          2118  * SUBQ: 0101|DAT|1|SZ|EMD|ERG
+000020E6                          2119  * Syntax: SUBQ      #<data>,<ea>
+000020E6                          2120  
+000020E6                          2121          END     START
 
 No errors detected
 No warnings generated
@@ -2136,8 +2139,8 @@ A2H14               14AA
 A2H15               14B0
 A2H16               14B6
 A2HADV              1490
-ADVBFR              1D52
-ADVBSZ              1D88
+ADVBFR              1D5C
+ADVBSZ              1D92
 ASCII2HEX           142E
 B1A                 7452
 B2A                 7458
@@ -2152,39 +2155,39 @@ BB1                 74C0
 BB2                 74C8
 BB3                 74D2
 BB4                 74E2
-BRADD               1EE8
-BRADDA              1F1A
-BRADDI              1F38
-BRADDQ              1F2E
-BRAND               1F42
-BRASD               207A
-BRBAD               1926
-BRBCC               1F56
-BRBEQ               1F60
-BRBHI               1F7E
-BRBLT               1F6A
-BRBNE               1F74
-BRBTST              1F4C
-BRCMP               1F88
-BRCMPA              1F92
-BRCMPI              1F9C
-BRDIVS              208C
-BREOR               2096
-BREORI              20AA
-BRJSR               1FCA
-BRLEA               1FB0
-BRLSD               207E
-BRMOVE              1FD4
-BRMOVEA             203A
-BRMOVEM             2066
-BRMOVEQ             2070
-BRMULU              2082
-BRNOT               20B4
-BRORI               20A0
-BRRTS               1FA6
-BRSUB               20BE
-BRSUBA              20C8
-BRSUBI              20D2
+BRADD               1EF2
+BRADDA              1F24
+BRADDI              1F42
+BRADDQ              1F38
+BRAND               1F4C
+BRASD               2084
+BRBAD               1930
+BRBCC               1F60
+BRBEQ               1F6A
+BRBHI               1F88
+BRBLT               1F74
+BRBNE               1F7E
+BRBTST              1F56
+BRCMP               1F92
+BRCMPA              1F9C
+BRCMPI              1FA6
+BRDIVS              2096
+BREOR               20A0
+BREORI              20B4
+BRJSR               1FD4
+BRLEA               1FBA
+BRLSD               2088
+BRMOVE              1FDE
+BRMOVEA             2044
+BRMOVEM             2070
+BRMOVEQ             207A
+BRMULU              208C
+BRNOT               20BE
+BRORI               20AA
+BRRTS               1FB0
+BRSUB               20C8
+BRSUBA              20D2
+BRSUBI              20DC
 CBITS               0
 CMPMSK              1564
 CR                  D
@@ -2202,16 +2205,16 @@ DISP9               1892
 DISPA               18AE
 DISPB               18D0
 DISPC               18FE
-DISPD               1920
+DISPD               192A
 DISPOP              175A
 DMD                 10C0
 DMDTBL              176A
-DONE                1AE0
+DONE                1AEA
 DRG                 10C1
 DRGTBL              1862
 DSPAX               15AA
 DSPHADV             160A
-DSPHDR              1AC4
+DSPHDR              1ACE
 DSPHST              15F6
 DSPHXA              15B4
 DSPHXL              1614
@@ -2228,8 +2231,8 @@ DSPSTRT             1722
 ELOC                1008
 ERR0                13CA
 ERR1                13ED
-EXDST               1E8C
-EXSRC               1EBE
+EXDST               1E96
+EXSRC               1EC8
 EXTADV              15A4
 EXTLP               1598
 EXTMSK              1592
@@ -2256,7 +2259,7 @@ IOLC                1014
 IOOPCD              100C
 IOOPSZ              10B4
 IOSIZE              100E
-JMPMSK              1AF0
+JMPMSK              1AFA
 JUMP                7526
 LF                  A
 MASK                154A
@@ -2274,23 +2277,23 @@ M_DALT              1FD
 M_DAT               FFD
 M_MALT              1FC
 M_MEM               FFC
-NODST               1A3E
-NOSRC               1A0C
-OP                  1B08
-OP0                 1DF2
-OP1                 1E04
-OP2                 1E16
-OP3                 1E28
-OP4                 1E3A
-OP5                 1E4C
-OP6                 1E5E
-OP7                 1E70
-OP8                 1E82
+NODST               1A48
+NOSRC               1A16
+OP                  1B12
+OP0                 1DFC
+OP1                 1E0E
+OP2                 1E20
+OP3                 1E32
+OP4                 1E44
+OP5                 1E56
+OP6                 1E68
+OP7                 1E7A
+OP8                 1E8C
 OPNAME              1016
-OPSIZE              1DC0
-OPTBL               1DD2
-PAUSE               1AA0
-PRINT               1950
+OPSIZE              1DCA
+OPTBL               1DDC
+PAUSE               1AAA
+PRINT               195A
 PRMPT1              1636
 PRMPT2              169E
 PRMPTDN             16F2
@@ -2301,7 +2304,7 @@ SMD                 10C2
 SRG                 10C3
 START               140E
 TB                  9
-TSTAM               1D2A
+TSTAM               1D34
 TSTMSK              1550
 VBIN1               FFCFCFCF
 VHEX1               FA

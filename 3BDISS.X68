@@ -684,6 +684,9 @@ DISPC   MOVE.B  #'#',D1             Read #
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
         CLR.L   D2
         MOVE.B  (IOSIZE),D2         Read instruction size to D2
+        CMP.B   #0,D2               Test if size is byte
+        BNE     *+6                 If !=, skip next line
+        MOVE.B  #1,D2               If ==, change byte to word
         MULU.W  #2,D2               Translate size to value
         BSR     DSPHXA              Display address
         ADD.L   D2,A1               Advance A1 by instruction size
@@ -1579,6 +1582,7 @@ BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
 * Syntax: SUBQ      #<data>,<ea>
 
         END     START
+
 
 
 
