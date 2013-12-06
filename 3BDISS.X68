@@ -1399,6 +1399,30 @@ BRCMPA  MOVE.B  #$61,(IOOPCD)   Set OP-code name
 * Syntax: CMPI      #<data>,<ea>
 
 BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$00C0,D2       Extract size at 0000000011000000
+        BSR     EXTMSK          Get the size to D1
+
+        CMP.B   #$FF,D1         Test if size was found
+        BEQ     FLAGCL          If it was not found, branch to clear flag      
+        MOVE.B  D1,(IOSIZE)     If it was found, store size in IOSIZE
+
+        * Dest EA field: "Only data alterable addressing modes can be used [...]."
+        MOVE.W  #M_DALT,D0      Set data alterable modes as valid
+        BSR     EXSRC           Extract source EA mode & register 
+        MOVE.B  SMD,(DMD)       The EA mode is the Destination mode
+        MOVE.B  SRG,(DRG)       The EA reg is the Destination reg
+        BSR     ADVBFR          Advance the buffer accordingly
+        * SUBI format is SUBI.(size)  #<data>, <ea>
+        * manually set the Source mode and source register
+        MOVE.B  #$07,(SMD)      Source Mode set to 111
+        MOVE.B  #$04,(SRG)      Register Mode set to 100 #<data>
+        MOVE.B  SRG,D1          Copy SRG to D1 to manipulate
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (SMD),D1        Add mode after reg
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        
+        BSR     ADVBFR          Advance the buffer accordingly
         BRA     FLAGST          Return successful
 
 * RTS: 0100111001110101
