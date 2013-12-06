@@ -40,6 +40,11 @@ VBIN1   EQU %11111111110011111100111111001111
 
 *LEGAL INSTRUCTIONS
 
+    MOVE.B  (6*2,A6,D2),(A4)     (d8,An,Xn),(An)
+    MOVE.W  (79,A6,A1),A5        (d8,An,Xn),An
+    MOVE.L  (5,A0,D2.L),D6       (d8,An,Xn.SIZE),Dn
+    
+
     MOVE.B  VHEX1, D0           <ea>,Dn
     MOVE.W  VHEX2, D1
     MOVE.L  #VHEX3, D2
@@ -709,11 +714,3 @@ JUMP    *For JSR & RTS test
         RTS
 *ILLEGAL INSTRUCTIONS
         NOP         NOP
-
-
-
-
-*~Font name~Courier New~
-*~Font size~10~
-*~Tab type~1~
-*~Tab size~4~
