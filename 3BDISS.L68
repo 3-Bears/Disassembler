@@ -1,6 +1,6 @@
 0000140E Starting Address
 Assembler used: EASy68K Editor/Assembler v5.13.01
-Created On: 12/5/2013 7:51:09 PM
+Created On: 12/5/2013 8:00:45 PM
 
 00000000                             1          INCLUDE 'TEST.x68'
 00007000                             2      ORG    $7000
@@ -1418,37 +1418,37 @@ Created On: 12/5/2013 7:51:09 PM
 00001B26                          1414          * ORI:    00000000XXXXXXXX
 00001B26  343C 0000               1415          MOVE.W  #%0000000000000000,D2
 00001B2A  363C FF00               1416          MOVE.W  #%1111111100000000,D3
-00001B2E  207C 000020BC           1417          MOVE.L  #BRORI,A0
+00001B2E  207C 000020A0           1417          MOVE.L  #BRORI,A0
 00001B34  61BA                    1418          BSR     JMPMSK
 00001B36                          1419  
 00001B36                          1420          * SUBI:   00000100XXXXXXXX
 00001B36  343C 0400               1421          MOVE.W  #%0000010000000000,D2
 00001B3A  363C FB00               1422          MOVE.W  #%1111101100000000,D3
-00001B3E  207C 000020EE           1423          MOVE.L  #BRSUBI,A0
+00001B3E  207C 000020D2           1423          MOVE.L  #BRSUBI,A0
 00001B44  61AA                    1424          BSR     JMPMSK
 00001B46                          1425  
 00001B46                          1426          * ADDI:   00000110XXXXXXXX
 00001B46  343C 0600               1427          MOVE.W  #%0000011000000000,D2
 00001B4A  363C F900               1428          MOVE.W  #%1111100100000000,D3
-00001B4E  207C 00001F44           1429          MOVE.L  #BRADDI,A0
+00001B4E  207C 00001F38           1429          MOVE.L  #BRADDI,A0
 00001B54  619A                    1430          BSR     JMPMSK
 00001B56                          1431  
 00001B56                          1432          * BTST:   0000100000XXXXXX
 00001B56  343C 0800               1433          MOVE.W  #%0000100000000000,D2
 00001B5A  363C F7C0               1434          MOVE.W  #%1111011111000000,D3
-00001B5E  207C 00001F58           1435          MOVE.L  #BRBTST,A0
+00001B5E  207C 00001F4C           1435          MOVE.L  #BRBTST,A0
 00001B64  618A                    1436          BSR     JMPMSK
 00001B66                          1437  
 00001B66                          1438          * EORI:   00001010XXXXXXXX
 00001B66  343C 0A00               1439          MOVE.W  #%0000101000000000,D2
 00001B6A  363C F500               1440          MOVE.W  #%1111010100000000,D3
-00001B6E  207C 000020C6           1441          MOVE.L  #BREORI,A0
+00001B6E  207C 000020AA           1441          MOVE.L  #BREORI,A0
 00001B74  6100 FF7A               1442          BSR     JMPMSK
 00001B78                          1443  
 00001B78                          1444          * CMPI:   00001100XXXXXXXX
 00001B78  343C 0C00               1445          MOVE.W  #%0000110000000000,D2
 00001B7C  363C F300               1446          MOVE.W  #%1111001100000000,D3
-00001B80  207C 00001FA8           1447          MOVE.L  #BRCMPI,A0
+00001B80  207C 00001F9C           1447          MOVE.L  #BRCMPI,A0
 00001B86  6100 FF68               1448          BSR     JMPMSK
 00001B8A                          1449  *-----
 00001B8A                          1450  * 0001
@@ -1456,7 +1456,7 @@ Created On: 12/5/2013 7:51:09 PM
 00001B8A                          1452          * MOVE.B: 0001XXXXXXXXXXXX
 00001B8A  343C 1000               1453          MOVE.W  #%0001000000000000,D2
 00001B8E  363C E000               1454          MOVE.W  #%1110000000000000,D3
-00001B92  207C 00001FE0           1455          MOVE.L  #BRMOVE,A0
+00001B92  207C 00001FD4           1455          MOVE.L  #BRMOVE,A0
 00001B98  6100 FF56               1456          BSR     JMPMSK
 00001B9C                          1457  *-----
 00001B9C                          1458  * 0010
@@ -1478,43 +1478,43 @@ Created On: 12/5/2013 7:51:09 PM
 00001BB4                          1474          * NOT:    01000110XXXXXXXX
 00001BB4  343C 4600               1475          MOVE.W  #%0100011000000000,D2
 00001BB8  363C B900               1476          MOVE.W  #%1011100100000000,D3
-00001BBC  207C 000020D0           1477          MOVE.L  #BRNOT,A0
+00001BBC  207C 000020B4           1477          MOVE.L  #BRNOT,A0
 00001BC2  6100 FF2C               1478          BSR     JMPMSK
 00001BC6                          1479  
 00001BC6                          1480          * MULU:   0100110000XXXXXX
 00001BC6  343C 4C00               1481          MOVE.W  #%0100110000000000,D2
 00001BCA  363C B3C0               1482          MOVE.W  #%1011001111000000,D3
-00001BCE  207C 0000209E           1483          MOVE.L  #BRMULU,A0
+00001BCE  207C 00002082           1483          MOVE.L  #BRMULU,A0
 00001BD4  6100 FF1A               1484          BSR     JMPMSK
 00001BD8                          1485  
 00001BD8                          1486          * DIVS:   0100110001XXXXXX
 00001BD8  343C 4C40               1487          MOVE.W  #%0100110001000000,D2
 00001BDC  363C B380               1488          MOVE.W  #%1011001110000000,D3
-00001BE0  207C 000020A8           1489          MOVE.L  #BRDIVS,A0
+00001BE0  207C 0000208C           1489          MOVE.L  #BRDIVS,A0
 00001BE6  6100 FF08               1490          BSR     JMPMSK
 00001BEA                          1491  
 00001BEA                          1492          * MOVEM:  01001X001XXXXXXX
 00001BEA  343C 4880               1493          MOVE.W  #%0100100010000000,D2
 00001BEE  363C B300               1494          MOVE.W  #%1011001100000000,D3
-00001BF2  207C 00002082           1495          MOVE.L  #BRMOVEM,A0
+00001BF2  207C 00002066           1495          MOVE.L  #BRMOVEM,A0
 00001BF8  6100 FEF6               1496          BSR     JMPMSK
 00001BFC                          1497  
 00001BFC                          1498          * RTS:    0100111001110101
 00001BFC  343C 4E75               1499          MOVE.W  #%0100111001110101,D2
 00001C00  363C B18A               1500          MOVE.W  #%1011000110001010,D3
-00001C04  207C 00001FB2           1501          MOVE.L  #BRRTS,A0
+00001C04  207C 00001FA6           1501          MOVE.L  #BRRTS,A0
 00001C0A  6100 FEE4               1502          BSR     JMPMSK
 00001C0E                          1503  
 00001C0E                          1504          * JSR:    0100111010XXXXXX
 00001C0E  343C 4E80               1505          MOVE.W  #%0100111010000000,D2
 00001C12  363C B140               1506          MOVE.W  #%1011000101000000,D3
-00001C16  207C 00001FD6           1507          MOVE.L  #BRJSR,A0
+00001C16  207C 00001FCA           1507          MOVE.L  #BRJSR,A0
 00001C1C  6100 FED2               1508          BSR     JMPMSK
 00001C20                          1509  
 00001C20                          1510          * LEA:    0100XXX111XXXXXX
 00001C20  343C 41C0               1511          MOVE.W  #%0100000111000000,D2
 00001C24  363C B000               1512          MOVE.W  #%1011000000000000,D3
-00001C28  207C 00001FBC           1513          MOVE.L  #BRLEA,A0
+00001C28  207C 00001FB0           1513          MOVE.L  #BRLEA,A0
 00001C2E  6100 FEC0               1514          BSR     JMPMSK
 00001C32                          1515  *-----
 00001C32                          1516  * 0101
@@ -1522,7 +1522,7 @@ Created On: 12/5/2013 7:51:09 PM
 00001C32                          1518          * ADDQ:   0101XXX0XXXXXXXX
 00001C32  343C 5000               1519          MOVE.W  #%0101000000000000,D2
 00001C36  363C A100               1520          MOVE.W  #%1010000100000000,D3
-00001C3A  207C 00001F3A           1521          MOVE.L  #BRADDQ,A0
+00001C3A  207C 00001F2E           1521          MOVE.L  #BRADDQ,A0
 00001C40  6100 FEAE               1522          BSR     JMPMSK
 00001C44                          1523  *-----
 00001C44                          1524  * 0110
@@ -1530,7 +1530,7 @@ Created On: 12/5/2013 7:51:09 PM
 00001C44                          1526          * BCC:    01100000XXXXXXXX
 00001C44  343C 6000               1527          MOVE.W  #%0110000000000000,D2
 00001C48  363C 9F00               1528          MOVE.W  #%1001111100000000,D3
-00001C4C  207C 00001F62           1529          MOVE.L  #BRBCC,A0
+00001C4C  207C 00001F56           1529          MOVE.L  #BRBCC,A0
 00001C52  6100 FE9C               1530          BSR     JMPMSK
 00001C56                          1531  *-----
 00001C56                          1532  * 0111
@@ -1538,7 +1538,7 @@ Created On: 12/5/2013 7:51:09 PM
 00001C56                          1534          * MOVEQ:  0111XXX0XXXXXXXX
 00001C56  343C 7000               1535          MOVE.W  #%0111000000000000,D2
 00001C5A  363C 8100               1536          MOVE.W  #%1000000100000000,D3
-00001C5E  207C 0000208C           1537          MOVE.L  #BRMOVEQ,A0
+00001C5E  207C 00002070           1537          MOVE.L  #BRMOVEQ,A0
 00001C64  6100 FE8A               1538          BSR     JMPMSK
 00001C68                          1539  *-----
 00001C68                          1540  * 1000
@@ -1546,7 +1546,7 @@ Created On: 12/5/2013 7:51:09 PM
 00001C68                          1542          * DIVS:   1000XXX111XXXXXX
 00001C68  343C 81C0               1543          MOVE.W  #%1000000111000000,D2
 00001C6C  363C 7000               1544          MOVE.W  #%0111000000000000,D3
-00001C70  207C 000020A8           1545          MOVE.L  #BRDIVS,A0
+00001C70  207C 0000208C           1545          MOVE.L  #BRDIVS,A0
 00001C76  6100 FE78               1546          BSR     JMPMSK
 00001C7A                          1547  *-----
 00001C7A                          1548  * 1001
@@ -1554,7 +1554,7 @@ Created On: 12/5/2013 7:51:09 PM
 00001C7A                          1550          * SUB:    1001XXXXXXXXXXXX
 00001C7A  343C 9000               1551          MOVE.W  #%1001000000000000,D2
 00001C7E  363C 6000               1552          MOVE.W  #%0110000000000000,D3
-00001C82  207C 000020DA           1553          MOVE.L  #BRSUB,A0
+00001C82  207C 000020BE           1553          MOVE.L  #BRSUB,A0
 00001C88  6100 FE66               1554          BSR     JMPMSK
 00001C8C                          1555  *-----
 00001C8C                          1556  * 1010
@@ -1565,11 +1565,11 @@ Created On: 12/5/2013 7:51:09 PM
 00001C8C                          1561          * CMP:    1011XXXXXXXXXXXX
 00001C8C  343C B000               1562          MOVE.W  #%1011000000000000,D2
 00001C90  363C 4000               1563          MOVE.W  #%0100000000000000,D3
-00001C94  207C 00001F94           1564          MOVE.L  #BRCMP,A0
+00001C94  207C 00001F88           1564          MOVE.L  #BRCMP,A0
 00001C9A  6100 FE54               1565          BSR     JMPMSK
 00001C9E                          1566  
 00001C9E                          1567          * EOR:    1011XXXXXXXXXXXX
-00001C9E  207C 000020B2           1568          MOVE.L  #BREOR,A0
+00001C9E  207C 00002096           1568          MOVE.L  #BREOR,A0
 00001CA4  6100 FE4A               1569          BSR     JMPMSK
 00001CA8                          1570  *-----
 00001CA8                          1571  * 1100
@@ -1577,13 +1577,13 @@ Created On: 12/5/2013 7:51:09 PM
 00001CA8                          1573          * AND:    1100XXXXXXXXXXXX
 00001CA8  343C C000               1574          MOVE.W  #%1100000000000000,D2
 00001CAC  363C 3000               1575          MOVE.W  #%0011000000000000,D3
-00001CB0  207C 00001F4E           1576          MOVE.L  #BRAND,A0
+00001CB0  207C 00001F42           1576          MOVE.L  #BRAND,A0
 00001CB6  6100 FE38               1577          BSR     JMPMSK
 00001CBA                          1578  
 00001CBA                          1579          * MULU:   1100XXX011XXXXXX
 00001CBA  343C C0C0               1580          MOVE.W  #%1100000011000000,D2
 00001CBE  363C 3100               1581          MOVE.W  #%0011000100000000,D3
-00001CC2  207C 0000209E           1582          MOVE.L  #BRMULU,A0
+00001CC2  207C 00002082           1582          MOVE.L  #BRMULU,A0
 00001CC8  6100 FE26               1583          BSR     JMPMSK
 00001CCC                          1584  *-----
 00001CCC                          1585  * 1101
@@ -1599,25 +1599,25 @@ Created On: 12/5/2013 7:51:09 PM
 00001CDE                          1595          * ASL/ASR:1110XXXXXXX00XXX
 00001CDE  343C E000               1596          MOVE.W  #%1110000000000000,D2
 00001CE2  363C 1018               1597          MOVE.W  #%0001000000011000,D3
-00001CE6  207C 00002096           1598          MOVE.L  #BRASd,A0
+00001CE6  207C 0000207A           1598          MOVE.L  #BRASd,A0
 00001CEC  6100 FE02               1599          BSR     JMPMSK
 00001CF0                          1600  
 00001CF0                          1601          * LSL/LSR:1110XXXXXXX01XXX
 00001CF0  343C E008               1602          MOVE.W  #%1110000000001000,D2
 00001CF4  363C 1010               1603          MOVE.W  #%0001000000010000,D3
-00001CF8  207C 0000209A           1604          MOVE.L  #BRLSd,A0
+00001CF8  207C 0000207E           1604          MOVE.L  #BRLSd,A0
 00001CFE  6100 FDF0               1605          BSR     JMPMSK
 00001D02                          1606  
 00001D02                          1607          * ASL/ASR:1110000X11XXXXXX
 00001D02  343C E0C0               1608          MOVE.W  #%1110000011000000,D2
 00001D06  363C 1E00               1609          MOVE.W  #%0001111000000000,D3
-00001D0A  207C 00002096           1610          MOVE.L  #BRASd,A0
+00001D0A  207C 0000207A           1610          MOVE.L  #BRASd,A0
 00001D10  6100 FDDE               1611          BSR     JMPMSK
 00001D14                          1612  
 00001D14                          1613          * LSL/LSR:1110001X11XXXXXX
 00001D14  343C E2C0               1614          MOVE.W  #%1110001011000000,D2
 00001D18  363C 1C00               1615          MOVE.W  #%0001110000000000,D3
-00001D1C  207C 0000209A           1616          MOVE.L  #BRLSd,A0
+00001D1C  207C 0000207E           1616          MOVE.L  #BRLSd,A0
 00001D22  6100 FDCC               1617          BSR     JMPMSK
 00001D26                          1618  *-----
 00001D26                          1619  * 1111
@@ -1847,279 +1847,279 @@ Created On: 12/5/2013 7:51:09 PM
 00001F04  303C 0FFF               1843          MOVE.W  #M_ALL,D0       Set all modes as valid
 00001F08                          1844          * "ADDA is used when the destination is an address register."
 00001F08  B43C 0002               1845          CMP.B   #2,D2           Compare operation to An
-00001F0C  6700 0010               1846          BEQ     BRADDA          If ==, branch to BRADDA
+00001F0C  6700 000C               1846          BEQ     BRADDA          If ==, branch to BRADDA
 00001F10                          1847  
 00001F10  61AC                    1848          BSR     EXSRC           Extract EA mode & register
 00001F12                          1849          *BSR     TSTAM           Test modes for validity
-00001F12  6600 F514               1850          BNE     FLAGCL          If not valid, return unsuccessful
-00001F16  6100 FE3A               1851          BSR     ADVBFR          Else, advance the buffer accordingly
-00001F1A  6000 F506               1852          BRA     FLAGST          Return return successful
-00001F1E                          1853  
-00001F1E                          1854  
-00001F1E                          1855  * ADDA: 1101|REG|OPM|EMD|ERG
-00001F1E                          1856  * Syntax: ADDA      <ea>,An
-00001F1E                          1857  
-00001F1E  11FC 0015 100C          1858  BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
-00001F24                          1859          * "All addressing modes can be used [...]."
-00001F24  303C 0FFF               1860          MOVE.W  #M_ALL,D0       Set all modes as valid
-00001F28  6194                    1861          BSR     EXSRC           Extract EA mode & register
-00001F2A  6100 FDFE               1862          BSR     TSTAM           Test modes for validity
-00001F2E  6600 F4F8               1863          BNE     FLAGCL          If not valid, return unsuccessful
-00001F32  6100 FE1E               1864          BSR     ADVBFR          Else, advance the buffer accordingly
-00001F36  6000 F4EA               1865          BRA     FLAGST          Return successful
-00001F3A                          1866  
-00001F3A                          1867  * ADDQ: 0101|DAT|0|SZ|EMD|ERG
-00001F3A                          1868  * Syntax: ADDQ      #<data>,<ea>
-00001F3A                          1869  
-00001F3A  11FC 001A 100C          1870  BRADDQ  MOVE.B  #$1A,(IOOPCD)   Set OP-code name
-00001F40  6000 F4E0               1871          BRA     FLAGST          Return successful
-00001F44                          1872  
-00001F44                          1873  * ADDI: 000000110|SZ|EMD|ERG
-00001F44                          1874  * Syntax: ADDI      #<data>,<ea>
-00001F44                          1875  
-00001F44  11FC 0099 100C          1876  BRADDI  MOVE.B  #$99,(IOOPCD)   Set OP-code name
-00001F4A  6000 F4D6               1877          BRA     FLAGST          Return successful
-00001F4E                          1878  
-00001F4E                          1879  * AND: 1100|REG|OPM|EMD|ERG
-00001F4E                          1880  * Syntax: AND       <ea>,Dn
-00001F4E                          1881  *         AND       Dn,<ea>
-00001F4E                          1882  * Note: The Dn mode is used when the destination is a data register;
-00001F4E                          1883  *       the destination < ea > mode is invalid for a data register. 
-00001F4E                          1884  *       Most assemblers use ANDI when the source is immediate data.
-00001F4E                          1885  
-00001F4E  11FC 003B 100C          1886  BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
-00001F54  6000 F4CC               1887          BRA     FLAGST          Return successful
-00001F58                          1888  
-00001F58                          1889  * BTST: 0000|REG|100|EMD|ERG (BIT NUMBER DYNAMIC, SPECIFIED IN A REGISTER)
-00001F58                          1890  *       0000100000|EMD|ERG  00000000|_BITNUM_ (BIT NUMBER STATIC, SPECIFIED AS IMMEDIATE DATA)
-00001F58                          1891  * Syntax: BTST      Dn,<ea>
-00001F58                          1892  *         BTST      #<data>,<ea>
-00001F58                          1893  
-00001F58  11FC 0058 100C          1894  BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
-00001F5E  6000 F4C2               1895          BRA     FLAGST          Return successful
-00001F62                          1896  
-00001F62                          1897  * BCC: 0110|COND|_8BTDSP_
-00001F62                          1898  * Syntax: BCC       <label>
-00001F62                          1899  
-00001F62  11FC 006B 100C          1900  BRBCC   MOVE.B  #$6B,(IOOPCD)   Set OP-code name
-00001F68  6000 F4B8               1901          BRA     FLAGST          Return successful
-00001F6C                          1902  
-00001F6C  11FC 006F 100C          1903  BRBEQ   MOVE.B  #$6F,(IOOPCD)   Set OP-code name
-00001F72  6000 F4AE               1904          BRA     FLAGST          Return successful
-00001F76                          1905          
-00001F76  11FC 0073 100C          1906  BRBLT   MOVE.B  #$73,(IOOPCD)   Set OP-code name
-00001F7C  6000 F4A4               1907          BRA     FLAGST          Return successful
-00001F80                          1908  
-00001F80  11FC 0077 100C          1909  BRBNE   MOVE.B  #$77,(IOOPCD)   Set OP-code name
-00001F86  6000 F49A               1910          BRA     FLAGST          Return successful
-00001F8A                          1911  
-00001F8A  11FC 007B 100C          1912  BRBHI   MOVE.B  #$7B,(IOOPCD)   Set OP-code name
-00001F90  6000 F490               1913          BRA     FLAGST          Return successful
-00001F94                          1914  
-00001F94                          1915  * CMP: 1011|REG|OPM|EMD|ERG
-00001F94                          1916  * Syntax: CMP       <ea>,Dn
-00001F94                          1917  * Note: CMPA is used when the destination is an address register.
-00001F94                          1918  *       CMPI is used when the source is immediate data.
-00001F94                          1919  *       CMPM is used for memory-to-memory compares.
-00001F94                          1920  *       Most assemblers automatically make the distinction.
-00001F94                          1921  
-00001F94  11FC 005D 100C          1922  BRCMP   MOVE.B  #$5D,(IOOPCD)   Set OP-code name
-00001F9A  6000 F486               1923          BRA     FLAGST          Return successful
-00001F9E                          1924  
-00001F9E                          1925  * CMPA: 1011|REG|OPM|EMD|ERG
-00001F9E                          1926  * Syntax: CMPA      <ea>,An       
-00001F9E                          1927  
-00001F9E  11FC 0061 100C          1928  BRCMPA  MOVE.B  #$61,(IOOPCD)   Set OP-code name
-00001FA4  6000 F47C               1929          BRA     FLAGST          Return successful
-00001FA8                          1930  
-00001FA8                          1931  * CMPI: 00001100|SZ|EMD|ERG
-00001FA8                          1932  * Syntax: CMPI      #<data>,<ea>
-00001FA8                          1933  
-00001FA8  11FC 0066 100C          1934  BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
-00001FAE  6000 F472               1935          BRA     FLAGST          Return successful
-00001FB2                          1936  
-00001FB2                          1937  * RTS: 0100111001110101
-00001FB2                          1938  * Syntax: RTS
-00001FB2                          1939  
-00001FB2  11FC 0083 100C          1940  BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
-00001FB8  6000 F468               1941          BRA     FLAGST          Return successful
-00001FBC                          1942  
-00001FBC                          1943  * LEA: 0100|REG|111|EMD|ERG
-00001FBC                          1944  * Syntax: LEA       <ea>,An
-00001FBC                          1945  
-00001FBC  11FC 0037 100C          1946  BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
-00001FC2  6100 FEC8               1947          BSR     EXDST           Extract destination mode & register
-00001FC6  6100 FD8A               1948          BSR     ADVBFR          Advance the buffer accordingly
-00001FCA  6100 FEF2               1949          BSR     EXSRC           Extract source mode & register
-00001FCE  6100 FD82               1950          BSR     ADVBFR          Advance the buffer accordingly
-00001FD2  6000 F44E               1951          BRA     FLAGST          Return successful
-00001FD6                          1952  
-00001FD6                          1953  * JSR: 0100111010|EMD|ERG
-00001FD6                          1954  * Syntax: JSR       <ea>
-00001FD6                          1955  
-00001FD6  11FC 007F 100C          1956  BRJSR   MOVE.B  #$7F,(IOOPCD)   Set OP-code name
-00001FDC  6000 F444               1957          BRA     FLAGST          Return successful
-00001FE0                          1958          
-00001FE0                          1959  * MOVE: 00|SZ|DRG|DMD|SMD|SRG
-00001FE0                          1960  * Syntax: MOVE      <ea>,<ea>
-00001FE0                          1961  * Note: Most assemblers use MOVEA when the destination is an address register. 
-00001FE0                          1962  *       MOVEQ can be used to move an immediate 8-bit value to a data register. 
-00001FE0                          1963  
-00001FE0  11FC 0000 100C          1964  BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
-00001FE6  3011                    1965          MOVE.W  (A1),D0         Move instruction to D0
-00001FE8  243C 00003000           1966          MOVE.L  #$3000,D2       Extract size at 0011000000000000
-00001FEE  6100 F5A2               1967          BSR     EXTMSK          Get the size to D1
-00001FF2                          1968  
-00001FF2  103C 00FF               1969          MOVE.B  #$FF,D0         Set size to null
-00001FF6  B23C 0001               1970          CMP.B   #%01,D1         01 = Byte
-00001FFA  6604                    1971          BNE.S   *+6             Branch to next test
-00001FFC  103C 0000               1972          MOVE.B  #$0,D0          Set size to byte
-00002000  B23C 0003               1973          CMP.B   #%11,D1         11 = Word
-00002004  6604                    1974          BNE.S   *+6             Branch to next test
-00002006  103C 0001               1975          MOVE.B  #$1,D0          Set size to word
-0000200A  B23C 0002               1976          CMP.B   #%10,D1         10 = Long
-0000200E  6604                    1977          BNE.S   *+6             Branch to next test
-00002010  103C 0002               1978          MOVE.B  #$2,D0          Set size to long
-00002014  B03C 00FF               1979          CMP.B   #$FF,D0         Test if size was found
-00002018  6700 F40E               1980          BEQ     FLAGCL          If it was not found, branch to clear flag      
-0000201C  11C0 100E               1981          MOVE.B  D0,(IOSIZE)     If it was found, store size in IOSIZE
-00002020                          1982  
-00002020  6100 FE6A               1983          BSR     EXDST           Extract dest EA mode & register
-00002024  0C38 0001 10C0          1984          CMP.B   #1,(DMD)        Compare mode to An
-0000202A  6700 002A               1985          BEQ     BRMOVEA         If ==, branch to BRMOVEA
-0000202E                          1986          * Dest EA field: "Only data alterable addressing modes can be used [...]."
-0000202E  303C 01FD               1987          MOVE.W  #M_DALT,D0      Set data alterable modes as valid
-00002032  6100 FCF6               1988          BSR     TSTAM           Test modes for validity
-00002036  6600 F3F0               1989          BNE     FLAGCL          If not valid, return unsuccessful
-0000203A  6100 FD16               1990          BSR     ADVBFR          Else, advance the buffer accordingly
-0000203E  6100 FE7E               1991          BSR     EXSRC           Extract source EA mode & register
-00002042                          1992          * Source EA field: "All addressing modes can be used [...]."
-00002042  303C 0FFF               1993          MOVE.W  #M_ALL,D0       Set all modes as valid
-00002046  6100 FCE2               1994          BSR     TSTAM           Test modes for validity
-0000204A  6600 F3DC               1995          BNE     FLAGCL          If not valid, return unsuccessful
-0000204E  6100 FD02               1996          BSR     ADVBFR          Else, advance the buffer accordingly
-00002052                          1997  
-00002052  6000 F3CE               1998          BRA     FLAGST          Return successful
-00002056                          1999  
-00002056                          2000  
-00002056                          2001  * MOVEA: 00|SZ|DRG|001|SMD|SRG
-00002056                          2002  * Syntax: MOVEA     <ea>,An
-00002056                          2003  
-00002056  11FC 0005 100C          2004  BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
-0000205C  0C38 0000 100E          2005          CMP.B   #0,(IOSIZE)     Compare size to byte
-00002062  6700 F3C4               2006          BEQ     FLAGCL          If ==, size is not valid, return unsuccessful
-00002066  6100 FCEA               2007          BSR     ADVBFR          Else, advance the buffer accordingly
-0000206A  6100 FE52               2008          BSR     EXSRC           Extract source EA mode & register
-0000206E                          2009          * Source EA field: "All addressing modes can be used [...]."
-0000206E  303C 0FFF               2010          MOVE.W  #M_ALL,D0       Set all modes as valid (0000011111111111)
-00002072  6100 FCB6               2011          BSR     TSTAM           Test modes for validity
-00002076  6600 F3B0               2012          BNE     FLAGCL          If not valid, return unsuccessful
-0000207A  6100 FCD6               2013          BSR     ADVBFR          Advance the buffer accordingly
-0000207E  6000 F3A2               2014          BRA     FLAGST          Return successful
-00002082                          2015  
-00002082                          2016  * MOVEM: 01001|D|001|S|EMD|ERG
-00002082                          2017  * Syntax: MOVEM     <list>,<ea>
-00002082                          2018  *         MOVEM     <ea>,<list>
-00002082                          2019  
-00002082  11FC 000B 100C          2020  BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
-00002088  6000 F398               2021          BRA     FLAGST          Return successful
-0000208C                          2022  
-0000208C                          2023  * MOVEQ: 0111|REG|0|__DATA__
-0000208C                          2024  * Syntax: MOVEQ     #<data>,Dn
-0000208C                          2025  
-0000208C  11FC 008B 100C          2026  BRMOVEQ MOVE.B  #$8B,(IOOPCD)   Set OP-code name
-00002092  6600 F38E               2027          BNE     FLAGST          Return unsuccessful
-00002096                          2028  
-00002096                          2029  * ASd: 1110000|d|11|EMD|ERG (memory shifts)
-00002096                          2030  *      1110|CRG|d|SZ|i|00|REG (register shifts)
-00002096                          2031  * Syntax: ASd       Dx,Dy
-00002096                          2032  *         ASd       #<data>,Dy
-00002096                          2033  *         ASd       <ea>
-00002096                          2034  
-00002096                          2035  BRASd   *MOVE.B  #$50,(IOOPCD)   ASL
-00002096                          2036          *MOVE.B  #$95,(IOOPCD)   ASR
-00002096  6000 F38A               2037          BRA     FLAGST          Return successful
-0000209A                          2038  
-0000209A                          2039  * LSd: 1110001|d|11|EMD|ERG (memory shifts)
-0000209A                          2040  *      1110|CRG|d|SZ|i|01|REG (register shifts)
-0000209A                          2041  * Syntax: LSd       Dx,Dy
-0000209A                          2042  *         LSd       #<data>,Dy
-0000209A                          2043  *         LSd       <ea>
-0000209A                          2044  
-0000209A                          2045  BRLSd   *MOVE.B  #$91,(IOOPCD)   LSL
-0000209A                          2046          *MOVE.B  #$54,(IOOPCD)   LSR
-0000209A  6000 F386               2047          BRA     FLAGST          Return successful
-0000209E                          2048  
-0000209E                          2049  * MULU: 1100|REG|011|EMD|ERG (WORD)
-0000209E                          2050  *       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
-0000209E                          2051  * Syntax: MULU.W    <ea>,Dn    16x16 -> 32
-0000209E                          2052  *         MULU.L    <ea>,Dl    32x32 -> 32
-0000209E                          2053  *         MULU.L    <ea>,Dh–Dl 32x32 -> 64 
-0000209E                          2054  
-0000209E  11FC 002D 100C          2055  BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
-000020A4  6000 F37C               2056          BRA     FLAGST          Return successful
-000020A8                          2057  
-000020A8                          2058  * DIVS: 1000|REG|111|EMD|ERG (WORD)
-000020A8                          2059  *       0100110001|EMD|ERG  0|RDQ|1|S|0000000|RDR (LONG)
-000020A8                          2060  * Synax: DIVS.W     <ea>,Dn     32/16 -> 16r – 16q
-000020A8                          2061  *        DIVS.L     <ea>,Dq     32/32 -> 32q
-000020A8                          2062  *        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r – 32q
-000020A8                          2063  *        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r – 32q
-000020A8                          2064  
-000020A8  11FC 0032 100C          2065  BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
-000020AE  6000 F372               2066          BRA     FLAGST          Return successful
-000020B2                          2067  
-000020B2                          2068  * EOR: 1011|REG|OPM|EMD|ERG
-000020B2                          2069  * Syntax: EOR       Dn,<ea>
-000020B2                          2070  * Note: Memory-to-data-register operations are not allowed.
-000020B2                          2071  *       Most assemblers use EORI when the source is immediate data.
-000020B2                          2072  
-000020B2  11FC 0043 100C          2073  BREOR   MOVE.B  #$43,(IOOPCD)   Set OP-code name
-000020B8  6000 F368               2074          BRA     FLAGST          Return successful
-000020BC                          2075  
-000020BC                          2076  * ORI: 00000000|SZ|EMD|ERG
-000020BC                          2077  * Syntax: ORI       #<data>,<ea>
-000020BC                          2078  
-000020BC  11FC 003F 100C          2079  BRORI   MOVE.B  #$3F,(IOOPCD)   Set OP-code name
-000020C2  6000 F35E               2080          BRA     FLAGST          Return successful
-000020C6                          2081  
-000020C6                          2082  * EORI: 00001010|SZ|EMD|ERG
-000020C6                          2083  * Syntax: EORI      #<data>,<ea>
-000020C6                          2084  
-000020C6  11FC 0047 100C          2085  BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
-000020CC  6000 F354               2086          BRA     FLAGST          Return successful
-000020D0                          2087  
-000020D0                          2088  * NOT: 01000110|SZ|EMD|ERG
-000020D0                          2089  * Syntax:  NOT      <ea>
-000020D0                          2090  
-000020D0  11FC 004C 100C          2091  BRNOT   MOVE.B  #$4C,(IOOPCD)   Set OP-code name
-000020D6  6000 F34A               2092          BRA     FLAGST          Return successful
-000020DA                          2093  
-000020DA                          2094  * SUB: 1001|REG|OPM|EMD|ERG
-000020DA                          2095  * Syntax: SUB       <ea>,Dn
-000020DA                          2096  *         SUB       Dn,<ea>
-000020DA                          2097  * Note: Most assemblers use SUBA when the destination is an address register
-000020DA                          2098  *       and SUBI or SUBQ when the source is immediate data.
-000020DA                          2099  
-000020DA  11FC 001F 100C          2100  BRSUB   MOVE.B  #$1F,(IOOPCD)   Set OP-code name
-000020E0  6000 F340               2101          BRA     FLAGST          Else, return successful
-000020E4                          2102  
-000020E4                          2103  * SUBA: 1001|REG|OPM|EMD|ERG
-000020E4                          2104  * Syntax: SUBA      <ea>,An
-000020E4                          2105  
-000020E4  11FC 0023 100C          2106  BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name 
-000020EA  6000 F336               2107          BRA     FLAGST          Else, return successful
-000020EE                          2108  
-000020EE                          2109  * SUBI: 0000|0100|SZ|EMD|ERG
-000020EE                          2110  * Syntax: SUBI      #<data>,<ea> 
-000020EE                          2111  
-000020EE  11FC 0028 100C          2112  BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
-000020F4  6000 F32C               2113          BRA     FLAGST          Else, return successful
-000020F8                          2114  
-000020F8                          2115  * SUBQ: 0101|DAT|1|SZ|EMD|ERG
-000020F8                          2116  * Syntax: SUBQ      #<data>,<ea>
-000020F8                          2117  
-000020F8                          2118          END     START
+00001F12                          1850          *BNE     FLAGCL          If not valid, return unsuccessful
+00001F12  6100 FE3E               1851          BSR     ADVBFR          Else, advance the buffer accordingly
+00001F16  6000 F50A               1852          BRA     FLAGST          Return return successful
+00001F1A                          1853  
+00001F1A                          1854  
+00001F1A                          1855  * ADDA: 1101|REG|OPM|EMD|ERG
+00001F1A                          1856  * Syntax: ADDA      <ea>,An
+00001F1A                          1857  
+00001F1A  11FC 0015 100C          1858  BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
+00001F20                          1859          * "All addressing modes can be used [...]."
+00001F20  303C 0FFF               1860          MOVE.W  #M_ALL,D0       Set all modes as valid
+00001F24  6198                    1861          BSR     EXSRC           Extract EA mode & register
+00001F26                          1862          *BSR     TSTAM           Test modes for validity
+00001F26                          1863          *BNE     FLAGCL          If not valid, return unsuccessful
+00001F26  6100 FE2A               1864          BSR     ADVBFR          Else, advance the buffer accordingly
+00001F2A  6000 F4F6               1865          BRA     FLAGST          Return successful
+00001F2E                          1866  
+00001F2E                          1867  * ADDQ: 0101|DAT|0|SZ|EMD|ERG
+00001F2E                          1868  * Syntax: ADDQ      #<data>,<ea>
+00001F2E                          1869  
+00001F2E  11FC 001A 100C          1870  BRADDQ  MOVE.B  #$1A,(IOOPCD)   Set OP-code name
+00001F34  6000 F4EC               1871          BRA     FLAGST          Return successful
+00001F38                          1872  
+00001F38                          1873  * ADDI: 000000110|SZ|EMD|ERG
+00001F38                          1874  * Syntax: ADDI      #<data>,<ea>
+00001F38                          1875  
+00001F38  11FC 0099 100C          1876  BRADDI  MOVE.B  #$99,(IOOPCD)   Set OP-code name
+00001F3E  6000 F4E2               1877          BRA     FLAGST          Return successful
+00001F42                          1878  
+00001F42                          1879  * AND: 1100|REG|OPM|EMD|ERG
+00001F42                          1880  * Syntax: AND       <ea>,Dn
+00001F42                          1881  *         AND       Dn,<ea>
+00001F42                          1882  * Note: The Dn mode is used when the destination is a data register;
+00001F42                          1883  *       the destination < ea > mode is invalid for a data register. 
+00001F42                          1884  *       Most assemblers use ANDI when the source is immediate data.
+00001F42                          1885  
+00001F42  11FC 003B 100C          1886  BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
+00001F48  6000 F4D8               1887          BRA     FLAGST          Return successful
+00001F4C                          1888  
+00001F4C                          1889  * BTST: 0000|REG|100|EMD|ERG (BIT NUMBER DYNAMIC, SPECIFIED IN A REGISTER)
+00001F4C                          1890  *       0000100000|EMD|ERG  00000000|_BITNUM_ (BIT NUMBER STATIC, SPECIFIED AS IMMEDIATE DATA)
+00001F4C                          1891  * Syntax: BTST      Dn,<ea>
+00001F4C                          1892  *         BTST      #<data>,<ea>
+00001F4C                          1893  
+00001F4C  11FC 0058 100C          1894  BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
+00001F52  6000 F4CE               1895          BRA     FLAGST          Return successful
+00001F56                          1896  
+00001F56                          1897  * BCC: 0110|COND|_8BTDSP_
+00001F56                          1898  * Syntax: BCC       <label>
+00001F56                          1899  
+00001F56  11FC 006B 100C          1900  BRBCC   MOVE.B  #$6B,(IOOPCD)   Set OP-code name
+00001F5C  6000 F4C4               1901          BRA     FLAGST          Return successful
+00001F60                          1902  
+00001F60  11FC 006F 100C          1903  BRBEQ   MOVE.B  #$6F,(IOOPCD)   Set OP-code name
+00001F66  6000 F4BA               1904          BRA     FLAGST          Return successful
+00001F6A                          1905          
+00001F6A  11FC 0073 100C          1906  BRBLT   MOVE.B  #$73,(IOOPCD)   Set OP-code name
+00001F70  6000 F4B0               1907          BRA     FLAGST          Return successful
+00001F74                          1908  
+00001F74  11FC 0077 100C          1909  BRBNE   MOVE.B  #$77,(IOOPCD)   Set OP-code name
+00001F7A  6000 F4A6               1910          BRA     FLAGST          Return successful
+00001F7E                          1911  
+00001F7E  11FC 007B 100C          1912  BRBHI   MOVE.B  #$7B,(IOOPCD)   Set OP-code name
+00001F84  6000 F49C               1913          BRA     FLAGST          Return successful
+00001F88                          1914  
+00001F88                          1915  * CMP: 1011|REG|OPM|EMD|ERG
+00001F88                          1916  * Syntax: CMP       <ea>,Dn
+00001F88                          1917  * Note: CMPA is used when the destination is an address register.
+00001F88                          1918  *       CMPI is used when the source is immediate data.
+00001F88                          1919  *       CMPM is used for memory-to-memory compares.
+00001F88                          1920  *       Most assemblers automatically make the distinction.
+00001F88                          1921  
+00001F88  11FC 005D 100C          1922  BRCMP   MOVE.B  #$5D,(IOOPCD)   Set OP-code name
+00001F8E  6000 F492               1923          BRA     FLAGST          Return successful
+00001F92                          1924  
+00001F92                          1925  * CMPA: 1011|REG|OPM|EMD|ERG
+00001F92                          1926  * Syntax: CMPA      <ea>,An       
+00001F92                          1927  
+00001F92  11FC 0061 100C          1928  BRCMPA  MOVE.B  #$61,(IOOPCD)   Set OP-code name
+00001F98  6000 F488               1929          BRA     FLAGST          Return successful
+00001F9C                          1930  
+00001F9C                          1931  * CMPI: 00001100|SZ|EMD|ERG
+00001F9C                          1932  * Syntax: CMPI      #<data>,<ea>
+00001F9C                          1933  
+00001F9C  11FC 0066 100C          1934  BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
+00001FA2  6000 F47E               1935          BRA     FLAGST          Return successful
+00001FA6                          1936  
+00001FA6                          1937  * RTS: 0100111001110101
+00001FA6                          1938  * Syntax: RTS
+00001FA6                          1939  
+00001FA6  11FC 0083 100C          1940  BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
+00001FAC  6000 F474               1941          BRA     FLAGST          Return successful
+00001FB0                          1942  
+00001FB0                          1943  * LEA: 0100|REG|111|EMD|ERG
+00001FB0                          1944  * Syntax: LEA       <ea>,An
+00001FB0                          1945  
+00001FB0  11FC 0037 100C          1946  BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
+00001FB6  6100 FED4               1947          BSR     EXDST           Extract destination mode & register
+00001FBA  6100 FD96               1948          BSR     ADVBFR          Advance the buffer accordingly
+00001FBE  6100 FEFE               1949          BSR     EXSRC           Extract source mode & register
+00001FC2  6100 FD8E               1950          BSR     ADVBFR          Advance the buffer accordingly
+00001FC6  6000 F45A               1951          BRA     FLAGST          Return successful
+00001FCA                          1952  
+00001FCA                          1953  * JSR: 0100111010|EMD|ERG
+00001FCA                          1954  * Syntax: JSR       <ea>
+00001FCA                          1955  
+00001FCA  11FC 007F 100C          1956  BRJSR   MOVE.B  #$7F,(IOOPCD)   Set OP-code name
+00001FD0  6000 F450               1957          BRA     FLAGST          Return successful
+00001FD4                          1958          
+00001FD4                          1959  * MOVE: 00|SZ|DRG|DMD|SMD|SRG
+00001FD4                          1960  * Syntax: MOVE      <ea>,<ea>
+00001FD4                          1961  * Note: Most assemblers use MOVEA when the destination is an address register. 
+00001FD4                          1962  *       MOVEQ can be used to move an immediate 8-bit value to a data register. 
+00001FD4                          1963  
+00001FD4  11FC 0000 100C          1964  BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
+00001FDA  3011                    1965          MOVE.W  (A1),D0         Move instruction to D0
+00001FDC  243C 00003000           1966          MOVE.L  #$3000,D2       Extract size at 0011000000000000
+00001FE2  6100 F5AE               1967          BSR     EXTMSK          Get the size to D1
+00001FE6                          1968  
+00001FE6  103C 00FF               1969          MOVE.B  #$FF,D0         Set size to null
+00001FEA  B23C 0001               1970          CMP.B   #%01,D1         01 = Byte
+00001FEE  6604                    1971          BNE.S   *+6             Branch to next test
+00001FF0  103C 0000               1972          MOVE.B  #$0,D0          Set size to byte
+00001FF4  B23C 0003               1973          CMP.B   #%11,D1         11 = Word
+00001FF8  6604                    1974          BNE.S   *+6             Branch to next test
+00001FFA  103C 0001               1975          MOVE.B  #$1,D0          Set size to word
+00001FFE  B23C 0002               1976          CMP.B   #%10,D1         10 = Long
+00002002  6604                    1977          BNE.S   *+6             Branch to next test
+00002004  103C 0002               1978          MOVE.B  #$2,D0          Set size to long
+00002008  B03C 00FF               1979          CMP.B   #$FF,D0         Test if size was found
+0000200C  6700 F41A               1980          BEQ     FLAGCL          If it was not found, branch to clear flag      
+00002010  11C0 100E               1981          MOVE.B  D0,(IOSIZE)     If it was found, store size in IOSIZE
+00002014                          1982  
+00002014  6100 FE76               1983          BSR     EXDST           Extract dest EA mode & register
+00002018  0C38 0001 10C0          1984          CMP.B   #1,(DMD)        Compare mode to An
+0000201E  6700 001A               1985          BEQ     BRMOVEA         If ==, branch to BRMOVEA
+00002022                          1986          * Dest EA field: "Only data alterable addressing modes can be used [...]."
+00002022  303C 01FD               1987          MOVE.W  #M_DALT,D0      Set data alterable modes as valid
+00002026                          1988          *BSR     TSTAM           Test modes for validity
+00002026                          1989          *BNE     FLAGCL          If not valid, return unsuccessful
+00002026  6100 FD2A               1990          BSR     ADVBFR          Else, advance the buffer accordingly
+0000202A  6100 FE92               1991          BSR     EXSRC           Extract source EA mode & register
+0000202E                          1992          * Source EA field: "All addressing modes can be used [...]."
+0000202E  303C 0FFF               1993          MOVE.W  #M_ALL,D0       Set all modes as valid
+00002032                          1994          *BSR     TSTAM           Test modes for validity
+00002032                          1995          *BNE     FLAGCL          If not valid, return unsuccessful
+00002032  6100 FD1E               1996          BSR     ADVBFR          Else, advance the buffer accordingly
+00002036                          1997  
+00002036  6000 F3EA               1998          BRA     FLAGST          Return successful
+0000203A                          1999  
+0000203A                          2000  
+0000203A                          2001  * MOVEA: 00|SZ|DRG|001|SMD|SRG
+0000203A                          2002  * Syntax: MOVEA     <ea>,An
+0000203A                          2003  
+0000203A  11FC 0005 100C          2004  BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
+00002040  0C38 0000 100E          2005          CMP.B   #0,(IOSIZE)     Compare size to byte
+00002046  6700 F3E0               2006          BEQ     FLAGCL          If ==, size is not valid, return unsuccessful
+0000204A  6100 FD06               2007          BSR     ADVBFR          Else, advance the buffer accordingly
+0000204E  6100 FE6E               2008          BSR     EXSRC           Extract source EA mode & register
+00002052                          2009          * Source EA field: "All addressing modes can be used [...]."
+00002052  303C 0FFF               2010          MOVE.W  #M_ALL,D0       Set all modes as valid (0000011111111111)
+00002056  6100 FCD2               2011          BSR     TSTAM           Test modes for validity
+0000205A  6600 F3CC               2012          BNE     FLAGCL          If not valid, return unsuccessful
+0000205E  6100 FCF2               2013          BSR     ADVBFR          Advance the buffer accordingly
+00002062  6000 F3BE               2014          BRA     FLAGST          Return successful
+00002066                          2015  
+00002066                          2016  * MOVEM: 01001|D|001|S|EMD|ERG
+00002066                          2017  * Syntax: MOVEM     <list>,<ea>
+00002066                          2018  *         MOVEM     <ea>,<list>
+00002066                          2019  
+00002066  11FC 000B 100C          2020  BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
+0000206C  6000 F3B4               2021          BRA     FLAGST          Return successful
+00002070                          2022  
+00002070                          2023  * MOVEQ: 0111|REG|0|__DATA__
+00002070                          2024  * Syntax: MOVEQ     #<data>,Dn
+00002070                          2025  
+00002070  11FC 008B 100C          2026  BRMOVEQ MOVE.B  #$8B,(IOOPCD)   Set OP-code name
+00002076  6600 F3AA               2027          BNE     FLAGST          Return unsuccessful
+0000207A                          2028  
+0000207A                          2029  * ASd: 1110000|d|11|EMD|ERG (memory shifts)
+0000207A                          2030  *      1110|CRG|d|SZ|i|00|REG (register shifts)
+0000207A                          2031  * Syntax: ASd       Dx,Dy
+0000207A                          2032  *         ASd       #<data>,Dy
+0000207A                          2033  *         ASd       <ea>
+0000207A                          2034  
+0000207A                          2035  BRASd   *MOVE.B  #$50,(IOOPCD)   ASL
+0000207A                          2036          *MOVE.B  #$95,(IOOPCD)   ASR
+0000207A  6000 F3A6               2037          BRA     FLAGST          Return successful
+0000207E                          2038  
+0000207E                          2039  * LSd: 1110001|d|11|EMD|ERG (memory shifts)
+0000207E                          2040  *      1110|CRG|d|SZ|i|01|REG (register shifts)
+0000207E                          2041  * Syntax: LSd       Dx,Dy
+0000207E                          2042  *         LSd       #<data>,Dy
+0000207E                          2043  *         LSd       <ea>
+0000207E                          2044  
+0000207E                          2045  BRLSd   *MOVE.B  #$91,(IOOPCD)   LSL
+0000207E                          2046          *MOVE.B  #$54,(IOOPCD)   LSR
+0000207E  6000 F3A2               2047          BRA     FLAGST          Return successful
+00002082                          2048  
+00002082                          2049  * MULU: 1100|REG|011|EMD|ERG (WORD)
+00002082                          2050  *       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
+00002082                          2051  * Syntax: MULU.W    <ea>,Dn    16x16 -> 32
+00002082                          2052  *         MULU.L    <ea>,Dl    32x32 -> 32
+00002082                          2053  *         MULU.L    <ea>,Dh–Dl 32x32 -> 64 
+00002082                          2054  
+00002082  11FC 002D 100C          2055  BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
+00002088  6000 F398               2056          BRA     FLAGST          Return successful
+0000208C                          2057  
+0000208C                          2058  * DIVS: 1000|REG|111|EMD|ERG (WORD)
+0000208C                          2059  *       0100110001|EMD|ERG  0|RDQ|1|S|0000000|RDR (LONG)
+0000208C                          2060  * Synax: DIVS.W     <ea>,Dn     32/16 -> 16r – 16q
+0000208C                          2061  *        DIVS.L     <ea>,Dq     32/32 -> 32q
+0000208C                          2062  *        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r – 32q
+0000208C                          2063  *        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r – 32q
+0000208C                          2064  
+0000208C  11FC 0032 100C          2065  BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
+00002092  6000 F38E               2066          BRA     FLAGST          Return successful
+00002096                          2067  
+00002096                          2068  * EOR: 1011|REG|OPM|EMD|ERG
+00002096                          2069  * Syntax: EOR       Dn,<ea>
+00002096                          2070  * Note: Memory-to-data-register operations are not allowed.
+00002096                          2071  *       Most assemblers use EORI when the source is immediate data.
+00002096                          2072  
+00002096  11FC 0043 100C          2073  BREOR   MOVE.B  #$43,(IOOPCD)   Set OP-code name
+0000209C  6000 F384               2074          BRA     FLAGST          Return successful
+000020A0                          2075  
+000020A0                          2076  * ORI: 00000000|SZ|EMD|ERG
+000020A0                          2077  * Syntax: ORI       #<data>,<ea>
+000020A0                          2078  
+000020A0  11FC 003F 100C          2079  BRORI   MOVE.B  #$3F,(IOOPCD)   Set OP-code name
+000020A6  6000 F37A               2080          BRA     FLAGST          Return successful
+000020AA                          2081  
+000020AA                          2082  * EORI: 00001010|SZ|EMD|ERG
+000020AA                          2083  * Syntax: EORI      #<data>,<ea>
+000020AA                          2084  
+000020AA  11FC 0047 100C          2085  BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
+000020B0  6000 F370               2086          BRA     FLAGST          Return successful
+000020B4                          2087  
+000020B4                          2088  * NOT: 01000110|SZ|EMD|ERG
+000020B4                          2089  * Syntax:  NOT      <ea>
+000020B4                          2090  
+000020B4  11FC 004C 100C          2091  BRNOT   MOVE.B  #$4C,(IOOPCD)   Set OP-code name
+000020BA  6000 F366               2092          BRA     FLAGST          Return successful
+000020BE                          2093  
+000020BE                          2094  * SUB: 1001|REG|OPM|EMD|ERG
+000020BE                          2095  * Syntax: SUB       <ea>,Dn
+000020BE                          2096  *         SUB       Dn,<ea>
+000020BE                          2097  * Note: Most assemblers use SUBA when the destination is an address register
+000020BE                          2098  *       and SUBI or SUBQ when the source is immediate data.
+000020BE                          2099  
+000020BE  11FC 001F 100C          2100  BRSUB   MOVE.B  #$1F,(IOOPCD)   Set OP-code name
+000020C4  6000 F35C               2101          BRA     FLAGST          Else, return successful
+000020C8                          2102  
+000020C8                          2103  * SUBA: 1001|REG|OPM|EMD|ERG
+000020C8                          2104  * Syntax: SUBA      <ea>,An
+000020C8                          2105  
+000020C8  11FC 0023 100C          2106  BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name 
+000020CE  6000 F352               2107          BRA     FLAGST          Else, return successful
+000020D2                          2108  
+000020D2                          2109  * SUBI: 0000|0100|SZ|EMD|ERG
+000020D2                          2110  * Syntax: SUBI      #<data>,<ea> 
+000020D2                          2111  
+000020D2  11FC 0028 100C          2112  BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
+000020D8  6000 F348               2113          BRA     FLAGST          Else, return successful
+000020DC                          2114  
+000020DC                          2115  * SUBQ: 0101|DAT|1|SZ|EMD|ERG
+000020DC                          2116  * Syntax: SUBQ      #<data>,<ea>
+000020DC                          2117  
+000020DC                          2118          END     START
 
 No errors detected
 No warnings generated
@@ -2153,38 +2153,38 @@ BB2                 74C8
 BB3                 74D2
 BB4                 74E2
 BRADD               1EE8
-BRADDA              1F1E
-BRADDI              1F44
-BRADDQ              1F3A
-BRAND               1F4E
-BRASD               2096
+BRADDA              1F1A
+BRADDI              1F38
+BRADDQ              1F2E
+BRAND               1F42
+BRASD               207A
 BRBAD               1926
-BRBCC               1F62
-BRBEQ               1F6C
-BRBHI               1F8A
-BRBLT               1F76
-BRBNE               1F80
-BRBTST              1F58
-BRCMP               1F94
-BRCMPA              1F9E
-BRCMPI              1FA8
-BRDIVS              20A8
-BREOR               20B2
-BREORI              20C6
-BRJSR               1FD6
-BRLEA               1FBC
-BRLSD               209A
-BRMOVE              1FE0
-BRMOVEA             2056
-BRMOVEM             2082
-BRMOVEQ             208C
-BRMULU              209E
-BRNOT               20D0
-BRORI               20BC
-BRRTS               1FB2
-BRSUB               20DA
-BRSUBA              20E4
-BRSUBI              20EE
+BRBCC               1F56
+BRBEQ               1F60
+BRBHI               1F7E
+BRBLT               1F6A
+BRBNE               1F74
+BRBTST              1F4C
+BRCMP               1F88
+BRCMPA              1F92
+BRCMPI              1F9C
+BRDIVS              208C
+BREOR               2096
+BREORI              20AA
+BRJSR               1FCA
+BRLEA               1FB0
+BRLSD               207E
+BRMOVE              1FD4
+BRMOVEA             203A
+BRMOVEM             2066
+BRMOVEQ             2070
+BRMULU              2082
+BRNOT               20B4
+BRORI               20A0
+BRRTS               1FA6
+BRSUB               20BE
+BRSUBA              20C8
+BRSUBI              20D2
 CBITS               0
 CMPMSK              1564
 CR                  D

@@ -1310,7 +1310,7 @@ BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
 
         BSR     EXSRC           Extract EA mode & register
         *BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
+        *BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
         BRA     FLAGST          Return return successful
 
@@ -1322,8 +1322,8 @@ BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
         * "All addressing modes can be used [...]."
         MOVE.W  #M_ALL,D0       Set all modes as valid
         BSR     EXSRC           Extract EA mode & register
-        BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
+        *BSR     TSTAM           Test modes for validity
+        *BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
         BRA     FLAGST          Return successful
 
@@ -1448,14 +1448,14 @@ BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
         BEQ     BRMOVEA         If ==, branch to BRMOVEA
         * Dest EA field: "Only data alterable addressing modes can be used [...]."
         MOVE.W  #M_DALT,D0      Set data alterable modes as valid
-        BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
+        *BSR     TSTAM           Test modes for validity
+        *BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
         BSR     EXSRC           Extract source EA mode & register
         * Source EA field: "All addressing modes can be used [...]."
         MOVE.W  #M_ALL,D0       Set all modes as valid
-        BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
+        *BSR     TSTAM           Test modes for validity
+        *BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
 
         BRA     FLAGST          Return successful
