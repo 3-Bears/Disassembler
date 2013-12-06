@@ -1254,6 +1254,7 @@ EXDST   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
         MOVE.L  #$E00,D2        Extract dest reg at 0000111000000000
         BSR     EXTMSK          Get dest reg to D1
         MOVE.B  D1,(DRG)        Move dest reg to (DRG)
+
         LSL.B   #3,D1           Shift the reg 3 bits left
         OR.B    (DMD),D1        Add mode after reg
         MOVE.B  D1,(RGMD)       Store D1 in RGMD
@@ -1516,17 +1517,17 @@ BRLSd   *MOVE.B  #$91,(IOOPCD)   LSL
 *       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
 * Syntax: MULU.W    <ea>,Dn    16x16 -> 32
 *         MULU.L    <ea>,Dl    32x32 -> 32
-*         MULU.L    <ea>,Dh–Dl 32x32 -> 64 
+*         MULU.L    <ea>,Dh?Dl 32x32 -> 64 
 
 BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
 * DIVS: 1000|REG|111|EMD|ERG (WORD)
 *       0100110001|EMD|ERG  0|RDQ|1|S|0000000|RDR (LONG)
-* Synax: DIVS.W     <ea>,Dn     32/16 -> 16r – 16q
+* Synax: DIVS.W     <ea>,Dn     32/16 -> 16r ? 16q
 *        DIVS.L     <ea>,Dq     32/32 -> 32q
-*        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r – 32q
-*        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r – 32q
+*        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r ? 32q
+*        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r ? 32q
 
 BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
         BRA     FLAGST          Return successful
@@ -1576,7 +1577,32 @@ BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name
 * Syntax: SUBI      #<data>,<ea> 
 
 BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$00C0,D2       Extract size at 0000000011000000
+        BSR     EXTMSK          Get the size to D1
+
+        CMP.B   #$FF,D1         Test if size was found
+        BEQ     FLAGCL          If it was not found, branch to clear flag      
+        MOVE.B  D1,(IOSIZE)     If it was found, store size in IOSIZE
+
+        * Dest EA field: "Only data alterable addressing modes can be used [...]."
+        MOVE.W  #M_DALT,D0      Set data alterable modes as valid
+        BSR     EXSRC           Extract source EA mode & register 
+        MOVE.B  SMD,(DMD)       The EA mode is the Destination mode
+        MOVE.B  SRG,(DRG)       The EA reg is the Destination reg
+        BSR     ADVBFR          Advance the buffer accordingly
+        * SUBI format is SUBI.(size)  #<data>, <ea>
+        * manually set the Source mode and source register
+        MOVE.B  #$07,(SMD)      Source Mode set to 111
+        MOVE.B  #$04,(SRG)      Register Mode set to 100 #<data>
+        MOVE.B  SRG,D1          Copy SRG to D1 to manipulate
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (SMD),D1        Add mode after reg
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        
+        BSR     ADVBFR          Advance the buffer accordingly
         BRA     FLAGST          Else, return successful
+
 
 * SUBQ: 0101|DAT|1|SZ|EMD|ERG
 * Syntax: SUBQ      #<data>,<ea>
