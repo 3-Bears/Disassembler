@@ -104,7 +104,6 @@ ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
 
 START   MOVE.B  #0,IOLC
-        *JMP     $7000
         LEA     MSSG0,A1        Welcome message
         MOVE.B  #14,D0
         TRAP    #15
@@ -518,6 +517,87 @@ DSPOFRT MOVEM.L (SP)+,D0-D2     Restore D0-D2
         RTS                     Return to callr
 
 *
+* Display An: Displays An or SP if n == 7
+* Input n in D3
+*
+
+DSPAn   CMP.B   #7,D3               Compare n to 7
+        BEQ     DSPSP               If ==, branch to Display SP
+        MOVE.B  #6,D0               Else, display character
+        MOVE.B  #'A',D1             Read A
+        TRAP    #15
+        CLR.L   D0
+        MOVE.L  D3,D0               Read reg from D3
+        BSR     DSPHXN              Display as hex nibble
+        RTS                         Return to caller
+
+DSPSP   MOVE.B  #6,D0               Display character
+        MOVE.B  #'S',D1             Read S
+        TRAP    #15
+        MOVE.B  #'P',D1             Read P
+        TRAP    #15
+        RTS                         Return to caller
+
+*
+* Brief Extension Word: Displays a brief extension word (without displacement)
+* Input BEW to D0.B
+* X|REG|S|SC|0 -> Xn.S * SC
+* X (Index Register Type):
+*   0 = Dn
+*   1 = An
+* S (Index Size):
+*   0 = Sign-Extended Word
+*   1 = Long Word
+* SC (Scale):
+*   00 = 1
+*   01 = 2
+*   10 = 4
+*   11 = 8
+*
+BEXTW   MOVEM.L D0-D3,-(SP)         Push D0-D3 to stack
+        MOVE.L  #$70,D2             Extract REG at 01110000
+        BSR     EXTMSK              Get REG to D1
+        MOVE.B  D1,D3               Move REG to D3
+        MOVE.L  #$80,D2	            Extract X at 10000000
+        BSR     EXTMSK	            Get X to D1
+        MOVE.B  D1,D2               Move MODE to D2
+        BSR     DISPOP              Display Xn
+        MOVE.L  #8,D2	            Extract S at 00001000
+        BSR     EXTMSK	            Get S to D1
+        MOVE.B  D1,D3               Move S to D3
+        MOVE.L  #6,D2	            Extract SC at 00000110
+        BSR     EXTMSK	            Get SC to D1
+        MULU.W  #4,D1               Convert D1 to displacement
+        JMP     SCTBL(PC,D1.W)      Jump to SC mode
+SCTBL   BRA     SC0                 00
+        BRA     SC1                 01
+        BRA     SC2                 10
+        BRA     SC3                 11
+SC0     MOVE.B  #1,D2               00 = 1
+        BRA     SC4
+SC1     MOVE.B  #2,D2               01 = 2
+        BRA     SC4
+SC2     MOVE.B  #4,D2               10 = 4
+        BRA     SC4
+SC3     MOVE.B  #8,D2               11 = 8
+        BRA     SC4
+SC4     MOVE.B  #6,D0               Display character
+        MOVE.B  #'.',D1              Read . to D1
+        TRAP    #15
+        MOVE.B  #'L',D1             Read L to D1 as default
+        TST.B   D3                  Test D3 for W
+        BNE     *+6                 If !=, skip next line
+        MOVE.B  #'W',D1             Else, read W to D1
+        TRAP    #15
+        MOVE.B  #'*',D1             Read *
+        TRAP    #15
+        MOVE.B  #3,D0               Display number
+        MOVE.B  D2,D1               Read scale
+        TRAP    #15
+        MOVEM.L (SP)+,D0-D3         Restore D0-D3
+        RTS                         Return to caller
+
+*
 * Display operand: Displays operand according to mode and register
 * Input mode in D2.B, input reg in D3.B
 *
@@ -537,22 +617,17 @@ DMDTBL  BRA     DISP0               Dn
 * Dn	    	000	XXX
 DISP0   MOVE.B  #'D',D1             Read D
         TRAP    #15
-        MOVE.L  D3,D0               Read reg from D3
+        CLR.L   D0
+        MOVE.B  D3,D0               Read reg from D3
         BSR     DSPHXN              Display as hex nibble
         BRA     DISPD               Branch to return
 * An		    001	XXX
-DISP1   MOVE.B  #'A',D1             Read A
-        TRAP    #15
-        MOVE.L  D3,D0               Read reg from D3
-        BSR     DSPHXN              Display as hex byte
+DISP1   BSR     DSPAn               Display An or SP        
         BRA     DISPD               Branch to return
 * (An)		    010	XXX
 DISP2   MOVE.B  #'(',D1             Read (
         TRAP    #15
-        MOVE.B  #'A',D1             Read A
-        TRAP    #15
-        MOVE.L  D3,D0               Read reg from D3
-        BSR     DSPHXN              Display as hex nibble
+        BSR     DSPAn               Display An or SP
         MOVE.B  #6,D0               Display character
         MOVE.B  #')',D1             Read )
         TRAP    #15
@@ -560,10 +635,7 @@ DISP2   MOVE.B  #'(',D1             Read (
 * (An)+		    011	XXX
 DISP3   MOVE.B  #'(',D1             Read (
         TRAP    #15
-        MOVE.B  #'A',D1             Read A
-        TRAP    #15
-        MOVE.L  D3,D0               Read reg from D3
-        BSR     DSPHXN              Display as hex nibble
+        BSR     DSPAn               Display An or SP
         MOVE.B  #6,D0               Display character
         MOVE.B  #')',D1             Read )
         TRAP    #15
@@ -575,49 +647,53 @@ DISP4   MOVE.B  #'-',D1             Read +
         TRAP    #15
         MOVE.B  #'(',D1             Read (
         TRAP    #15
-        MOVE.B  #'A',D1             Read A
-        TRAP    #15
-        MOVE.L  D3,D0               Read reg from D3
-        BSR     DSPHXN              Display as hex nibble
+        BSR     DSPAn               Display An or SP
         MOVE.B  #6,D0               Display character
         MOVE.B  #')',D1             Read )
         TRAP    #15
         BRA     DISPD               Branch to return
-* (d,An)		101	XXX
+* (d16,An)		101	XXX
 DISP5   MOVE.B  #'(',D1             Read (
         TRAP    #15
-        *----TODO---*
-        * Display d *
+        MOVE.B  #3,D0               Display signed number
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        MOVE.W  (A1),D1             Read word to D1
+        EXT.L   D1                  Extend word to long
+        TRAP    #15
+        ADD.L   #2,(IOADDR)         Advance IO address by word
+        MOVE.B  #6,D0               Display character
         MOVE.B  #',',D1             Read ,
         TRAP    #15
-        MOVE.B  #'A',D1             Read A
-        TRAP    #15
-        *----TODO---*
-        * Display A *
+        BSR     DSPAn               Display An or SP
+        MOVE.B  #6,D0               Display character
         MOVE.B  #')',D1             Read )
         TRAP    #15
         BRA     DISPD               Branch to return
-* (d,An,Xn)	    110	XXX
+* (d8,An,Xn)   110	XXX
 DISP6   MOVE.B  #'(',D1             Read (
         TRAP    #15
-        *----TODO---*
-        * Display d *
+        MOVE.B  #3,D0               Display signed number
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        MOVE.B  (A1)+,(DIS)         Store byte to displacement (DIS) and post-increment A1
+        MOVE.B  (A1),D1             Read next byte to D1 for the actual displacement
+        EXT.W   D1                  Extend byte to word
+        EXT.L   D1                  Extend word to long
+        TRAP    #15
+        MOVE.B  #6,D0               Display character
         MOVE.B  #',',D1             Read ,
         TRAP    #15
-        MOVE.B  #'A',D1             Read A
-        TRAP    #15
-        *----TODO---*
-        * Display A *
+        BSR     DSPAn               Display An or SP
+        MOVE.B  #6,D0               Display character
         MOVE.B  #',',D1             Read ,
         TRAP    #15
-        MOVE.B  #'X',D1             Read X
-        TRAP    #15
-        *----TODO---*
-        * Display X *
+        MOVE.B  (DIS),D0            Read (DIS) to D0
+        BSR     BEXTW               Display Brief Extension Word
+        ADD.L   #2,(IOADDR)         Advance IO address by word
+        MOVE.B  #6,D0               Display character
         MOVE.B  #')',D1             Read )
         TRAP    #15
         BRA     DISPD               Branch to return
-* (XXX).W/(XXX).L/(d,PC)/(d,PC,Xn)/#data
+* (XXX).W/(XXX).L/(d16,PC)/(d8,PC,Xn)/#data
 DISP7   MULU.W  #4,D3
         JMP     DRGTBL(PC,D3.W)     Jump to reg
 DRGTBL  BRA     DISP8               (XXX).W
@@ -644,11 +720,16 @@ DISP9   MOVE.B  #'$',D1             Read $
         BSR     DSPHXA              Display address
         ADD.L   D2,(IOADDR)         Advance IO address by long
         BRA     DISPD               Branch to return
-* (d,PC)		111	010
+* (d16,PC)		111	010
 DISPA   MOVE.B  #'(',D1             Read (
         TRAP    #15
-        *----TODO---*
-        * Display d *
+        MOVE.B  #3,D0               Display signed number
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        MOVE.W  (A1),D1             Read word to D1
+        EXT.L   D1                  Extend word to long
+        TRAP    #15
+        ADD.L   #2,(IOADDR)         Advance IO address by word
+        MOVE.B  #6,D0               Display character
         MOVE.B  #',',D1             Read ,
         TRAP    #15
         MOVE.B  #'P',D1             Read P
@@ -658,23 +739,29 @@ DISPA   MOVE.B  #'(',D1             Read (
         MOVE.B  #')',D1             Read )
         TRAP    #15
         BRA     DISPD
-* (d,PC,Xn)		111	011
+* (d8,PC,Xn)	111	011
 DISPB   MOVE.B  #'(',D1             Read (
         TRAP    #15
-        *----TODO---*
-        * Display d *
+        MOVE.B  #3,D0               Display signed number
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        MOVE.B  (A1)+,(DIS)         Store byte to displacement (DIS) and post-increment A1
+        MOVE.B  (A1),D1             Read next byte to D1 for the actual displacement
+        EXT.W   D1                  Extend byte to word
+        EXT.L   D1                  Extend word to long
+        TRAP    #15
+        MOVE.B  #6,D0               Display character
         MOVE.B  #',',D1             Read ,
         TRAP    #15
         MOVE.B  #'P',D1             Read P
         TRAP    #15
-        MOVE.B  #'C',D1             Read C
+        MOVE.B   #'C',D1             Read C
         TRAP    #15
         MOVE.B  #',',D1             Read ,
         TRAP    #15
-        MOVE.B  #'X',D1             Read X
-        TRAP    #15
-        *----TODO---*
-        * Display X *
+        MOVE.B  (DIS),D0            Read (DIS) to D0
+        BSR     BEXTW               Display Brief Extension Word
+        ADD.L   #2,(IOADDR)         Advance IO address by word
+        MOVE.B  #6,D0               Display character
         MOVE.B  #')',D1             Read )
         TRAP    #15
         BRA     DISPD               Branch to return
@@ -1144,15 +1231,29 @@ ADVBFR  MOVEM.L D1/D2,-(SP)     Push D1 & D2 to the stack
         MOVE.B  #$FF,(DIS)      Set displacement to NULL
         MOVE.B  (RGMD),D1       Move Reg & Mod to D1
         MOVE.L  A1,D2           Copy buffer to D2
-        CMP.B   #$07,D1         Test 000 111 = Address (Word)
+        CMP.B   #$07,D1         Test 000 111 = (XXX).W (Word)
         BNE.S   *+4             Skip next line
-        ADD.L   #$2,A1          Advance buffer by word
-        CMP.B   #$0F,D1         Test 001 111 = Address (Long)
+        ADD.L   #2,A1           Advance buffer by word
+        CMP.B   #$0F,D1         Test 001 111 = (XXX).L (Long)
         BNE.S   *+4             Skip next line
-        ADD.L   #$4,A1          Advance buffer by long
+        ADD.L   #4,A1           Advance buffer by long
+        CMP.B   #$17,D1         Test 010 111 = (d16,PC) (Word)
+        BNE.S   *+4             Skip next line
+        ADD.L   #2,A1           Advance buffer by word
+        CMP.B   #$1F,D1         Test 011 111 = (d8,PC,Xn) (Word)
+        BNE.S   *+4             Skip next line
+        ADD.L   #2,A1           Advance buffer by word
         CMP.B   #$27,D1         Test 100 111 = Immediate (OP code size)
         BEQ     ADVBSZ          If ==, branch to Advance Buffer by Size
-        NEG.L   D2              Else, negate original buffer
+        LSL.B   #5,D1           Else, check the mode...
+        LSR.B   #5,D1           D1 = Mode
+        CMP.B   #5,D1           Test XXX 101 = (d16,An) (Word)
+        BNE     *+4             Skip next line
+        ADD.L   #2,A1           Advance buffer by word
+        CMP.B   #6,D1           Test XXX 110 = (d8,An,Xn) (Word)
+        BNE     *+4             Skip next line
+        ADD.L   #2,A1           Advance buffer by word
+        NEG.L   D2              Negate original buffer
         ADD.L   A1,D2           Add buffer to get difference
         MOVE.B  D2,(DIS)        Store displacement in DIS
         MOVEM.L (SP)+,D1/D2     Restore D1 & D2
@@ -1168,15 +1269,15 @@ ADVBSZ  CMP.B   #$FF,(DIS)      Check if DIS is NULL (255 is odd so displacement
         MOVEM.L D1/D2,-(SP)     Else, push D1 & D2 to the stack
         MOVE.B  (IOSIZE),D1     Read size to D1
         MOVE.L  A1,D2           Copy buffer to D2
-        CMP.B   #$1,D0          Test 0 = Byte
+        CMP.B   #0,D1           Test 0 = Byte
         BNE.S   *+4             Skip next line
-        ADD.L   #$2,A1          Advance buffer by word (00BB)
-        CMP.B   #$1,D1          Test 1 = Word
+        ADD.L   #2,A1           Advance buffer by word (00BB)
+        CMP.B   #1,D1           Test 1 = Word
         BNE.S   *+4             Skip next line
-        ADD.L   #$2,A1          Advance buffer by word        
-        CMP.B   #$2,D1          Test 2 = Long
+        ADD.L   #2,A1           Advance buffer by word        
+        CMP.B   #2,D1           Test 2 = Long
         BNE.S   *+4             Skip next line
-        ADD.L   #$4,A1          Advance buffer by long
+        ADD.L   #4,A1           Advance buffer by long
         NEG     D2              Negate original buffer
         ADD.L   A1,D2           Add buffer to get difference
         MOVE.B  D2,(DIS)        Store displacement in DIS
@@ -1243,11 +1344,12 @@ OP8     MOVE.B  D0,(IOSIZE)     Store size in IOSIZE
 
 *
 * Extract destination: Extracts destination mode to DMD and destination register to DRG from instruction
-* Input instruction from A1, output a combination of reg & mode in RGMD
+* Input instruction from GBUFF, output a combination of reg & mode in RGMD
 *
 
-EXDST   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
-        MOVE.W  (A1),D0         Move instruction to D0
+EXDST   MOVEM.L D0-D2/A0,-(SP)  Push D0 - D2 and A0 to stack
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
+        MOVE.W  (A0),D0         Move instruction to D0
         MOVE.L  #$1C0,D2        Extract dest mode at 0000000111000000
         BSR     EXTMSK          Get dest mode to D1
         MOVE.B  D1,(DMD)        Move dest mode to DMD
@@ -1257,7 +1359,7 @@ EXDST   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
         LSL.B   #3,D1           Shift the reg 3 bits left
         OR.B    (DMD),D1        Add mode after reg
         MOVE.B  D1,(RGMD)       Store D1 in RGMD
-        MOVEM.L (SP)+,D0-D2     Restore D0 - D2
+        MOVEM.L (SP)+,D0-D2/A0  Restore D0 - D2 and A0
         RTS                     Return to caller
 
 *
@@ -1265,8 +1367,9 @@ EXDST   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
 * Inputs instruction from GBUFF, output a combination of reg & mode in RGMD
 *
 
-EXSRC   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
-        MOVE.W  (A1),D0         Move instruction to D0
+EXSRC   MOVEM.L D0-D2/A0,-(SP)  Push D0 - D2 and A0 to stack
+        MOVE.L  GBUFF,A0        Point A0 to GBUFF
+        MOVE.W  (A0),D0         Move instruction to D0
         MOVE.L  #$38,D2         Extract src mode at 0000000000111000
         BSR     EXTMSK          Get src mode to D1
         MOVE.B  D1,(SMD)        Move src mode to (OMD)
@@ -1276,7 +1379,7 @@ EXSRC   MOVEM.L D0-D2,-(SP)     Push D0 - D2 to stack
         LSL.B   #3,D1           Shift the reg 3 bits left
         OR.B    (SMD),D1        Add mode after reg
         MOVE.B  D1,(RGMD)       Store D1 in RGMD
-        MOVEM.L (SP)+,D0-D2     Restore D0 - D2
+        MOVEM.L (SP)+,D0-D2/A0  Restore D0 - D2
         RTS                     Return to caller
 
 * ----------------
@@ -1325,8 +1428,8 @@ BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
         * "All addressing modes can be used [...]."
         MOVE.W  #M_ALL,D0       Set all modes as valid
         BSR     EXSRC           Extract EA mode & register
-        *BSR     TSTAM           Test modes for validity
-        *BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
         BRA     FLAGST          Return successful
 
@@ -1398,6 +1501,30 @@ BRCMPA  MOVE.B  #$61,(IOOPCD)   Set OP-code name
 * Syntax: CMPI      #<data>,<ea>
 
 BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$00C0,D2       Extract size at 0000000011000000
+        BSR     EXTMSK          Get the size to D1
+
+        CMP.B   #$FF,D1         Test if size was found
+        BEQ     FLAGCL          If it was not found, branch to clear flag      
+        MOVE.B  D1,(IOSIZE)     If it was found, store size in IOSIZE
+
+        * Dest EA field: "Only data alterable addressing modes can be used [...]."
+        MOVE.W  #M_DALT,D0      Set data alterable modes as valid
+        BSR     EXSRC           Extract source EA mode & register 
+        MOVE.B  SMD,(DMD)       The EA mode is the Destination mode
+        MOVE.B  SRG,(DRG)       The EA reg is the Destination reg
+        BSR     ADVBFR          Advance the buffer accordingly
+        * SUBI format is SUBI.(size)  #<data>, <ea>
+        * manually set the Source mode and source register
+        MOVE.B  #$07,(SMD)      Source Mode set to 111
+        MOVE.B  #$04,(SRG)      Register Mode set to 100 #<data>
+        MOVE.B  SRG,D1          Copy SRG to D1 to manipulate
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (SMD),D1        Add mode after reg
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        
+        BSR     ADVBFR          Advance the buffer accordingly
         BRA     FLAGST          Return successful
 
 * RTS: 0100111001110101
@@ -1451,14 +1578,14 @@ BRMOVE  MOVE.B  #$00,(IOOPCD)   Set OP-code name
         BEQ     BRMOVEA         If ==, branch to BRMOVEA
         * Dest EA field: "Only data alterable addressing modes can be used [...]."
         MOVE.W  #M_DALT,D0      Set data alterable modes as valid
-        *BSR     TSTAM           Test modes for validity
-        *BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
         BSR     EXSRC           Extract source EA mode & register
         * Source EA field: "All addressing modes can be used [...]."
         MOVE.W  #M_ALL,D0       Set all modes as valid
-        *BSR     TSTAM           Test modes for validity
-        *BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
 
         BRA     FLAGST          Return successful
@@ -1576,23 +1703,37 @@ BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name
 * Syntax: SUBI      #<data>,<ea> 
 
 BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$00C0,D2       Extract size at 0000000011000000
+        BSR     EXTMSK          Get the size to D1
+
+        CMP.B   #$FF,D1         Test if size was found
+        BEQ     FLAGCL          If it was not found, branch to clear flag      
+        MOVE.B  D1,(IOSIZE)     If it was found, store size in IOSIZE
+
+        * Dest EA field: "Only data alterable addressing modes can be used [...]."
+        MOVE.W  #M_DALT,D0      Set data alterable modes as valid
+        BSR     EXSRC           Extract source EA mode & register 
+        MOVE.B  SMD,(DMD)       The EA mode is the Destination mode
+        MOVE.B  SRG,(DRG)       The EA reg is the Destination reg
+        BSR     ADVBFR          Advance the buffer accordingly
+        * SUBI format is SUBI.(size)  #<data>, <ea>
+        * manually set the Source mode and source register
+        MOVE.B  #$07,(SMD)      Source Mode set to 111
+        MOVE.B  #$04,(SRG)      Register Mode set to 100 #<data>
+        MOVE.B  SRG,D1          Copy SRG to D1 to manipulate
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (SMD),D1        Add mode after reg
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        
+        BSR     ADVBFR          Advance the buffer accordingly
         BRA     FLAGST          Else, return successful
+
 
 * SUBQ: 0101|DAT|1|SZ|EMD|ERG
 * Syntax: SUBQ      #<data>,<ea>
 
         END     START
-
-
-
-
-
-
-
-
-
-
-
 
 *~Font name~Courier New~
 *~Font size~10~
