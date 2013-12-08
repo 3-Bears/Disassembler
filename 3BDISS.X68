@@ -1997,7 +1997,38 @@ BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name
 *       Most assemblers use EORI when the source is immediate data.
 
 BREOR   MOVE.B  #$43,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Return successful
+        MOVE.L  #$01C0,D2       Extract OPmode at 0000000111000000
+        BSR     EXTMSK          Get the size to D1
+        CMP.B   #$7,D1          If OPmode is greater than or equal to 7
+        BGE     FLAGCL          instruction not EOR    
+        CMP.B   #$03, D1        If OPmode is less than or equal to 3
+        BLE     FLAGCL          instruction not EOR
+        
+        CMP.B   #$6,D1          If 6, size equals a long
+        MOVE.B  #$6,IOSIZE      Set size to long
+        CMP.B   #$5,D1          If 5, size equals a word
+        MOVE.B  #$3,IOSIZE      Set size to word
+        CMP.B   #$4,D1          If 4, size equals a byte
+        MOVE.B  #$1,D1          Set size to byte
+        
+        * dest EA field: "Only data alterable addressing modes can be used [...]."
+        MOVE.W  #M_DALT,D0      Set data alterable modes as valid
+        BSR     EXSRC           Extract the <EA> mode and register
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        MOVE.B  SMD,(DMD)       Else, move source mode to destination mode
+        MOVE.B  SRG,(DRG)       Move source reg to destination reg 
+	    BSR     ADVBFR          Advance the buffer accordingly
+	    * manually set the source mode and source register
+	    MOVE.L  #$0E00,D2       Extract Dn register at 0000111000000000
+        BSR     EXTMSK          Get the register to D1
+        MOVE.B  D1,SRG          Store Source register in SRG
+        MOVE.B  #$00,(SMD)      Set source mode to 000
+	    LSL.B   #3,D1           Shift the reg 3 bits left
+	    OR.B    (SMD),D1        Add mode after reg     
+	    MOVE.B  D1,(RGMD)       Store D1 in RGMD     
+	    BSR     ADVBFR          Advance the buffer accordingly 
+	    BRA     FLAGST          Return successful
 
 
 * NOT: 01000110|SZ|EMD|ERG
