@@ -2076,7 +2076,7 @@ BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
 
 BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
         BSR     EXDST           Extract destination mode & register
-        BSR     ADVBFR          Advance the buffer accordingly
+        MOVE.B  #%001,(DMD)     Set destination mode to An
         BSR     EXSRC           Extract source mode & register
         * "Source EA field: "Only control addressing modes can be used [...]."
         MOVE.W  #M_CTR,D0       Set control modes as valid
