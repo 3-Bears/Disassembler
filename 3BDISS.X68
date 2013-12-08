@@ -82,6 +82,15 @@ OPNAME  DC.B    'MOVE',0        00      00
         DC.B    'BLS',0         203     CB
         DC.B    'ANDI',0        207     CF
         DC.B    'SUBQ',0        212     D4
+        DC.B    'JMP',0         217     D9
+        DC.B    'RTE',0         221     DD
+        DC.B    'RTD',0         225     E1
+        DC.B    'RTR',0         229     E5
+        DC.B    'NOP',0         233     E9
+        DC.B    'TRAPV',0       237     ED
+        DC.B    'RESET',0       243     F3
+        DC.B    'ILLEGAL',0     249     F9
+
 
 IOOPSZ  DC.B    '.B',0          0       00
         DC.B    '.W',0          3       03
@@ -663,6 +672,7 @@ DMDTBL  BRA     DISPM0              Dn
         BRA     DISPM6              (d,An,Xn)
         BRA     DISPM7              (XXX).W/(XXX).L/(d,PC)/(d,PC,Xn)/#data
         BRA     DISPM8              3 BEARS CUSTOM
+        BRA     DISPM9              Special (111) next word
 * Dn	    	0000 XXXX
 DISPM0  MOVE.B  #'D',D1             Read D
         TRAP    #15
@@ -839,6 +849,7 @@ D3BTBL  BRA     DISPC0              #<1-8>.Q
         BRA     DISPC4              (DIS).W
         BRA     DISPC5              (DIS).L
         BRA     DISPC6              (RLM).L
+        BRA     DISPC7              #<bit num>.B
 
 * #<1-8>.Q     1000 0000
 DISPC0  MOVE.B  #'#',D1             Read #
@@ -889,7 +900,6 @@ DISPC3  CLR.L   D0
         SUB.L   #2,A1               Advance A1 by word
         MOVE.L  D0,D1               Move D0 to D1
         BSR     DISPDIS             Display displacement
-        MOVE.L  A1,(IOADDR)         Move A1 to IOADDR
         BRA     DISPRT              Branch to return
 * (DIS).W       1000 0100
 DISPC4  CLR.L   D0
@@ -898,25 +908,37 @@ DISPC4  CLR.L   D0
         MOVE.W  (A1),D0             Get displacement to D0
         EXT.L   D0                  Extend word to long
         ADD.L   #2,D0               Add word for data to PC
-        SUB.L   #2,A1               Advance A1 by word
+        SUB.L   #2,A1               
         MOVE.L  D0,D1               Move D0 to D1
         BSR     DISPDIS             Display displacement
-        MOVE.L  A1,(IOADDR)         Move A1 to IOADDR
         BRA     DISPRT              Branch to return
 * (DIS).L       1000 0101
 DISPC5  CLR.L   D0
         CLR.L   D1
-        SIMHALT
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
         MOVE.L  (A1),D0             Get displacement to D0
         ADD.L   #4,D0               Add long for data to PC
-        SUB.L   #4,A1               Advance A1 by long
+        SUB.L   #4,A1               
         MOVE.L  D0,D1               Move D0 to D1
         BSR     DISPDIS             Display displacement
-        MOVE.L  A1,(IOADDR)         Move A1 to IOADDR
         BRA     DISPRT              Branch to return
-* (RLM).L
+* (RLM).L       1000 0110
 DISPC6
+        BRA     DISPRT              Branch to return
+* #<bit num>.B  1000 0111
+DISPC7  MOVE.B  #'#',D1             Read #
+        TRAP    #15
+        CLR.L   D1
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        MOVE.W  (A1),D1             Read bit number to D1
+        MOVE.B  #3,D0               Display number
+        TRAP    #15
+        BRA     DISPRT              Branch to return
+* Special-- next word: The mode was 111, but the value is located in the next word
+DISPM9  ADD.L   #2,IOADDR           Advance IOADDR by word
+        MOVE.B  #%111,D2            Set mode to 111
+        BSR     DISPOP              Display the special mode
+        SUB.L   #2,IOADDR           Re-align IOADDR
         BRA     DISPRT              Branch to return
         
 DISPRT  MOVEM.L (SP)+,D0-D3/A1      Restore D0-D3 & A1
@@ -1209,8 +1231,8 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         BSR     JMPMSK
 
         * ANDI:   00000010XXXXXXXX
-        MOVE.W  #%000000100000000,D2
-        MOVE.W  #%111111010000000,D3
+        MOVE.W  #%0000001000000000,D2
+        MOVE.W  #%1111110100000000,D3
         MOVE.L  #BRANDI,A0
         BSR     JMPMSK
 
@@ -1283,6 +1305,18 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.L  #BRNOT,A0
         BSR     JMPMSK
 
+        * MOVEM:  01001X001XXXXXXX
+        MOVE.W  #%0100100010000000,D2
+        MOVE.W  #%1011001100000000,D3
+        MOVE.L  #BRMOVEM,A0
+        BSR     JMPMSK
+
+        * ILLEGAL:0100101011111100
+        MOVE.W  #%0100101011111100,D2
+        MOVE.W  #%1011010100000011,D3
+        MOVE.L  #BRILLEGAL,A0
+        BSR     JMPMSK
+
         * MULU:   0100110000XXXXXX
         MOVE.W  #%0100110000000000,D2
         MOVE.W  #%1011001111000000,D3
@@ -1295,10 +1329,28 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.L  #BRDIVS,A0
         BSR     JMPMSK
 
-        * MOVEM:  01001X001XXXXXXX
-        MOVE.W  #%0100100010000000,D2
-        MOVE.W  #%1011001100000000,D3
-        MOVE.L  #BRMOVEM,A0
+        * RESET:  0100111001110000
+        MOVE.W  #%0100111001110000,D2
+        MOVE.W  #%1011000110001111,D3
+        MOVE.L  #BRRESET,A0
+        BSR     JMPMSK
+
+        * NOP:    0100111001110001
+        MOVE.W  #%0100111001110001,D2
+        MOVE.W  #%1011000110001110,D3
+        MOVE.L  #BRNOP,A0
+        BSR     JMPMSK
+
+        * RTE:    0100111001110011
+        MOVE.W  #%0100111001110011,D2
+        MOVE.W  #%1011000110001100,D3
+        MOVE.L  #BRRTE,A0
+        BSR     JMPMSK
+
+        * RTD:    0100111001110100
+        MOVE.W  #%0100111001110100,D2
+        MOVE.W  #%1011000110001011,D3
+        MOVE.L  #BRRTD,A0
         BSR     JMPMSK
 
         * RTS:    0100111001110101
@@ -1307,10 +1359,29 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.L  #BRRTS,A0
         BSR     JMPMSK
 
+        * TRAPV:  0100111001110110
+        MOVE.W  #%0100111001110110,D2
+        MOVE.W  #%1011000110001001,D3
+        MOVE.L  #BRTRAPV,A0
+        BSR     JMPMSK
+
+        * RTR:    0100111001110111
+        MOVE.W  #%0100111001110111,D2
+        MOVE.W  #%1011000110001000,D3
+        MOVE.L  #BRRTR,A0
+        BSR     JMPMSK
+
+
         * JSR:    0100111010XXXXXX
         MOVE.W  #%0100111010000000,D2
         MOVE.W  #%1011000101000000,D3
         MOVE.L  #BRJSR,A0
+        BSR     JMPMSK
+    
+        * JMP:    0100111011XXXXXX
+        MOVE.W  #%0100111011000000,D2
+        MOVE.W  #%1011000100000000,D3
+        MOVE.L  #BRJMP,A0
         BSR     JMPMSK
 
         * LEA:    0100XXX111XXXXXX
@@ -1725,7 +1796,7 @@ BRORI   MOVE.B  #$3F,(IOOPCD)   Set OP-code name
 * ANDI: 0000|0010|SZ|EMD|ERG
 * Syntax: ANDI      #<data>,<ea> 
 
-BRANDI  MOVE.B  #$CD,(IOOPCD)   Set OP-code name
+BRANDI  MOVE.B  #$CF,(IOOPCD)   Set OP-code name
         BRA     BRIMM           Branch to immediate instruction
 
 * SUBI: 0000|0100|SZ|EMD|ERG
@@ -1893,13 +1964,59 @@ BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
         BSR     ADVBFR          Else, advance the buffer accordingly
         BRA     FLAGST          Return successful
 
-* BTST: 0000|REG|100|EMD|ERG (BIT NUMBER DYNAMIC, SPECIFIED IN A REGISTER)
-*       0000100000|EMD|ERG  00000000|_BITNUM_ (BIT NUMBER STATIC, SPECIFIED AS IMMEDIATE DATA)
+* BTST: 0000XXXX00|EMD|ERG
 * Syntax: BTST      Dn,<ea>
 *         BTST      #<data>,<ea>
 
 BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Return successful
+        BSR     EXDST           Extract bits in destination mode & register location
+        CMP.B   #0,(DMD)        Compare the mode to STATIC
+        BEQ     BRBTSTS         If ==, branch to BTST STATIC
+        CMP.B   #4,(DMD)        Compare the mode to DYNAMIC
+        BEQ     BRBTSTD         If ==, branch to BTST DYNAMIC
+        BRA     FLAGCL          If neither were found, return unsuccessful
+
+
+* BTST STATIC: 0000100000|EMD|ERG
+*              00000000|_BITNUM_
+* Syntax: BTST      #<data>,<ea>
+
+BRBTSTS BSR     EXSRC           Extract destination from source location
+        * "Only data addressing modes can be used [...]."
+        * M68 Manual oddly does not note that #<data> is invalid
+        MOVE.W  #$7FD,D0        Set data modes - #<data> as valid %0000111111111101
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance buffer accordingly
+        BSR     SWAPF           Swap source to destination
+        MOVE.B  #0,(IOSIZE)     Set size to byte
+        CMP.B   #0,(DMD)        Compare destination to Dn
+        BNE     *+8             If !=, skip the next line
+        MOVE.B  #2,(IOSIZE)     Else, set size to long
+        ADD.L   #2,A1           Advance buffer for bit num
+        MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
+        MOVE.B  #7,(SRG)        Set reg mode to 7 for #<bit num>.B
+        CMP.B   #%111,(DMD)     Compare destination mode to special
+        BNE     FLAGST          If !=, return successful
+        MOVE.B  #%1001,(DMD)    Else if ==, set mode to special-- next word
+        BRA     FLAGST          Return successful
+
+* BTST DYNAMIC: 0000|REG|100|EMD|ERG
+* Syntax: BTST      Dn,<ea>
+
+BRBTSTD BSR     EXSRC           Extract destination from source location
+        * "Only data addressing modes can be used [...]."
+        MOVE.W  #M_DAT,D0       Set data modes as valid
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance buffer accordingly
+        BSR     SWAPF           Swap source to destination
+        MOVE.B  #0,(IOSIZE)     Set size to byte
+        CMP.B   #0,(DMD)        Compare destination to Dn
+        BNE     *+8             If !=, skip the next line
+        MOVE.B  #2,(IOSIZE)     Else, set size to long
+        MOVE.B  #0,(SMD)        Set source mode to Dn
+        BRA     FLAGST          Return successful
 
 * Bcc: 0110|COND|_8BTDSP_
 * Syntax: Bcc       <label>
@@ -2064,13 +2181,6 @@ BREOR   MOVE.B  #$43,(IOOPCD)   Set OP-code name
         BSR     SWAPF           Swap dest & source fields
 	    BRA     FLAGST          Return successful
 
-
-* RTS: 0100111001110101
-* Syntax: RTS
-
-BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
-        BRA     FLAGST          Return successful
-
 * LEA: 0100|REG|111|EMD|ERG
 * Syntax: LEA       <ea>,An
 
@@ -2089,7 +2199,25 @@ BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
 * Syntax: JSR       <ea>
 
 BRJSR   MOVE.B  #$7F,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Return successful
+        BSR     EXSRC           Extract source mode & register
+        * "Source EA field: "Only control addressing modes can be used [...]."
+        MOVE.W  #M_CTR,D0       Set control modes as valid
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Return successful
+
+* JMP: 0100111011|EMD|ERG
+* Syntax: JMP       <ea>
+
+BRJMP   MOVE.B  #$D9,(IOOPCD)   Set OP-code name
+        BSR     EXSRC           Extract source mode & register
+        * "Source EA field: "Only control addressing modes can be used [...]."
+        MOVE.W  #M_CTR,D0       Set control modes as valid
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Return successful
         
 * MOVE: 00|SZ|DRG|DMD|SMD|SRG
 * Syntax: MOVE      <ea>,<ea>
@@ -2220,6 +2348,55 @@ BRNOT   MOVE.B  #$4C,(IOOPCD)   Set OP-code name
         BSR     ADVBFR          Else, advance the buffer accordingly
         * The destination is in the source values, but this is ok because they are
         * only used for display purposes and the order of values.
+        BRA     FLAGST          Return successful
+
+* RTS: 0100111001110101
+* Syntax: RTS
+
+BRRTS   MOVE.B  #$83,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+* RTE: 0100111001110011
+* Syntax: RTE
+
+BRRTE   MOVE.B  #$DD,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+* RTD: 0100111001110100
+* Syntax: RTD
+
+BRRTD   MOVE.B  #$E1,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+* RTR: 0100111001110111
+* Syntax: RTR
+
+BRRTR   MOVE.B  #$E5,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+* ILLEGAL: 0100101011111100
+* Syntax: ILLEGAL
+
+BRILLEGAL
+        MOVE.B  #$F9,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+* NOP: 0100111001110001
+* Syntax: NOP
+
+BRNOP   MOVE.B  #$E9,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+* RESET: 0100111001110000
+* Syntax: RESET
+
+BRRESET MOVE.B  #$F3,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+* TRAPV: 0100111001110110
+* Syntax: TRAPV
+
+BRTRAPV MOVE.B  #$ED,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
         END     START
