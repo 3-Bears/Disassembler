@@ -2089,7 +2089,12 @@ BRLEA   MOVE.B  #$37,(IOOPCD)   Set OP-code name
 * Syntax: JSR       <ea>
 
 BRJSR   MOVE.B  #$7F,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Return successful
+        BSR     EXSRC           Extract source mode & register
+        MOVE.W  #M_CTR,D0       Set control modes as valid
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Return successful
         
 * MOVE: 00|SZ|DRG|DMD|SMD|SRG
 * Syntax: MOVE      <ea>,<ea>
