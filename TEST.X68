@@ -37,8 +37,25 @@ VBIN1   EQU %11111111110011111100111111001111
 * Syntax: <ea>, <ea>
 * Size: B, W, L
 *-----------------------------------------------------------
-
+*START
 *LEGAL INSTRUCTIONS
+    BCS     *-10
+    BSR     $7030
+    BGT     *+24
+    BPL     24
+    BVS     *+2013
+
+    NOT.B   D0
+    NOT.W   (A0)
+    NOT.L   (A1)+
+    NOT.B   -(A2)
+    NOT.W   (0,A3)
+    NOT.L   (5,A7,D1)
+    NOT.W   $123.L   
+
+    SUBI.W  #VHEX2,D2
+    SUBI.B  #VHEX1,D0
+    SUBI.W  #VHEX2,D2
 
     MOVE.B  (6*2,A6,D2),(A4)     (d8,An,Xn),(An)
     MOVE.W  (79,A6,A1),A5        (d8,An,Xn),An
@@ -714,3 +731,5 @@ JUMP    *For JSR & RTS test
         RTS
 *ILLEGAL INSTRUCTIONS
         NOP         NOP
+
+*        END     START
