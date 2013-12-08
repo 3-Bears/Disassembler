@@ -79,6 +79,7 @@ OPNAME  DC.B    'MOVE',0        00      00
         DC.B    'BGE',0         191     BF
         DC.B    'BGT',0         195     C3
         DC.B    'BLE',0         197     C7
+        DC.B    'BLS',0         201     CB
 
 IOOPSZ  DC.B    '.B',0          0       00
         DC.B    '.W',0          3       03
@@ -1743,6 +1744,8 @@ BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
 * Branch on...
 *  BRA:     0000
 *  BSR:     0001
+*   HI:     0010
+*   LS:     0011
 *   CC(HI): 0100
 *   CS(LO): 0101
 *   NE:     0110
@@ -1773,14 +1776,13 @@ BRBccd  MOVE.B  #$6B,(IOOPCD)   Set OP-code name
         MOVE.L  #$0F00,D2       Extract condition at  0000111100000000
         CLR.L   D1              Clear D1 for table displacement
         BSR     EXTMSK          Get the condition to D1
-        CMP.B   #0,D1           Compare condition to BRA
-        BEQ     BRBRA           If ==, branch to BRA
-        CMP.B   #1,D1           Else, Compare condition to BSR
-        BEQ     BRBSR           If ==, branch to BSR
-        SUB.L   #4,D1           Else, subtract 4 from condition
         MULU.W  #4,D1           Convert condition to displacement
         JMP     BccTBL(PC,D1)   Jump to condition code branch
-BccTBL  BRA     BRBCC
+BccTBL  BRA     BRBRA
+        BRA     BRBSR
+        BRA     BRBHI
+        BRA     BRBLS
+        BRA     BRBCC
         BRA     BRBCS
         BRA     BRBNE
         BRA     BRBEQ
@@ -1837,6 +1839,9 @@ BRBGT   MOVE.B  #$C3,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
 BRBLE   MOVE.B  #$C7,(IOOPCD)   Set OP-code name
+        BRA     FLAGST          Return successful
+
+BRBLS   MOVE.B  #$CB,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
 * CMP: 1011|REG|OPM|EMD|ERG
