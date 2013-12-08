@@ -78,8 +78,10 @@ OPNAME  DC.B    'MOVE',0        00      00
         DC.B    'BMI',0         187     BB
         DC.B    'BGE',0         191     BF
         DC.B    'BGT',0         195     C3
-        DC.B    'BLE',0         197     C7
-        DC.B    'BLS',0         201     CB
+        DC.B    'BLE',0         199     C7
+        DC.B    'BLS',0         203     CB
+        DC.B    'ANDI',0        207     CF
+
 
 IOOPSZ  DC.B    '.B',0          0       00
         DC.B    '.W',0          3       03
@@ -1192,6 +1194,12 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.L  #BRORI,A0
         BSR     JMPMSK
 
+        * ANDI:   00000010XXXXXXXX
+        MOVE.W  #%000000100000000,D2
+        MOVE.W  #%111111010000000,D3
+        MOVE.L  #BRANDI,A0
+        BSR     JMPMSK
+
         * SUBI:   00000100XXXXXXXX
         MOVE.W  #%0000010000000000,D2
         MOVE.W  #%1111101100000000,D3
@@ -1638,17 +1646,6 @@ BRIMM   MOVE.W  (A1),D0         Move instruction to D0
         BSR     ADVBFR          Advance the buffer accordingly
         BRA     FLAGST          Return successful
 
-* ADDI: 000000110|SZ|EMD|ERG
-* Syntax: ADDI      #<data>,<ea>
-
-BRADDI  MOVE.B  #$9A,(IOOPCD)   Set OP-code name
-        BRA     BRIMM           Branch to immediate instruction
-
-* CMPI: 00001100|SZ|EMD|ERG
-* Syntax: CMPI      #<data>,<ea>
-
-BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
-        BRA     BRIMM           Branch to immediate instruction
 
 * ORI: 00000000|SZ|EMD|ERG
 * Syntax: ORI       #<data>,<ea>
@@ -1656,11 +1653,10 @@ BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
 BRORI   MOVE.B  #$3F,(IOOPCD)   Set OP-code name
         BRA     BRIMM           Branch to immediate instruction
 
+* ANDI: 0000|0010|SZ|EMD|ERG
+* Syntax: ANDI      #<data>,<ea> 
 
-* EORI: 00001010|SZ|EMD|ERG
-* Syntax: EORI      #<data>,<ea>
-
-BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
+BRANDI  MOVE.B  #$CD,(IOOPCD)   Set OP-code name
         BRA     BRIMM           Branch to immediate instruction
 
 * SUBI: 0000|0100|SZ|EMD|ERG
@@ -1669,6 +1665,23 @@ BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
 BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
         BRA     BRIMM           Branch to immediate instruction
 
+* ADDI: 000000110|SZ|EMD|ERG
+* Syntax: ADDI      #<data>,<ea>
+
+BRADDI  MOVE.B  #$9A,(IOOPCD)   Set OP-code name
+        BRA     BRIMM           Branch to immediate instruction
+
+* EORI: 00001010|SZ|EMD|ERG
+* Syntax: EORI      #<data>,<ea>
+
+BREORI  MOVE.B  #$47,(IOOPCD)   Set OP-code name
+        BRA     BRIMM           Branch to immediate instruction
+
+* CMPI: 00001100|SZ|EMD|ERG
+* Syntax: CMPI      #<data>,<ea>
+
+BRCMPI  MOVE.B  #$66,(IOOPCD)   Set OP-code name
+        BRA     BRIMM           Branch to immediate instruction
 
 * ADD: 1101|REG|OPM|EMD|ERG
 * Syntax: ADD       <ea>,Dn
@@ -1682,25 +1695,24 @@ BRSUBI  MOVE.B  #$28,(IOOPCD)   Set OP-code name
 BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
         BSR     EXDST           Extract OP mode & register
         BSR     OPSIZE          Translate OP mode from DMD, get operation in D2.B
-        * "If the location specified is a destination operand,
-        * only memory alterable addressing modes can be used [...]."
-        CMP.B   #0,D2           Compare operation to Dn
-        BNE.S   *+6             If !=, skip next line
-        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
         * "If the location specified is a source operand,
         * all addressing modes can be used [...]."
-        CMP.B   #1,D2           Compare operation to <ea>
+        CMP.B   #0,D2           Compare operation to Dn
         BNE.S   *+6             If !=, skip next line
         MOVE.W  #M_ALL,D0       Set all modes as valid
+        * "If the location specified is a destination operand,
+        * only memory alterable addressing modes can be used [...]."
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE.S   *+6             If !=, skip next line
+        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
         * "ADDA is used when the destination is an address register."
         CMP.B   #2,D2           Compare operation to An
         BEQ     BRADDA          If ==, branch to BRADDA
-
         BSR     EXSRC           Extract EA mode & register
-        *BSR     TSTAM           Test modes for validity
-        *BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
-        BRA     FLAGST          Return return successful
+        BRA     FLAGST          Return successful
 
 
 * ADDA: 1101|REG|OPM|EMD|ERG
@@ -1729,7 +1741,25 @@ BRADDQ  MOVE.B  #$1A,(IOOPCD)   Set OP-code name
 *       Most assemblers use ANDI when the source is immediate data.
 
 BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Return successful
+        BSR     EXDST           Extract OP mode & register
+        BSR     OPSIZE          Translate OP mode from DMD, get operation in D2.B
+        CMP.B   #2,D2           Compare OP mode to An
+        BEQ     FLAGCL          If ==, mode is not valid, return unsuccessful
+        * "If the location specified is a source operand,
+        * only data addressing modes can be used [...]."
+        CMP.B   #0,D2           Compare operation to Dn
+        BNE.S   *+6             If !=, skip next line
+        MOVE.W  #M_DAT,D0       Set data modes as valid
+        * "If the location specified is a destination operand,
+        * only memory alterable addressing modes can be used [...]."
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE.S   *+6             If !=, skip next line
+        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
+        BSR     EXSRC           Extract EA mode & register
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Return successful
 
 * BTST: 0000|REG|100|EMD|ERG (BIT NUMBER DYNAMIC, SPECIFIED IN A REGISTER)
 *       0000100000|EMD|ERG  00000000|_BITNUM_ (BIT NUMBER STATIC, SPECIFIED AS IMMEDIATE DATA)
@@ -2060,13 +2090,39 @@ BRNOT   MOVE.B  #$4C,(IOOPCD)   Set OP-code name
 *       and SUBI or SUBQ when the source is immediate data.
 
 BRSUB   MOVE.B  #$1F,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Else, return successful
+        BSR     EXDST           Extract OP mode & register
+        BSR     OPSIZE          Translate OP mode from DMD, get operation in D2.B
+        * "If the location specified is a source operand,
+        * all addressing modes can be used [...]."
+        CMP.B   #0,D2           Compare operation to Dn
+        BNE.S   *+6             If !=, skip next line
+        MOVE.W  #M_ALL,D0       Set all modes as valid
+        * "If the location specified is a destination operand,
+        * only memory alterable addressing modes can be used [...]."
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE.S   *+6             If !=, skip next line
+        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
+        * "SUBA is used when the destination is an address register."
+        CMP.B   #2,D2           Compare operation to An
+        BEQ     BRSUBA          If ==, branch to BRADDA
+        BSR     EXSRC           Extract EA mode & register
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Return successful
+
 
 * SUBA: 1001|REG|OPM|EMD|ERG
 * Syntax: SUBA      <ea>,An
 
 BRSUBA  MOVE.B  #$23,(IOOPCD)   Set OP-code name 
-        BRA     FLAGCL          Else, return successful
+        * "All addressing modes can be used [...]."
+        MOVE.W  #M_ALL,D0       Set all modes as valid
+        BSR     EXSRC           Extract EA mode & register
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Return successful
 
 * SUBQ: 0101|DAT|1|SZ|EMD|ERG
 * Syntax: SUBQ      #<data>,<ea>
