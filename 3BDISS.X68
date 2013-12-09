@@ -13,8 +13,8 @@ MNADDR  EQU     $7000       Min address
 MXADDR  EQU     $00FFFFFF   Max address
 
 GBUFF   DS.L    1           Pointer to next location in "Good buffer"
-SLOC    DS.B    4           Starting location storage
-ELOC    DS.B    4           Ending location storage
+SLOC    DS.B    80          Starting location storage
+ELOC    DS.B    80          Ending location storage
 
 *-----I/O Memory-----
 NGBUFF  DS.L    1           Pointer to next location after the first displayed instruction
@@ -106,23 +106,28 @@ RGMD    DS.B    1               Last register + mod (00REGMOD)
 DIS     DS.B    1               Last displacement
 
 *--------------------
-
-MSSG0   DC.B    '  _     _     _     _     _     _ ',CR,LF
-        DC.B    ' (o\---/o)   (o\---/o)   (o\---/o)',CR,LF
-        DC.B    '  | - - |     | ^ ^ |     | . . |',CR,LF
-        DC.B    ' _( (Y)_)_,--.(_(Y)_),--._(_(Y) )_',CR,LF
-        DC.B    '/ /___|_  ".."       ".."  _|___\ \',CR,LF
-        DC.B    '\_______):     THREE     :(_______/',CR,LF
-        DC.B    '| |   |        BEARS        |   | |',CR,LF
-        DC.B    '| |   |    DISASSEMBLER     |   | |',CR,LF
-        DC.B    '|  \__|__Joey__Terence__Win_|__/  |',CR,LF
-        DC.B    ' \    I  /_  )   |   (  _\  I    /',CR,LF
-        DC.B    '  \____)___)(___/ \___)(___(____/',CR,LF
-        DC.B    'Welcome to 3B Disassembler. Enter 0 at any time to quit.',CR,LF,0
-MSSG1   DC.B    'Enter the starting location of the code to be disassembled, or leave it blank',CR,LF,'for the starting address:',0
-MSSG2   DC.B    'Enter the ending location of the code to be disassembled, or leave it blank',CR,LF,'for the ending address:',0
+*                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+MSSG0   DC.B    '                        _     _     _     _     _     _ ',CR,LF
+        DC.B    '                       (o\---/o)   (o\---/o)   (o\---/o)',CR,LF
+        DC.B    '                        | - - |     | ^ ^ |     | . . |',CR,LF
+        DC.B    '                       _( (Y)_)_,--.(_(Y)_),--._(_(Y) )_',CR,LF
+        DC.B    '                      / /___|_  ".."       ".."  _|___\ \',CR,LF
+        DC.B    '                      \_______):     THREE     :(_______/',CR,LF
+        DC.B    '                      | |   |        BEARS        |   | |',CR,LF
+        DC.B    '                      | |   |    DISASSEMBLER     |   | |',CR,LF
+        DC.B    '                      |  \__|__Joey__Terence__Win_|__/  |',CR,LF
+        DC.B    '                       \    I  /_  )   |   (  _\  I    /',CR,LF
+        DC.B    '                        \____)___)(___/ \___)(___(____/',CR,LF,CR,LF
+        DC.B    '     Welcome to 3B Disassembler. The following instructions will guide you',CR,LF
+        DC.B    '     through the steps in order to disassemble your code according to your',CR,LF
+        DC.B    '     preferences. After which, you may press [BACKSPACE] if you would like',CR,LF
+        DC.B    '     to restart the program. You may press 0 at any time, to quit.',CR,LF,CR,LF,0
+MSSG1   DC.B    ' Enter the starting location of the code to be disassembled, or leave it blank',CR,LF
+        DC.B    ' for the starting address:',0
+MSSG2   DC.B    ' Enter the ending location of the code to be disassembled, or leave it blank',CR,LF
+        DC.B    ' for the ending address:',0
 MSSG4   DC.B    'Press [ENTER] for the next page, or [CTRL] + [ENTER] for next line.',0
-MSSG5   DC.B    'You have reached the end of the program.',0
+MSSG5   DC.B    'You have reached the end of the program. Press any key to restart, or 0 to quit.',0
 HEADR   DC.B    'Address      OP-Code       Operand',0
 ERR0    DC.B    'The input address was too small.',CR,LF,0
 ERR1    DC.B    'The input address was too big.',CR,LF,0
@@ -431,19 +436,18 @@ PRMPT1  LEA     MSSG1,A1        Starting location request message
         MOVE.B  #2,D0           Input starting location (as string / hex)
         TRAP    #15
         
-        MOVE.L  (SLOC),D0       Move input to D0
+        MOVE.L  (A1),D0         Move input to D0
 
         CMP.L   #$00FFFFFF,D0   Check if input was NULL
         BNE     *+14            If the input was not null, branch to convert input
         MOVE.L  #MNADDR,(SLOC)  If the input was null, move the min address to SLOC
         BRA     PRMPT2          Branch to the next prompt
-        
+
         BSR     ASCII2HEX       Convert D0 to HEX in D1
         
         MOVE.L  D1,(A1)         Set SLOC to HEX value
-                        
-        CMP.L   #0,D1           Compare starting location to 0
-        BEQ     DONE            End program if 0
+        CMP.L   #$0000F0FF,D1   Compare starting location to 0
+        BEQ     HALT            End program if 0
         
         CMP.L   #MNADDR,D1      Compare starting location to min
         BLO     ILL0            Branch to ILL0 if < min
@@ -481,8 +485,8 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         
         MOVE.L  D1,(A1)         Set ELOC to HEX value
 
-        CMP.L   #0,D1           Compare ending location to 0
-        BEQ     DONE            End program if 0
+        CMP.L   #$0000F0FF,D1   Compare ending location to 0
+        BEQ     HALT            End program if 0
         
         CMP.L   #MNADDR,D1      Compare min ending location to min
         BLS     ILL2            Branch to ILL2 if <= min
@@ -494,7 +498,7 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         CMP.L   D0,D1           Compare ending location to starting location
         BLS     ILL2            Branch to ILL3 if <= starting location
         
-PRMPTDN MOVE.L  SLOC,GBUFF      Store starting location in GBUFF for OP
+PRMPTDN MOVE.L  (SLOC),(GBUFF)  Store starting location in GBUFF for OP
         BRA     DSPHDR          Branch to display method
 
 *
@@ -1149,16 +1153,14 @@ PRINTD  BSR     DISPDST             Get destination display
         TRAP    #15                 If it was displayed, display a comma
         BSR     DISPOP              Display destination accordingly
 
-PRNTFIN MOVE.L  GBUFF,A0            Set A0 to ELOC location
-        CMPA.L  ELOC,A0             Compare next buffer to ending location
-        BGE     DONE                Branch to DONE if >= ending location
+PRNTFIN BSR     RESETIO             Reset IO values
+        ADD.L   #$2,(GBUFF)         Advance buffer past instruction
 
         ADD.B   #1,IOLC
         CMP.B   #30,IOLC            Compare #30 to line counter
         BEQ     PAUSE               If ==, branch to PAUSE
 
-        BSR     RESETIO
-        ADD.L   #$2,(GBUFF)         Advance buffer
+        BSR     CHKEND              Check for end of program
 
         CMP.B   #1,IOLC             Compare #1 to line counter
         BNE     OP                  If !=, branch to OP for next instruction
@@ -1176,12 +1178,18 @@ RESETIO MOVE.B  #$FF,(IOOPCD)
         MOVE.B  #$FF,(DRG)
         RTS
 
+* Check if the end of the program has been reached
+CHKEND  MOVE.L  GBUFF,A0            Set A0 to GBUFF location
+        CMPA.L  ELOC,A0             Compare next buffer to ending location
+        BGT     DONE                Branch to DONE if > ending location
+        RTS                         Else, return to caller
+
 *
 * Pause: Halt the instruction display process, and prompt for an action
 *
 
-PAUSE   LEA     MSSG4,A1            Display keypress prompt
-        BSR     NEWLINE             Display new line
+PAUSE   BSR     NEWLINE             Display new line
+        LEA     MSSG4,A1            Display keypress prompt
         MOVE.B  #14,D0              Display A1 until null char
         TRAP    #15
         MOVE.B  #12,D0              Keyboard echo
@@ -1192,13 +1200,14 @@ PAUSE   LEA     MSSG4,A1            Display keypress prompt
 * Request Key: Request a keyboard input, and do not continue until a valid input was given
 *
 
-REQKEY  MOVE.B  #7,D0               Request keyboard input
-        MOVE.B  #1,D1
-        TRAP    #15
-        MOVE.B  #5,D0               Request keyboard input
+REQKEY  MOVE.B  #5,D0               Request keyboard input
         TRAP    #15
         CMP.B   #$D,D1              Compare input to ENTER
         BEQ     DSPHDR              If ==, branch to DSPHDR
+        CMP.B   #$8,D1              Compare input to BACKSPACE
+        BEQ     RESTART             If ==, branch to RESTART
+        CMP.B   #$30,D1             Compare input to [0]
+        BEQ     HALT                If ==, branch to HALT
         CMP.B   #$A,D1              Compare input to CTR + ENTER
         BNE     REQKEY              If !=, loop until a recognized key code was entered
         MOVE.L  (NGBUFF),(GBUFF)    Else, go down one line
@@ -1219,19 +1228,46 @@ DSPHDR  MOVE.B  #12,D0              Keyboard echo
         TRAP    #15
         CLR.B   (IOLC)              Reset line counter
         CLR.B   (IOBC)              Reset bad counter
-        BSR     RESETIO
+        BSR     CHKEND              Check for end of program        
         BRA     OP                  Branch to OP
 
 *
-* Display the ending message, and halt the program
+* Done: Display the ending message, and halt the program
 *
 
 DONE    BSR     NEWLINE             Display new line
         LEA     MSSG5,A1            Display end message
-        MOVE.B  #14,D0              Display A1 until nul char
+        MOVE.B  #14,D0              Display A1 until null char
         TRAP    #15
-        MOVE.B  #9,D0               Sleep now
+        MOVE.B  #12,D0              Keyboard echo
+        MOVE.B  #0,D1               Hidden
         TRAP    #15
+        MOVE.B  #5,D0               Request keyboard input
+        TRAP    #15
+        CMP.B   #$30,D1             Compare input to 0
+        BEQ     HALT                If ==, branch to halt
+        MOVE.B  #12,D0              Keyboard echo
+        MOVE.B  #1,D1               Visible
+        TRAP    #15
+
+        BRA     RESTART
+
+*
+* Halt: Halt the program
+*
+
+HALT    MOVE.B  #9,D0               Terminate the program
+        TRAP    #15
+
+*
+* Restart: Restart the program
+*
+
+RESTART MOVE.B  #11,D0              Clear the screen
+        MOVE.W  #$FF00,D1
+        TRAP    #15
+        MOVE.L  #$00,(GBUFF)        Reset GBUFF
+        BRA     START
 
 *--------------------
 *   OP
@@ -1246,7 +1282,7 @@ JMPMSK  BSR     CMPMSK              Branch to CMPMSK
         BNE.S   *+18                If the bits did not match, return to caller
         JSR     (A0)                If the bits matched, branch to the OP address
         BNE     *+12                If the OP address was read successful, skip the next two lines
-        MOVE.L  A1,GBUFF            The buffer was good, move it to GBUFF
+        MOVE.L  A1,(GBUFF)          The buffer was good, move it to GBUFF
         BRA     PRINT               Branch to PRINT     
         MOVE.L  GBUFF,A1            The buffer was bad, restore A1
         RTS                         Return to caller for next instruction
