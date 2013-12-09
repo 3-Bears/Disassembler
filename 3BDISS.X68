@@ -849,7 +849,8 @@ D3BTBL  BRA     DISPC0              #<1-8>.Q
         BRA     DISPC4              (DIS).W
         BRA     DISPC5              (DIS).L
         BRA     DISPC6              (RLM).L
-        BRA     DISPC7              #<bit num>.B
+        BRA     DISPC7              (MLR).L
+        BRA     DISPC8              #<bit num>.B
 
 * #<1-8>.Q     1000 0000
 DISPC0  MOVE.B  #'#',D1             Read #
@@ -922,11 +923,54 @@ DISPC5  CLR.L   D0
         MOVE.L  D0,D1               Move D0 to D1
         BSR     DISPDIS             Display displacement
         BRA     DISPRT              Branch to return
-* (RLM).L       1000 0110
-DISPC6
+* (RLM).W       1000 0110
+* Tentative solution...
+DISPC6  MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        CLR.L   D2
+        MOVE.W  (A1),D2             Get register list mask to D2
+        MOVE.L  #RLMA,A1            Set return address to RLMA
+        MOVE.L  #0,D3               Set Dn counter
+        MOVE.B  #0,D4               Set last bit to false
+        MOVE.B  #'D',D5             Set character to D
+RLMLP   BTST    D3,D2               Test bit at counter
+        BEQ     RLMADV
+        MOVE.B  #6,D0
+        MOVE.B  #'/',D1
+        CMP.B   #0,D4
+        BEQ     *+4
+        TRAP    #15
+        MOVE.B  D5,D1               Read char
+        TRAP    #15
+        MOVE.B  #3,D0               Display number
+        MOVE.B  D3,D1               Read counter
+        TRAP    #15
+        MOVE.B  #1,D4               Set last bit to true
+RLMADV  ADD.B   #1,D3
+        CMP.B   #8,D3
+        BNE     *+4
+        JMP     (A1)
+        MOVE.B  #6,D0
+        MOVE.B  #'/',D1
+        CMP.B   #0,D4
+        BEQ     *+4
+        TRAP    #15
+        MOVE.B  #0,D4               Set last bit to false
+        BRA     RLMLP
+RLMA    ROL.W   #8,D2               Get An in LSB
+        MOVE.L  #0,D3               Set An counter
+        MOVE.B  #0,D4               Set last bit to false
+        MOVE.B  #'A',D5             Set char to A
+        MOVE.L  #RLMFN,A1           Set return address to RLM Finish
+        BRA     RLMLP
+RLMFN   MOVE.B  #6,D0
+        MOVE.B  #',',D1
+        TRAP    #15
+        BRA     DISPRT              Branch to return
+* (MLR).W       1000 0110
+DISPC7
         BRA     DISPRT              Branch to return
 * #<bit num>.B  1000 0111
-DISPC7  MOVE.B  #'#',D1             Read #
+DISPC8  MOVE.B  #'#',D1             Read #
         TRAP    #15
         CLR.L   D1
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
@@ -1995,7 +2039,7 @@ BRBTSTS BSR     EXSRC           Extract destination from source location
         MOVE.B  #2,(IOSIZE)     Else, set size to long
         ADD.L   #2,A1           Advance buffer for bit num
         MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
-        MOVE.B  #7,(SRG)        Set reg mode to 7 for #<bit num>.B
+        MOVE.B  #8,(SRG)        Set reg mode to 8 for #<bit num>.B
         CMP.B   #%111,(DMD)     Compare destination mode to special
         BNE     FLAGST          If !=, return successful
         MOVE.B  #%1001,(DMD)    Else if ==, set mode to special-- next word
@@ -2273,15 +2317,51 @@ BRMOVEA MOVE.B  #$05,(IOOPCD)   Set Op-code name
         MOVE.W  #M_ALL,D0       Set all modes as valid (0000011111111111)
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Advance the buffer accordingly
+        BSR     ADVBFR          Else advance the buffer accordingly
         BRA     FLAGST          Return successful
 
-* MOVEM: 01001|D|001|S|EMD|ERG
+* MOVEM: 01001|D|001|S|EMD|ERG  REGISTERLISTMASK
 * Syntax: MOVEM     <list>,<ea>
 *         MOVEM     <ea>,<list>
 
 BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Return successful
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$40,D2         Extract size at 0000000001000000
+        BSR     EXTMSK          Get the size to D1
+        ADD.B   #1,D1           Convert size to W/L
+        MOVE.B  D1,(IOSIZE)     Store D1 in size
+        MOVE.L  #$400,D2        Extract direction at 0000010000000000
+        BSR     EXTMSK          Get the direction to D1
+        * Direction 0 = Register-to-memory
+        * Direction 1 = Memory-to-register
+        BSR     EXSRC           Get the EA mode & reg from source location
+        * EA field: "For register-to-memory transfers,
+        * only control alterable addressing modes
+        * or the predecrement addressing mode can be used [...]."
+        MOVE.W  #$1F3,D0        Set valid modes for reg-to-mem by default (0000000111110100)
+        CMP.B   #0,D1           Compare direction to reg-to-mem
+        BEQ.S   *+6             If ==, skip the next line
+        * EA field: "For memory-to-register transfers,
+        * only control addressing modes
+        * or the postincrement addressing mode can be used [...]."
+        MOVE.W  #$7EC,D0        Else, Set valid modes for mem-to-reg (0000011111101100)
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else advance the buffer accordingly
+        MOVE.B  #8,(DMD)        Set mode to 3 BEARS CUSTOM
+        MOVE.B  #6,(DRG)        Set register to (RLM).W by default
+        * "For the predecrement mode addresses, the mask correspondence is reversed."
+        CMP.B   #%100,(SMD)     Compare source mode to predecrement mode
+        BNE.S   *+8             If !=, skip next line
+        MOVE.B  #7,(DRG)        Else if ==, set register to (MLR).W
+        CMP.B   #%111,(SMD)     Compare source mode to special
+        BNE.S   *+8             If !=, skip next line
+        MOVE.B  #%1001,(SMD)    Else if ==, set mode to special-- next word
+        CMP.B   #0,D1           Compare direction to reg-to-mem again
+        BEQ.S   *+6             If ==, skip the next line
+        BSR     SWAPF           Else, swap the source and destination
+        ADD.L   #2,A1           Advance buffer by word for MLR
+        BRA     FLAGST          Return successful
 
 * MOVEQ: 0111|REG|0|__DATA__
 * Syntax: MOVEQ     #<data>,Dn
@@ -2313,7 +2393,7 @@ BRLSd   *MOVE.B  #$92,(IOOPCD)   LSL
 *       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
 * Syntax: MULU.W    <ea>,Dn    16x16 -> 32
 *         MULU.L    <ea>,Dl    32x32 -> 32
-*         MULU.L    <ea>,Dh:Dl 32x32 -> 64 
+*         MULU.L    <ea>,Dh-Dl 32x32 -> 64 
 
 BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
         BRA     FLAGCL          Return successful
