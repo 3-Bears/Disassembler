@@ -132,7 +132,7 @@ MSSG3   DC.B    ' Please note that this program will automatically detect the en
         DC.B    '          Continue: [ENTER]      Restart: [BACKSPACE]      Quit: [0]',0
 MSSG4   DC.B    'Press [ENTER] for the next page, or [CTRL] + [ENTER] for next line.',0
 MSSG5   DC.B    'You have reached the end of the program. Press any key to restart, or 0 to quit.',0
-HEADR   DC.B    'Address      OP-Code       Operand',0
+HEADR   DC.B    '|  Address | --------Code-------- |    OP-Code    |          Operand           |',0
 ERR0    DC.B    '                     !!! The input address was too small !!!',0
 ERR1    DC.B    '                     !!! The input address was too large !!!',0
 BLANK   DC.B    '                                                                                ',0
@@ -382,10 +382,10 @@ DSPHXRT MOVEM.L (SP)+,D0-D2/A1  Else, restore values
 
 
 *
-* Display HEX Nibble: Display the hex from D0.B to screen
+* Display HEX Byte: Display the hex from D0.B to screen
 *
 
-DSPHXN  MOVEM.L D0/D1,-(SP)     Push D0 and D1 to stack
+DSPHXB  MOVEM.L D0/D1,-(SP)     Push D0 and D1 to stack
         BSR     HEX2ASCII       Get ASCII in D1
         MOVE.B  #6,D0           Set trap #6 to read single char from D1.B
         TRAP    #15
@@ -421,6 +421,49 @@ DSPHXL  SWAP    D0              Swap first half to D0.W
         SWAP    D0              Swap lower half to D0.W
         BSR     DSPHXW          Display lower half
         RTS                     Return to caller
+
+*
+* Display string: Displays string until NULL char
+* Input string at A1, output length of string at D1.B
+* Max length: 255
+*
+        
+DSPSTR  MOVEM.L D0-D2/A1,-(SP)  Push D0-D2, and A1 to stack
+        MOVE.L  #255,D2         Set count to 255
+DSPSTLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch to return
+        BRA     DSPSTRT         If count is <= 0, branch to return
+        MOVE.B  (A1)+,D0        Get HEX byte in D0, post-increment A1
+        CMP.B   #0,D0           Check if byte is NULL char
+        BEQ     DSPSTRT         If byte is NULL char, branch to return
+        BSR     HEX2ASCII       Else, get ASCII in D1
+        BSR     DSPAX           Display ASCII
+        BRA     DSPSTLP         Loop back
+DSPSTRT NEG.L   D2              Negate count
+        ADD.L   #254,D2         Add 254; effectively 255 - count - null byte
+        MOVEM.L (SP)+,D0/D1     Restore D0 and D1
+        MOVE.B  D2,D1           Move length to D1
+        MOVEM.L (SP)+,D2/A1     Restore D2 and A1
+        RTS                     Return to caller
+
+*
+* Display offset space: Display space according to offset length
+* Input offset length in D2.B
+*
+
+DSPOFS  MOVEM.L D0-D2,-(SP)     Push D0-D2 to stack
+        * Ensure count is strictly in one byte
+        CLR.L   D0
+        MOVE.B  D2,D0
+        MOVE.L  D0,D2
+DSPOFLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch to return
+        BRA     DSPOFRT         If count is <= 0, branch to return
+        MOVE.B  #6,D0           Display character
+        MOVE.B  #' ',D1         Read space
+        TRAP    #15
+        BRA     DSPOFLP         Loop back
+DSPOFRT MOVEM.L (SP)+,D0-D2     Restore D0-D2
+        RTS                     Return to callr
+
         
 *--------------------
 *   I/O
@@ -562,48 +605,6 @@ PRMPTDN MOVE.B  #$18,D1         Set row to $18
         BRA     REQKEY          Branch to request key
 
 *
-* Display string: Displays string until NULL char
-* Input string at A1, output length of string at D1.B
-* Max length: 255
-*
-        
-DSPSTR  MOVEM.L D0-D2/A1,-(SP)  Push D0-D2, and A1 to stack
-        MOVE.L  #255,D2         Set count to 255
-DSPSTLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch to return
-        BRA     DSPSTRT         If count is <= 0, branch to return
-        MOVE.B  (A1)+,D0        Get HEX byte in D0, post-increment A1
-        CMP.B   #0,D0           Check if byte is NULL char
-        BEQ     DSPSTRT         If byte is NULL char, branch to return
-        BSR     HEX2ASCII       Else, get ASCII in D1
-        BSR     DSPAX           Display ASCII
-        BRA     DSPSTLP         Loop back
-DSPSTRT NEG.L   D2              Negate count
-        ADD.L   #254,D2         Add 254; effectively 255 - count - null byte
-        MOVEM.L (SP)+,D0/D1     Restore D0 and D1
-        MOVE.B  D2,D1           Move length to D1
-        MOVEM.L (SP)+,D2/A1     Restore D2 and A1
-        RTS                     Return to caller
-
-*
-* Display offset space: Display space according to offset length
-* Input offset length in D2.B
-*
-
-DSPOFS  MOVEM.L D0-D2,-(SP)     Push D0-D2 to stack
-        * Ensure count is strictly in one byte
-        CLR.L   D0
-        MOVE.B  D2,D0
-        MOVE.L  D0,D2
-DSPOFLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch to return
-        BRA     DSPOFRT         If count is <= 0, branch to return
-        MOVE.B  #6,D0           Display character
-        MOVE.B  #' ',D1         Read space
-        TRAP    #15
-        BRA     DSPOFLP         Loop back
-DSPOFRT MOVEM.L (SP)+,D0-D2     Restore D0-D2
-        RTS                     Return to callr
-
-*
 * Display An: Displays An or SP if n == 7
 * Input n in D3
 *
@@ -615,7 +616,7 @@ DSPAn   CMP.B   #7,D3               Compare n to 7
         TRAP    #15
         CLR.L   D0
         MOVE.L  D3,D0               Read reg from D3
-        BSR     DSPHXN              Display as hex nibble
+        BSR     DSPHXB              Display as hex byte
         RTS                         Return to caller
 
 DSPSP   MOVE.B  #6,D0               Display character
@@ -743,7 +744,7 @@ DISPM0  MOVE.B  #'D',D1             Read D
         TRAP    #15
         CLR.L   D0
         MOVE.B  D3,D0               Read reg from D3
-        BSR     DSPHXN              Display as hex nibble
+        BSR     DSPHXB              Display as hex byte
         BRA     DISPRT              Branch to return
 * An		    0001 XXXX
 DISPM1  BSR     DSPAn               Display An or SP        
@@ -1156,11 +1157,39 @@ DISPDST CLR.W   D2                  Reset mode offset
         BRA     FLAGST              Else, branch to set flag
 
 * Display address: PRINT sub-routine
-DISPADR MOVE.L  (IOADDR),D0         Read memory location
+DISPADR MOVE.B  #6,D0               Display character
+        MOVE.B  #'|',D1             Read divider
+        TRAP    #15
+        MOVE.B  #' ',D1             Read space
+        TRAP    #15
+        MOVE.L  (IOADDR),D0         Read memory location
         BSR     DSPHXL              Display as hex long
         MOVE.B  #6,D0               Display character
-        MOVE.B  #TB,D1              Read tab
+        MOVE.B  #' ',D1             Read space
         TRAP    #15
+        MOVE.B  #'|',D1             Read divider
+        TRAP    #15
+        MOVE.B  #' ',D1             Read space
+        TRAP    #15
+        RTS                         Return to PRINT
+
+* Display raw data: PRINT sub-routine
+DISPRAW MOVEM.L D2/A1,-(SP)
+        MOVE.L  (GBUFF),D2          Move GBUFF to D1
+        SUB.L   (IOADDR),D2         Subtract IOADDR from GBUFF
+        ADD.L   #2,D2               Add word length
+        MOVEA.L IOADDR,A1           Point A1 to IOADDR
+        BSR     DSPHXA              Display address with D1 length
+        MULU.W  #2,D2               Multiply length * 2 for offset space
+        NEG.W   D2                  Negate D2
+        ADD.W   #21,D2              Add 21; effectively, 21 - length
+        BSR     DSPOFS              Display offset space
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #'|',D1             Read divider
+        TRAP    #15
+        MOVE.B  #' ',D1             Read space
+        TRAP    #15
+        MOVEM.L (SP)+,D2/A1
         RTS                         Return to PRINT
 
 * Display bad code: PRINT sub-routine
@@ -1231,6 +1260,7 @@ PRINT   CMP.B   #$FF,(IOOPCD)       Test if OP code exists
 NEWBAD  MOVE.B  #1,(IOBC)           Set bad counter to 1
         BSR     NEWLINE             Else, display new line
         BSR     DISPADR             Display address
+        BSR     DISPRAW             Display raw data
         BSR     DISPINS             Display instruction (DATA)
         BSR     TSTBAD              Test if BAD OP code exists
         BNE     *+6                 If it doesn't exist, skip the next line
@@ -1238,6 +1268,11 @@ NEWBAD  MOVE.B  #1,(IOBC)           Set bad counter to 1
         NEG.W   D2                  Negate space offset
         ADD.W   #14,D2              Add 13 to space offset; effectively 13 - space offset
         BSR     DSPOFS              Display space offset with tab
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #'|',D1             Read divider
+        TRAP    #15
+        MOVE.B  #' ',D1             Read space
+        TRAP    #15
         ADD.B   #1,IOLC             Increment line counter to counteract DISPDAT
 DISPDAT BSR     TSTBAD              Test if BAD OP code exists
         BEQ     NEWBAD              If it exists, branch to NEWBAD to start a new line
@@ -1249,15 +1284,20 @@ DISPDAT BSR     TSTBAD              Test if BAD OP code exists
         TRAP    #15
         SUB.B   #1,IOLC             Decrement line counter
         BRA     PRNTFIN             Branch to PRINT finish
-
 NOTBAD  MOVE.B  #0,(IOBC)           Reset bad counter
         BSR     NEWLINE             Display new line
         BSR     DISPADR             Display address
+        BSR     DISPRAW             Display raw data
         BSR     DISPINS             Display instruction
         BSR     DISPSZ              Display size
         NEG.W   D2                  Negate space offset
         ADD.W   #14,D2              Add 14 to space offset; effectively 14 - space offset
         BSR     DSPOFS              Display space offset with tab
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #'|',D1             Read divider
+        TRAP    #15
+        MOVE.B  #' ',D1             Read space
+        TRAP    #15
         ADD.L   #2,(IOADDR)         Move memory location past first word
 PRINTS  BSR     DISPSRC             Get source display
         BNE     *+10                If source does not exist, skip the next two lines
@@ -1272,7 +1312,15 @@ PRINTD  BSR     DISPDST             Get destination display
         TRAP    #15                 If it was displayed, display a comma
         BSR     DISPOP              Display destination accordingly
 
-PRNTFIN BSR     RESETIO             Reset IO values
+PRNTFIN MOVE.B  #11,D0              Position cursor COL/ROW
+        MOVE.W  #$4F00,D1           Set column to end
+        MOVE.B  IOLC,D1             Set row to line counter
+        ADD.B   #1,D1               Increment by 1
+        TRAP    #15
+        MOVE.B  #6,D0               Display character
+        MOVE.B  #'|',D1             Read divider
+        TRAP    #15
+        BSR     RESETIO             Reset IO values
         ADD.L   #$2,(GBUFF)         Advance buffer past instruction
 
         ADD.B   #1,IOLC
