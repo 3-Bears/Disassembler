@@ -2592,9 +2592,94 @@ BRMOVEQ MOVE.B  #$8C,(IOOPCD)   Set OP-code name
 *         ASd       #<data>,Dy
 *         ASd       <ea>
 
-BRASd   *MOVE.B  #$50,(IOOPCD)   ASL
-        *MOVE.B  #$96,(IOOPCD)   ASR
-        BRA     FLAGCL          Return successful
+BRASd   MOVE.L  #$00C0,D2       Set mask to return the size
+        BSR     EXTMSK          Extract the size
+        CMP.B   #%00,D1         01 = Byte
+        BNE.S   *+6             Branch to next test
+        MOVE.B  #$0,D0          Set size to byte
+        CMP.B   #%01,D1         11 = Word
+        BNE.S   *+6             Branch to next test
+        MOVE.B  #$1,D0          Set size to word
+        CMP.B   #%10,D1         10 = Long
+        BNE.S   *+6             Branch to next test
+        MOVE.B  #$2,D0          Set size to long
+        CMP.B   #$3,D1          If size == 11 it memory shift
+        BEQ     MEMSHIFT        Branch to memory shift      
+        MOVE.B  D0,(IOSIZE)     If it was found, store size in IOSIZE
+        
+        *Check to see if it's LSd or ASd
+        MOVE.L  #$8,D2          Set mask to see if it's ASd or LSd
+        BSR     EXTMSK          Extract the bits to see what it is
+        CMP.B   #$1,D1          If == 1 it's LSd
+        BEQ     BRLSd           Branch to LSd
+        MOVE.L  #$0100,D2       Set mask to return the direction
+        BSR     EXTMSK          Extract the direction bit
+        CMP.B   #1,D1           If == 1 direction is ASL
+        BEQ     SETASL          Branch to ASL if direction bit is 1        
+        MOVE.B  #$96,(IOOPCD)   ASR OPmode
+        BRA     REGCOUNTSHIFT
+SETASL  MOVE.B  #$50,(IOOPCD)   ASL OPmode
+REGCOUNTSHIFT        
+        * Check to see if it's register or count shift
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$0020,D2       Set mask to return (Count or Reg shift)
+        BSR     EXTMSK          Extract the i/r bit
+        CMP.B   #$0,D1          If == 0 immediate data
+        BEQ     DATAIMM         Branch to immediate data mode
+        MOVE.B  #$00,(SMD)      Set source mode to 000
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$0E00,D2       Set mask to extract the source register 
+        BSR     EXTMSK          Extract the source register        
+        MOVE.B  D1,(SRG)        Copy SRG to variable
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (SMD),D1        Add mode after reg 
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        BSR     ADVBFR          Advance the buffer accordingly
+        BRA     COMPLETESHIFT        
+DATAIMM   * manually set the source mode and source register
+        MOVE.B  #$07,(SMD)      Set source mode to 111
+        MOVE.B  #$04,(SRG)      Set reg mode to 100 for immediate data
+        MOVE.B  SRG,D1          Copy SRG to D1 to manipulate
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (SMD),D1        Add mode after reg 
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        BSR     ADVBFR          Advance the buffer accordingly
+COMPLETESHIFT
+        MOVE.B  #$00,(DMD)      Set destination mode to 000
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$7,D2          Set mask to get destination reg
+        BSR     EXTMSK          Extract the destination reg
+        MOVE.B  D1,(DRG)        Set the destination Register
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (DMD),D1        Add mode after reg
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        BSR     ADVBFR          Advance the buffer accordingly
+        BRA     FLAGST          Return Successful
+        
+        
+
+MEMSHIFT * only memory alterable addressing modes can be used [...]."
+        MOVE.W  (A1),D0         Move instruction to D0
+        *Check to see if it's LSd or ASd
+        MOVE.L  #$0200,D2       Set mask to see if it's ASd or LSd
+        BSR     EXTMSK          Extract the bits to see what it is
+        CMP.B   #$1,D1          If == 1 it's LSd
+        BEQ     BRLSdMEMORY     Branch to LSd
+        MOVE.L  #$0100,D2       Set mask to return the direction
+        BSR     EXTMSK          Extract the direction bit
+        CMP.B   #1,D1           If == 1 direction is ASL
+        BEQ     SETd            Branch to ASL if direction bit is 1        
+        MOVE.B  #$96,(IOOPCD)   ASR OPmode
+        BRA     MEMcon          Continue memory shift
+SETd    MOVE.B  #$50,(IOOPCD)   ASL OPmode
+MEMcon  MOVE.B  #$1,D0          Set size to word
+        MOVE.B  D0,(IOSIZE)
+        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
+        BSR     EXSRC           Extract the <ea> mode/register
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Advance the buffer accordingly
+        BRA     FLAGST          Return Successful
 
 * LSd: 1110001|d|11|EMD|ERG (memory shifts)
 *      1110|CRG|d|SZ|i|01|REG (register shifts)
@@ -2602,9 +2687,32 @@ BRASd   *MOVE.B  #$50,(IOOPCD)   ASL
 *         LSd       #<data>,Dy
 *         LSd       <ea>
 
-BRLSd   *MOVE.B  #$92,(IOOPCD)   LSL
-        *MOVE.B  #$54,(IOOPCD)   LSR
-        BRA     FLAGCL          Return successful
+BRLSd   *Some LSd memory shift skip over the ASd OPmode
+        *Check to see if it's a memory shift before doing anything else
+        MOVE.L  #$00C0,D2       Set mask to return the size
+        BSR     EXTMSK          Extract the size
+        CMP.B   #$3,D1          If size == 11 it memory shift
+        BEQ     MEMSHIFT        Branch to memory shift
+        
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$0100,D2       Set mask to return the direction
+        BSR     EXTMSK          Extract the direction bit
+        CMP.B   #1,D1           If == 1 direction is LSL
+        BEQ     SETLSL          Branch to ASL if direction bit is 1        
+        MOVE.B  #$54,(IOOPCD)   LSR OPmode
+        BRA     REGCOUNTSHIFT
+SETLSL  MOVE.B  #$92,(IOOPCD)   LSL OPmode
+        BRA     REGCOUNTSHIFT   Return Successful
+BRLSdMEMORY
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$0100,D2       Set mask to return the direction
+        BSR     EXTMSK          Extract the direction bit
+        CMP.B   #1,D1           If == 1 direction is LSL
+        BEQ     SETLSd          Branch to ASL if direction bit is 1        
+        MOVE.B  #$54,(IOOPCD)   LSR OPmode
+        BRA     MEMcon          Continue memory shift
+SETLSd  MOVE.B  #$92,(IOOPCD)   LSL OPmode
+        BRA     MEMcon          Continue memory shift
 
 * MULU: 1100|REG|011|EMD|ERG (WORD)
 *       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
@@ -2613,7 +2721,31 @@ BRLSd   *MOVE.B  #$92,(IOOPCD)   LSL
 *         MULU.L    <ea>,Dh-Dl 32x32 -> 64 
 
 BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
-        BRA     FLAGCL          Return successful
+        MOVE.L  #$00C0,D2       Set mask to see if MULU
+        BSR     EXTMSK          Extract Mask
+        CMP.B   #$7,D1          If == 7 it's divs
+        BEQ     BRDIVS          Branch to divs
+        CMP.B   #$3,D1          If != 3 it's not MULU
+        BNE     FLAGCL          Unsuccessful
+        MOVE.B  #$1,D0          Set size to word
+        MOVE.B  D0,(IOSIZE)     Set size variable
+        * Source EA field: "Only data addressing modes can be used [...]."
+        MOVE.W  #M_DAT,D0       Set data modes as valid
+        BSR     EXSRC           Extract destination from source location
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        * Destination MODE: will always be a Dn
+        MOVE.B  #$00,(DMD)      Set destination mode to 000
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$0E00,D2          Set mask to get destination reg
+        BSR     EXTMSK          Extract the destination reg
+        MOVE.B  D1,(DRG)        Set the destination Register
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (DMD),D1        Add mode after reg
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        BSR     ADVBFR          Advance the buffer accordingly        
+        BRA     FLAGST          Return successful
 
 * DIVS: 1000|REG|111|EMD|ERG (WORD)
 *       0100110001|EMD|ERG  0|RDQ|1|S|0000000|RDR (LONG)
@@ -2622,8 +2754,26 @@ BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
 *        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r ? 32q
 *        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r ? 32q
 
-BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
-        BRA     FLAGCL          Return successful
+BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name
+        MOVE.B  #$1,D0          Set size to word
+        MOVE.B  D0,(IOSIZE)     Set size variable
+        * Source EA field: "Only data addressing modes can be used [...]."
+        MOVE.W  #M_DAT,D0       Set data modes as valid
+        BSR     EXSRC           Extract destination from source location
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        * Destination MODE: will always be a Dn
+        MOVE.B  #$00,(DMD)      Set destination mode to 000
+        MOVE.W  (A1),D0         Move instruction to D0
+        MOVE.L  #$0E00,D2          Set mask to get destination reg
+        BSR     EXTMSK          Extract the destination reg
+        MOVE.B  D1,(DRG)        Set the destination Register
+        LSL.B   #3,D1           Shift the reg 3 bits left
+        OR.B    (DMD),D1        Add mode after reg
+        MOVE.B  D1,(RGMD)       Store D1 in RGMD
+        BSR     ADVBFR          Advance the buffer accordingly        
+        BRA     FLAGST          Return successful
  
 * NOT: 01000110|SZ|EMD|ERG
 * Syntax:  NOT      <ea>
