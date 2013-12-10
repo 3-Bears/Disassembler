@@ -927,7 +927,7 @@ DISPC0  MOVE.B  #'#',D1             Read #
         CLR.L   D1
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
         MOVE.W  -(A1),D0            Pre-decrement location, get instruction to D0
-        MOVE.L  #$0700,D2           Extract data at 000011100000000
+        MOVE.L  #$0E00,D2           Extract data at 000011100000000
         BSR     EXTMSK              Get the data to D1
         TST     D1                  Compare data to 0
         BNE     *+4                 If !=, skip the next line
@@ -2639,13 +2639,9 @@ REGCOUNTSHIFT
         BSR     ADVBFR          Advance the buffer accordingly
         BRA     COMPLETESHIFT        
 DATAIMM   * manually set the source mode and source register
-        MOVE.B  #$07,(SMD)      Set source mode to 111
-        MOVE.B  #$04,(SRG)      Set reg mode to 100 for immediate data
-        MOVE.B  SRG,D1          Copy SRG to D1 to manipulate
-        LSL.B   #3,D1           Shift the reg 3 bits left
-        OR.B    (SMD),D1        Add mode after reg 
-        MOVE.B  D1,(RGMD)       Store D1 in RGMD
-        BSR     ADVBFR          Advance the buffer accordingly
+        * manually set the source mode and source register
+        MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
+        MOVE.B  #0,(SRG)        Set reg mode to 0 for #<1-8>
 COMPLETESHIFT
         MOVE.B  #$00,(DMD)      Set destination mode to 000
         MOVE.W  (A1),D0         Move instruction to D0
