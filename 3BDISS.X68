@@ -127,11 +127,17 @@ MSSG1   DC.B    ' Enter the starting location of the code to be disassembled, or
         DC.B    ' for the starting address: 0x',0
 MSSG2   DC.B    ' Enter the ending location of the code to be disassembled, or leave it blank',CR,LF
         DC.B    ' for the ending address: 0x',0
+MSSG3   DC.B    ' Please note that this program will automatically detect the end of the file if',CR,LF
+        DC.B    ' an address is out of range. You may now confirm your inputs before continuing.',CR,LF
+        DC.B    '          Continue: [ENTER]      Restart: [BACKSPACE]      Quit: [0]',0
 MSSG4   DC.B    'Press [ENTER] for the next page, or [CTRL] + [ENTER] for next line.',0
 MSSG5   DC.B    'You have reached the end of the program. Press any key to restart, or 0 to quit.',0
 HEADR   DC.B    'Address      OP-Code       Operand',0
-ERR0    DC.B    'The input address was too small.',CR,LF,0
-ERR1    DC.B    'The input address was too big.',CR,LF,0
+ERR0    DC.B    '                     !!! The input address was too small !!!',0
+ERR1    DC.B    '                     !!! The input address was too large !!!',0
+BLANK   DC.B    '                                                                                ',0
+*                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 
 START   MOVE.B  #0,IOLC             Set line counter to 0
         MOVE.B  #0,IOBC             Set bad counter to 0
@@ -373,7 +379,6 @@ DSPHXLP DBRA    D2,*+8          Decrement count; if count is > 0, do not branch 
         BRA     DSPHXLP         Loop back
 DSPHXRT MOVEM.L (SP)+,D0-D2/A1  Else, restore values
         RTS                     Return to caller
-        
 
 
 *
@@ -419,17 +424,49 @@ DSPHXL  SWAP    D0              Swap first half to D0.W
         
 *--------------------
 *   I/O
-*--------------------                   
+*--------------------
+
+*
+* Clear row: Clears the row specified in D1
+*
+
+CLRRW   MOVEM.W D0/D1/A1,-(SP)  Push D0, D1, and A1 to stack
+        ROL.W   #8,D1           Move row to MSB
+        CLR.B   D1              Set column to 0
+        ROL.W   #8,D1           Move row to LSB
+        MOVE.B  #11,D0          Position cursor at ROW/COL
+        TRAP    #15
+        LEA     BLANK,A1        Read blank row
+        MOVE.B  #14,D0          Display A1 until null
+        TRAP    #15
+        MOVEM.W (SP)+,D0/D1/A1  Restore D0, D1, and A1
+        RTS                     Return to caller
+
 ILL0    LEA     ERR0,A1         Starting location was too small
         MOVE.B  #14,D0
         TRAP    #15
-        BRA     PRMPT1
+        BRA     PRMPT1          Branch to prompt one
         
-ILL1    LEA     ERR1,A1         Starting location was too big
+ILL1    LEA     ERR1,A1         Starting location was too large
         MOVE.B  #14,D0
         TRAP    #15
+        BRA     PRMPT1          Branch to prompt one
+
+ILL2    MOVE.B  #11,D0          Position cursor at COL/ROW
+        MOVE.W  #$1D14,D1       Position after input location
+        TRAP    #15
+        MOVE.L  #MNADDR,D0      Move min address to D0
+        BSR     DSPHXL          Display min address to screen
+        MOVE.L  #MNADDR,(A1)    Move the min address to SLOC
+        BRA     PRMPT2          Branch to the next prompt
         
-PRMPT1  LEA     MSSG1,A1        Starting location request message
+PRMPT1  MOVE.B  #$14,D1         Set row to $14
+        BSR     CLRRW           Clear the row (if existing input is present)
+        MOVE.B  #11,D0          Position cursor at COL/ROW
+        MOVE.W  #$0013,D1       Position
+        TRAP    #15
+
+        LEA     MSSG1,A1        Starting location request message
         MOVE.B  #14,D0
         TRAP    #15
         
@@ -439,14 +476,10 @@ PRMPT1  LEA     MSSG1,A1        Starting location request message
 
         CMP.B   #8,D1           Compare the length of the input to 8
         BGT     ILL1            Branch to ILL1 if > 8
-
         MOVE.L  (A1),D0         Move input to D0
-        CMP.B   #0,D1           Test the length of the input to 0
-        BNE     *+12            If the input was not null, branch to convert input
-        MOVE.L  #MNADDR,(A1)    If the input was null, move the min address to SLOC
-        BRA     PRMPT2          Branch to the next prompt
-
-        BSR     ASCII2HEX       Convert D0 to HEX in D1
+        CMP.B   #0,D1           Compare the length of the input to 0
+        BEQ     ILL2            If the input was null, branch to ILL2
+        BSR     ASCII2HEX       Else, convert D0 to HEX in D1
         
         MOVE.L  D1,(A1)         Set SLOC to HEX value
         CMP.L   #$0000F0FF,D1   Compare starting location to 0
@@ -460,16 +493,32 @@ PRMPT1  LEA     MSSG1,A1        Starting location request message
                 
         BRA     PRMPT2          Branch to the next prompt
 
-ILL2    LEA     ERR0,A1         Ending location was too small
+ILL3    LEA     ERR0,A1         Ending location was too small
         MOVE.B  #14,D0
         TRAP    #15
         BRA     PRMPT2
         
-ILL3    LEA     ERR1,A1         Ending location was too big
+ILL4    LEA     ERR1,A1         Ending location was too big
         MOVE.B  #14,D0
         TRAP    #15
+
+ILL5    MOVE.B  #11,D0          Position cursor at ROW/COL
+        MOVE.W  #$1B17,D1       Position after input location
+        TRAP    #15
+        MOVE.L  #MXADDR,D0      Move max address to D0
+        BSR     DSPHXL          Display max address to screen
+        MOVE.L  #MXADDR,(A1)    Move the max address to ELOC
+        BRA     PRMPTDN         Branch to prompt done
         
-PRMPT2  LEA     MSSG2,A1        Ending location request message
+PRMPT2  MOVE.B  #$15,D1         Set row to $15
+        BSR     CLRRW           Clear the row (if existing error is present)
+        MOVE.B  #$17,D1         Set row to $17
+        BSR     CLRRW           Clear the row (if existing input is present)
+        MOVE.B  #11,D0          Position cursor at COL/ROW
+        MOVE.W  #$0016,D1       Position
+        TRAP    #15
+
+        LEA     MSSG2,A1        Ending location request message
         MOVE.B  #14,D0
         TRAP    #15
         
@@ -478,15 +527,11 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         TRAP    #15
         
         CMP.B   #8,D1           Compare the length of the input to 8
-        BGT     ILL3            Branch to ILL3 if > 8
-
+        BGT     ILL4            Branch to ILL4 if > 8
         MOVE.L  (A1),D0         Move input to D0
-        CMP.B   #0,D1           Test the length of the input to 0
-        BNE     *+12            If the input was not null, branch to convert input
-        MOVE.L  #MXADDR,(A1)    If the input was null, move the max address to ELOC
-        BRA     PRMPTDN         Branch to prompt done
-        
-        BSR     ASCII2HEX       Convert D0 to HEX in D1
+        CMP.B   #0,D1           Compare the length of the input to 0
+        BEQ     ILL5            If the input was null, branch to ILL5
+        BSR     ASCII2HEX       Else, convert D0 to HEX in D1
         
         MOVE.L  D1,(A1)         Set ELOC to HEX value
 
@@ -494,17 +539,27 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         BEQ     HALT            End program if 0
         
         CMP.L   #MNADDR,D1      Compare min ending location to min
-        BLS     ILL2            Branch to ILL2 if <= min
+        BLS     ILL3            Branch to ILL3 if <= min
         
         CMP.L   #MXADDR,D1      Compare ending location to max
-        BHI     ILL3            Branch to ILL3 if > max
+        BHI     ILL4            Branch to ILL4 if > max
         
         MOVE.L  (SLOC),D0       Move starting location data to D0
         CMP.L   D0,D1           Compare ending location to starting location
-        BLS     ILL2            Branch to ILL3 if <= starting location
+        BLS     ILL3            Branch to ILL3 if <= starting location
         
-PRMPTDN MOVE.L  (SLOC),(GBUFF)  Store starting location in GBUFF for OP
-        BRA     DSPHDR          Branch to display method
+PRMPTDN MOVE.B  #$18,D1         Set row to $18
+        BSR     CLRRW           Clear the row (if existing error is present)
+        MOVE.B  #11,D0          Position cursor at COL/ROW
+        MOVE.W  #$0019,D1       Position
+        TRAP    #15
+
+        LEA     MSSG3,A1        Confirmation message
+        MOVE.B  #14,D0
+        TRAP    #15
+        MOVE.L  (SLOC),(GBUFF)  Store starting location in GBUFF for OP
+        MOVE.L  (SLOC),(NGBUFF) Copy to NGBUFF
+        BRA     REQKEY          Branch to request key
 
 *
 * Display string: Displays string until NULL char
@@ -1256,15 +1311,15 @@ PAUSE   BSR     NEWLINE             Display new line
         LEA     MSSG4,A1            Display keypress prompt
         MOVE.B  #14,D0              Display A1 until null char
         TRAP    #15
-        MOVE.B  #12,D0              Keyboard echo
-        MOVE.B  #0,D1               Hidden
-        TRAP    #15
 
 *
 * Request Key: Request a keyboard input, and do not continue until a valid input was given
 *
 
-REQKEY  MOVE.B  #5,D0               Request keyboard input
+REQKEY  MOVE.B  #12,D0              Keyboard echo
+        MOVE.B  #0,D1               Hidden
+        TRAP    #15
+        MOVE.B  #5,D0               Request keyboard input
         TRAP    #15
         CMP.B   #$D,D1              Compare input to ENTER
         BEQ     DSPHDR              If ==, branch to DSPHDR
