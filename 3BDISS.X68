@@ -1235,9 +1235,9 @@ TSTBAD  CMP.B   #$FF,IOBDCD         Check if BAD OPCODE exists
 BRBAD   MOVE.B  (IOOPCD),(IOBDCD)   Move OPCODE to BAD OPCODE
         MOVE.B  #$87,(IOOPCD)       Set OPCODE to BAD
         CMP.B   #4,IOBC             Compare bad counter to 4
-        BLT     *+6                 If < 4, skip the next line
+        BLT     BADADV              If < 4, branch to advance bad counter
         CLR.B   (IOBC)              Else, set counter to 0
-        ADD.B   #1,IOBC             Increment bad counter
+BADADV  ADD.B   #1,IOBC             Increment bad counter
         * Clear bad data
         MOVE.B  #$FF,(SMD)
         MOVE.B  #$FF,(SRG)
@@ -1277,11 +1277,22 @@ NEWBAD  MOVE.B  #1,(IOBC)           Set bad counter to 1
 DISPDAT BSR     TSTBAD              Test if BAD OP code exists
         BEQ     NEWBAD              If it exists, branch to NEWBAD to start a new line
         MOVE.L  IOADDR,A1           Else, point A1 to IOADDR
-        MOVE.W  (A1),D0             Read data
-        BSR     DSPHXW              Display as hex word
-        MOVE.B  #6,D0               Display character
-        MOVE.B  #' ',D1             Read space
+        MOVE.W  #2,D2               Set size to word
+        MOVE.B  #11,D0              Position cursor COL/ROW
+        MOVE.B  (IOBC),D1           Move bad counter to D1
+        SUB.B   #1,D1               Decrement by 1
+        MULU.W  #4,D1               Multiply by word space
+        LSL.W   #8,D1               Move to MSB
+        ADD.W   #$0D00,D1           Add code column offset
+        MOVE.B  IOLC,D1             Set row to line counter
         TRAP    #15
+        BSR     DSPHXA              Display hex word
+        ADD.W   #$2600,D1           Add operand column offset
+        ROL.W   #8,D1               Swap col and row
+        ADD.B   (IOBC),D1           Add counter offset
+        ROL.W   #8,D1               Swap col and row
+        TRAP    #15
+        BSR     DSPHXA              Display hex word
         SUB.B   #1,IOLC             Decrement line counter
         BRA     PRNTFIN             Branch to PRINT finish
 NOTBAD  MOVE.B  #0,(IOBC)           Reset bad counter
