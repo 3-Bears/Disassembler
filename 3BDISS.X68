@@ -9,8 +9,8 @@
 CR      EQU     $0D         ASCII: carriage return
 LF      EQU     $0A         ASCII: line feed
 TB      EQU     $09         ASCII: horizontal tab
-MNADDR  EQU     $7000       Min address
-MXADDR  EQU     $00FFFFFF   Max address
+MNADDR  EQU     $7000       Min address (starting location of test memory)
+MXADDR  EQU     $00FFFFFE   Max address (last location for memory - 1 word)
 
 GBUFF   DS.L    1           Pointer to next location in "Good buffer"
 SLOC    DS.B    80          Starting location storage
@@ -121,11 +121,12 @@ MSSG0   DC.B    '                        _     _     _     _     _     _ ',CR,LF
         DC.B    '     Welcome to 3B Disassembler. The following instructions will guide you',CR,LF
         DC.B    '     through the steps in order to disassemble your code according to your',CR,LF
         DC.B    '     preferences. After which, you may press [BACKSPACE] if you would like',CR,LF
-        DC.B    '     to restart the program. You may press 0 at any time, to quit.',CR,LF,CR,LF,0
+        DC.B    '     to restart the program. You may press 0 at any time, to quit.',CR,LF,CR,LF
+        DC.B    ' The following inputs must be entered in HEX format, from 0x7000 to 0x00FFFFFE.',CR,LF,CR,LF,0
 MSSG1   DC.B    ' Enter the starting location of the code to be disassembled, or leave it blank',CR,LF
-        DC.B    ' for the starting address:',0
+        DC.B    ' for the starting address: 0x',0
 MSSG2   DC.B    ' Enter the ending location of the code to be disassembled, or leave it blank',CR,LF
-        DC.B    ' for the ending address:',0
+        DC.B    ' for the ending address: 0x',0
 MSSG4   DC.B    'Press [ENTER] for the next page, or [CTRL] + [ENTER] for next line.',0
 MSSG5   DC.B    'You have reached the end of the program. Press any key to restart, or 0 to quit.',0
 HEADR   DC.B    'Address      OP-Code       Operand',0
@@ -435,12 +436,14 @@ PRMPT1  LEA     MSSG1,A1        Starting location request message
         LEA     SLOC,A1         Input will be stored in SLOC
         MOVE.B  #2,D0           Input starting location (as string / hex)
         TRAP    #15
-        
-        MOVE.L  (A1),D0         Move input to D0
 
-        CMP.L   #$00FFFFFF,D0   Check if input was NULL
-        BNE     *+14            If the input was not null, branch to convert input
-        MOVE.L  #MNADDR,(SLOC)  If the input was null, move the min address to SLOC
+        CMP.B   #8,D1           Compare the length of the input to 8
+        BGT     ILL1            Branch to ILL1 if > 8
+
+        MOVE.L  (A1),D0         Move input to D0
+        CMP.B   #0,D1           Test the length of the input to 0
+        BNE     *+12            If the input was not null, branch to convert input
+        MOVE.L  #MNADDR,(A1)    If the input was null, move the min address to SLOC
         BRA     PRMPT2          Branch to the next prompt
 
         BSR     ASCII2HEX       Convert D0 to HEX in D1
@@ -474,11 +477,13 @@ PRMPT2  LEA     MSSG2,A1        Ending location request message
         MOVE.B  #2,D0           Input starting location (as string / hex)
         TRAP    #15
         
-        MOVE.L  (ELOC),D0       Move input to D0
+        CMP.B   #8,D1           Compare the length of the input to 8
+        BGT     ILL3            Branch to ILL3 if > 8
 
-        CMP.L   #$00FFFFFF,D0   Check if input was NULL
-        BNE     *+14            If the input was not null, branch to convert input
-        MOVE.L  #MXADDR,(ELOC)  If the input was null, move the max address to ELOC
+        MOVE.L  (A1),D0         Move input to D0
+        CMP.B   #0,D1           Test the length of the input to 0
+        BNE     *+12            If the input was not null, branch to convert input
+        MOVE.L  #MXADDR,(A1)    If the input was null, move the max address to ELOC
         BRA     PRMPTDN         Branch to prompt done
         
         BSR     ASCII2HEX       Convert D0 to HEX in D1
@@ -581,6 +586,7 @@ DSPSP   MOVE.B  #6,D0               Display character
 *   10 = 4
 *   11 = 8
 *
+
 BEXTW   MOVEM.L D0-D3,-(SP)         Push D0-D3 to stack
         MOVE.L  #$70,D2             Extract REG at 01110000
         BSR     EXTMSK              Get REG to D1
@@ -663,7 +669,7 @@ DISPDIS MOVEM.L D0-D2,-(SP)         Push D0-D2 to stack
 * Input mode in D2.B, input reg in D3.B
 *
 
-DISPOP  MOVEM.L D0-D3/A1,-(SP)       Push D0-D3 & A1 to stack
+DISPOP  MOVEM.L D0-D7/A0-A7,-(SP)   Push all registers to stack
         MOVE.B  #6,D0               Display character
         MULU.W  #4,D2
         JMP     DMDTBL(PC,D2.W)     Jump to mode
@@ -928,51 +934,109 @@ DISPC5  CLR.L   D0
         BSR     DISPDIS             Display displacement
         BRA     DISPRT              Branch to return
 * (RLM).W       1000 0110
-* Tentative solution...
-DISPC6  MOVEA.L IOADDR,A1           Point A1 to the instruction address
+DISPC6  MOVEA.L IOADDR,A1   Point A1 to the instruction address
         CLR.L   D2
-        MOVE.W  (A1),D2             Get register list mask to D2
-        MOVE.L  #RLMA,A1            Set return address to RLMA
-        MOVE.L  #0,D3               Set Dn counter
-        MOVE.B  #0,D4               Set last bit to false
-        MOVE.B  #'D',D5             Set character to D
-RLMLP   BTST    D3,D2               Test bit at counter
-        BEQ     RLMADV
-        MOVE.B  #6,D0
-        MOVE.B  #'/',D1
-        CMP.B   #0,D4
-        BEQ     *+4
+        MOVE.W  (A1),D2     Get register list mask to D2
+        MOVE.L  #0,D3       Count
+        MOVE.B  #'D',D5     D/A
+        MOVE.B  #$00,D6     / or - separator (set to null for first 1)
+        MOVE.L  #RLMNXT,A0  Next instruction
+RLMLP   BTST.L  D3,D2       Check bit at count for 0
+        BEQ     RLMADV      If bit was 0, branch to LPADV
+        MOVE.B  #6,D0       Else, display character
+        MOVE.B  D6,D1       Read separator
+        MOVE.B  #'/',D6     Set next default separator to /
         TRAP    #15
-        MOVE.B  D5,D1               Read char
+        MOVE.B  D5,D1       Read A/D
         TRAP    #15
-        MOVE.B  #3,D0               Display number
-        MOVE.B  D3,D1               Read counter
+        MOVE.B  #3,D0       Display number
+        MOVE.B  D3,D1       Read count
         TRAP    #15
-        MOVE.B  #1,D4               Set last bit to true
-RLMADV  ADD.B   #1,D3
-        CMP.B   #8,D3
-        BNE     *+4
-        JMP     (A1)
-        MOVE.B  #6,D0
-        MOVE.B  #'/',D1
-        CMP.B   #0,D4
-        BEQ     *+4
+        MOVE.L  D3,D4       Move bit location to D4
+RLMINC  CMP.B   #7,D3       Compare count to 7
+        BEQ     *+10        If ==, branch to decrement count
+        ADD.B   #1,D3       Else, increment count
+        BTST.L  D3,D2       Check next bit at count for 0
+        BNE     RLMINC      If bit was not 0, keep incrementing
+        SUB.B   #1,D3       Decrement count
+        NEG.B   D4          Negate bit location
+        ADD.B   D3,D4       Add count to location; effectively, count - location = length
+        CMP.B   #1,D4       Compare length to 1
+        BLE     *+6         If <=, skip the next line
+        MOVE.B  #'-',D6     Else, set separator to -
+        CMP.B   #0,D4       Compare length to 0
+        BEQ     RLMADV      If ==, branch to instruction
+        MOVE.B  #6,D0       Else, display character
+        MOVE.B  D6,D1       Read separator
+        MOVE.B  #'/',D6     Set next default separator to /
         TRAP    #15
-        MOVE.B  #0,D4               Set last bit to false
-        BRA     RLMLP
-RLMA    ROL.W   #8,D2               Get An in LSB
-        MOVE.L  #0,D3               Set An counter
-        MOVE.B  #0,D4               Set last bit to false
-        MOVE.B  #'A',D5             Set char to A
-        MOVE.L  #RLMFN,A1           Set return address to RLM Finish
-        BRA     RLMLP
-RLMFN   MOVE.B  #6,D0
-        MOVE.B  #',',D1
+        MOVE.B  D5,D1       Read A/D
         TRAP    #15
-        BRA     DISPRT              Branch to return
+        MOVE.B  #3,D0       Display number
+        MOVE.B  D3,D1       Read count
+        TRAP    #15
+RLMADV  ADD.B   #1,D3       Increment count
+        CMP.B   #7,D3       Compare count to 7
+        BLE     RLMLP       If <=, branch back to loop
+        JMP     (A0)        Else, jump to address in A0
+RLMNXT  ROL.W   #8,D2       Move A bits to LSB
+        MOVE.L  #0,D3       Count
+        MOVE.B  #'A',D5     D/A
+        MOVE.L  #DISPRT,A0  Next instruction
+        BRA     RLMLP       Display A registers
 * (MLR).W       1000 0110
-DISPC7
-        BRA     DISPRT              Branch to return
+DISPC7  MOVEA.L IOADDR,A1   Point A1 to the instruction address
+        CLR.L   D2
+        MOVE.W  (A1),D2     Get register list mask to D2
+        ROL.W   #8,D2       Move D bits to LSB
+        MOVE.L  #7,D3       Count
+        MOVE.B  #'D',D5     D/A
+        MOVE.B  #$00,D6     / or - separator (set to null for first 1)
+        MOVE.L  #MLRNXT,A0  Next instruction
+MLRLP   BTST.L  D3,D2       Check bit at count for 0
+        BEQ     MLRADV      If bit was 0, branch to LPADV
+        MOVE.B  #6,D0       Else, display character
+        MOVE.B  D6,D1       Read separator
+        MOVE.B  #'/',D6     Set next default separator to /
+        TRAP    #15
+        MOVE.B  D5,D1       Read A/D
+        TRAP    #15
+        MOVE.B  #3,D0       Display number
+        MOVE.B  #7,D1       Read 7
+        SUB.B   D3,D1       Subtract count
+        TRAP    #15
+        MOVE.L  D3,D4       Move bit location to D4
+MLRDEC  CMP.B   #0,D3       Compare count to 0
+        BEQ     *+10        If ==, branch to decrement count
+        SUB.B   #1,D3       Else, decrement count
+        BTST.L  D3,D2       Check next bit at count for 0
+        BNE     MLRDEC      If bit was not 0, keep decrementing
+        ADD.B   #1,D3       Increment count
+        SUB.B   D3,D4       Location - count = length
+        CMP.B   #1,D4       Compare length to 1
+        BLE     *+6         If <=, skip the next line
+        MOVE.B  #'-',D6     Else, set separator to -
+        CMP.B   #0,D4       Compare length to 0
+        BEQ     MLRADV      If ==, branch to instruction
+        MOVE.B  #6,D0       Else, display character
+        MOVE.B  D6,D1       Read separator
+        MOVE.B  #'/',D6     Set next default separator to /
+        TRAP    #15
+        MOVE.B  D5,D1       Read A/D
+        TRAP    #15
+        MOVE.B  #3,D0       Display number
+        MOVE.B  #7,D1       Read 7
+        SUB.B   D3,D1       Subtract count
+        TRAP    #15
+MLRADV  SUB.B   #1,D3       Decrement count
+        CMP.B   #0,D3       Compare count to 0
+        BGE     MLRLP       If >=, branch back to loop
+        JMP     (A0)        Else, jump to address in A0
+MLRNXT  ROL.W   #8,D2       Move A bits to LSB
+        MOVE.L  #7,D3       Count
+        MOVE.B  #'A',D5     D/A
+        MOVE.L  #DISPRT,A0  Next instruction
+        BRA     MLRLP       Display A registers
 * #<bit num>.B  1000 0111
 DISPC8  MOVE.B  #'#',D1             Read #
         TRAP    #15
@@ -989,7 +1053,7 @@ DISPM9  ADD.L   #2,IOADDR           Advance IOADDR by word
         SUB.L   #2,IOADDR           Re-align IOADDR
         BRA     DISPRT              Branch to return
         
-DISPRT  MOVEM.L (SP)+,D0-D3/A1      Restore D0-D3 & A1
+DISPRT  MOVEM.L (SP)+,D0-D7/A0-A7   Restore all registers
         RTS                         Return to caller
         
 
@@ -1246,9 +1310,6 @@ DONE    BSR     NEWLINE             Display new line
         TRAP    #15
         CMP.B   #$30,D1             Compare input to 0
         BEQ     HALT                If ==, branch to halt
-        MOVE.B  #12,D0              Keyboard echo
-        MOVE.B  #1,D1               Visible
-        TRAP    #15
 
         BRA     RESTART
 
@@ -1266,7 +1327,13 @@ HALT    MOVE.B  #9,D0               Terminate the program
 RESTART MOVE.B  #11,D0              Clear the screen
         MOVE.W  #$FF00,D1
         TRAP    #15
-        MOVE.L  #$00,(GBUFF)        Reset GBUFF
+        MOVE.B  #12,D0              Keyboard echo
+        MOVE.B  #1,D1               Visible
+        TRAP    #15
+        CLR.L   (GBUFF)             Reset GBUFF
+        CLR.L   (SLOC)              Reset starting location
+        CLR.L   (ELOC)              Reset ending location
+        MOVEA.L #$01000000,A7       Reset stack pointer
         BRA     START
 
 *--------------------
