@@ -892,6 +892,8 @@ DISPR3  MOVE.B  #'(',D1             Read (
 * #<data>		0111 0100
 DISPR4  MOVE.B  #'#',D1             Read #
         TRAP    #15
+        MOVE.B  #'$',D1             Read $
+        TRAP    #15
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
         CLR.L   D2
         MOVE.B  (IOSIZE),D2         Read instruction size to D2
@@ -2847,3 +2849,4 @@ BRTRAPV MOVE.B  #$ED,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
         END     START
+
