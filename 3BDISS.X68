@@ -689,6 +689,7 @@ SC4     MOVE.B  #6,D0               Display character
 
 * Display displacement in D1.L
 DISPDIS MOVEM.L D0-D2,-(SP)         Push D0-D2 to stack
+        ADD.L   #2,D1               Add 2 to displacement to account  for instruction
         MOVE.L  D1,D2               Copy displacement to D2
         MOVE.B  #6,D0               Display character
         MOVE.B  #'*',D1             Read *
@@ -707,7 +708,7 @@ DISPDIS MOVEM.L D0-D2,-(SP)         Push D0-D2 to stack
         TRAP    #15
         MOVE.B  #'$',D1             Read $
         TRAP    #15
-        MOVE.L  A1,D0               Move instruction address to D0
+        MOVE.L  (GBUFF),D0          Move GBUFF address to D0
         ADD.L   D2,D0               Add displacement to address
         CMP.L   #$FFFF,D0           Compare address to greatest word addres
         BGT.S   *+6                 If >, skip next line
@@ -975,7 +976,6 @@ DISPC2  CLR.L   D0
         BSR     EXTMSK              Get the data to D1
         EXT.W   D1                  Extend byte to word
         EXT.L   D1                  Extend word to long
-        ADD.L   #2,D1               Add word for instruction to PC
         BSR     DISPDIS             Display displacement
         BRA     DISPRT              Branch to return
         
@@ -983,33 +983,24 @@ DISPC2  CLR.L   D0
 DISPC3  CLR.L   D0
         CLR.L   D1
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
-        MOVE.W  (A1),D0             Get displacement to D0
-        EXT.W   D0                  Extend byte to word
-        EXT.L   D0                  Extend word to long
-        ADD.L   #2,D0               Add word for data to PC
-        SUB.L   #2,A1               Advance A1 by word
-        MOVE.L  D0,D1               Move D0 to D1
+        MOVE.W  (A1),D1             Get displacement to D1
+        EXT.W   D1                  Extend byte to word
+        EXT.L   D1                  Extend word to long
         BSR     DISPDIS             Display displacement
         BRA     DISPRT              Branch to return
 * (DIS).W       1000 0100
 DISPC4  CLR.L   D0
         CLR.L   D1
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
-        MOVE.W  (A1),D0             Get displacement to D0
-        EXT.L   D0                  Extend word to long
-        ADD.L   #2,D0               Add word for data to PC
-        SUB.L   #2,A1               
-        MOVE.L  D0,D1               Move D0 to D1
+        MOVE.W  (A1),D1             Get displacement to D1
+        EXT.L   D1                  Extend word to long
         BSR     DISPDIS             Display displacement
         BRA     DISPRT              Branch to return
 * (DIS).L       1000 0101
 DISPC5  CLR.L   D0
         CLR.L   D1
         MOVEA.L IOADDR,A1           Point A1 to the instruction address
-        MOVE.L  (A1),D0             Get displacement to D0
-        ADD.L   #4,D0               Add long for data to PC
-        SUB.L   #4,A1               
-        MOVE.L  D0,D1               Move D0 to D1
+        MOVE.L  (A1),D1             Get displacement to D1
         BSR     DISPDIS             Display displacement
         BRA     DISPRT              Branch to return
 * (RLM).W       1000 0110
