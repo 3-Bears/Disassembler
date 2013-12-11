@@ -89,8 +89,8 @@ OPNAME  DC.B    'MOVE',0        00      00
         DC.B    'NOP',0         233     E9
         DC.B    'MULS',0        237     ED
         DC.B    'DIVU',0        242     F2
-        DC.B    'RESET',0       247     F7
-        DC.B    'ILLEGAL',0     253     FD
+        DC.B    'OR',0          247     F7
+        DC.B    'ILLEGAL',0     250     FA
 
 
 IOOPSZ  DC.B    '.B',0          0       00
@@ -1623,12 +1623,6 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.L  #BRILLEGAL,A0
         BSR     JMPMSK
 
-        * RESET:  0100111001110000
-        MOVE.W  #%0100111001110000,D2
-        MOVE.W  #%1011000110001111,D3
-        MOVE.L  #BRRESET,A0
-        BSR     JMPMSK
-
         * NOP:    0100111001110001
         MOVE.W  #%0100111001110001,D2
         MOVE.W  #%1011000110001110,D3
@@ -1719,6 +1713,12 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.W  #%1000000111000000,D2
         MOVE.W  #%0111000000000000,D3
         MOVE.L  #BRDIVS,A0
+        BSR     JMPMSK
+
+        * OR:     1000XXXXXXXXXXXX
+        MOVE.W  #%1000000000000000,D2
+        MOVE.W  #%0111000000000000,D3
+        MOVE.L  #BROR,A0
         BSR     JMPMSK
 *-----
 * 1001
@@ -2270,6 +2270,39 @@ BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
         BNE     *+6             If !=, skip the next line
         BSR     SWAPF           Else, swap the destination & source values
         BRA     FLAGST          Return successful
+
+* OR: 1000|REG|OPM|EMD|ERG
+* Syntax: OR        <ea>,Dn
+*         OR        Dn,<ea>
+* Note: The Dn mode is used when the destination is a data register;
+*       the destination < ea > mode is invalid for a data register. 
+*       Most assemblers use ORI when the source is immediate data.
+
+BROR    MOVE.B  #$F7,(IOOPCD)   Set OP-code name
+        BSR     EXDST           Extract OP mode & register
+        BSR     OPSIZE          Translate OP mode from DMD, get operation in D2.B
+        CMP.B   #2,D2           Compare OP mode to An
+        BEQ     FLAGCL          If ==, mode is not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        * "If the location specified is a source operand,
+        * only data addressing modes can be used [...]."
+        CMP.B   #0,D2           Compare operation to Dn
+        BNE.S   *+6             If !=, skip next line
+        MOVE.W  #M_DAT,D0       Set data modes as valid
+        * "If the location specified is a destination operand,
+        * only memory alterable addressing modes can be used [...]."
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE.S   *+6             If !=, skip next line
+        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
+        BSR     EXSRC           Extract EA mode & register
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If not valid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE     *+6             If !=, skip the next line
+        BSR     SWAPF           Else, swap the destination & source values
+        BRA     FLAGST          Return successful
+
 
 * BTST: 0000XXXX00|EMD|ERG
 * Syntax: BTST      Dn,<ea>
@@ -2829,17 +2862,11 @@ BRRTR   MOVE.B  #$E5,(IOOPCD)   Set OP-code name
 BRNOP   MOVE.B  #$E9,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
-* RESET: 0100111001110000
-* Syntax: RESET
-
-BRRESET MOVE.B  #$F7,(IOOPCD)   Set OP-code name
-        BRA     FLAGST          Return successful
-
 * ILLEGAL: 0100101011111100
 * Syntax: ILLEGAL
 
 BRILLEGAL
-        MOVE.B  #$FD,(IOOPCD)   Set OP-code name
+        MOVE.B  #$FA,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
         END     START
