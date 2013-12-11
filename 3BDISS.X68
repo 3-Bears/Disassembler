@@ -1,4 +1,4 @@
-        INCLUDE "TEST.X68"
+            INCLUDE "TEST.X68"
 *----------------------------------------------------------------------------
 * Title      : 3B Disassembler
 * Written by : The Three Bears: Joseph Schooley, Nguyen Tong, Terence Calhoun
@@ -742,6 +742,8 @@ DMDTBL  BRA     DISPM0              Dn
         BRA     DISPM8              3 BEARS CUSTOM
         BRA     DISPM9              Special (111) next word
         BRA     DISPMA              3 BEARS CUSTOM (1000) next word
+        BRA     DISPMB              3 BEARS CUSTOM (1000) previous word
+        BRA     DISPMC              3 BEARS CUSTOM (1000) previous long
 * Dn	    	0000 XXXX
 DISPM0  MOVE.B  #'D',D1             Read D
         TRAP    #15
@@ -931,7 +933,6 @@ D3BTBL  BRA     DISPC0              #<1-8>.Q
         BRA     DISPC7              (MLR).L
         BRA     DISPC8              #<bit num>.B
         BRA     DISPC9              #<0-7>.Q
-
 
 * #<1-8>.Q     1000 0000
 DISPC0  MOVE.B  #'#',D1             Read #
@@ -1134,11 +1135,23 @@ DISPM9  ADD.L   #2,IOADDR           Advance IOADDR by word
         BSR     DISPOP              Display the special mode
         SUB.L   #2,IOADDR           Re-align IOADDR
         BRA     DISPRT              Branch to return
-* 3B Custom-- next word: The mode was 1000, but the value is located in the next word
-DISPMA  ADD.L   #2,IOADDR           Advance IOADDR by word
+* 3B Special-- next word: The mode was 1000, but the value is located in the next word
+DISPMA  ADD.L   #2,IOADDR           Increment IOADDR by word
         MOVE.B  #%1000,D2           Set mode to 1000
         BSR     DISPOP              Display the special mode
         SUB.L   #2,IOADDR           Re-align IOADDR
+        BRA     DISPRT              Branch to return
+* 3B Special-- previous word: The mode was 1000, but the value is located in the previous word
+DISPMB  SUB.L   #2,IOADDR           Decrement IOADDR by word
+        MOVE.B  #%1000,D2           Set mode to 1000
+        BSR     DISPOP              Display the special mode
+        ADD.L   #2,IOADDR           Re-align IOADDR
+        BRA     DISPRT              Branch to return
+* 3B Special-- previous long: The mode was 1000, but the value is located in the previous long
+DISPMC  SUB.L   #4,IOADDR           Decrement IOADDR by long
+        MOVE.B  #%1000,D2           Set mode to 1000
+        BSR     DISPOP              Display the special mode
+        ADD.L   #2,IOADDR           Re-align IOADDR
         BRA     DISPRT              Branch to return
         
 DISPRT  MOVEM.L (SP)+,D0-D7/A0-A7   Restore all registers
@@ -2146,6 +2159,9 @@ BRADD   MOVE.B  #$11,(IOOPCD)   Set OP-code name
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE     *+6             If !=, skip the next line
+        BSR     SWAPF           Else, swap the destination & source values
         BRA     FLAGST          Return successful
 
 
@@ -2162,14 +2178,6 @@ BRADDA  MOVE.B  #$15,(IOOPCD)   Set OP-code name
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Advance the buffer accordingly
-        BRA     FLAGST          Return successful
-
-        * "All addressing modes can be used [...]."
-        MOVE.W  #M_ALL,D0       Set all modes as valid
-        BSR     EXSRC           Extract EA mode & register
-        BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Else, advance the buffer accordingly
         BRA     FLAGST          Return successful
 
 * ADDQ: 0101|DAT|0|SZ|EMD|ERG
@@ -2205,6 +2213,9 @@ BRSUB   MOVE.B  #$1F,(IOOPCD)   Set OP-code name
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE     *+6             If !=, skip the next line
+        BSR     SWAPF           Else, swap the destination & source values
         BRA     FLAGST          Return successful
 
 
@@ -2255,6 +2266,9 @@ BRAND   MOVE.B  #$3B,(IOOPCD)   Set OP-code name
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
         BSR     ADVBFR          Else, advance the buffer accordingly
+        CMP.B   #1,D2           Compare operation to <ea>
+        BNE     *+6             If !=, skip the next line
+        BSR     SWAPF           Else, swap the destination & source values
         BRA     FLAGST          Return successful
 
 * BTST: 0000XXXX00|EMD|ERG
@@ -2429,7 +2443,7 @@ BRCMP   MOVE.B  #$5D,(IOOPCD)   Set OP-code name
         BEQ     FLAGCL          If ==, it is invalid, branch to flag clear
         CMP.B   #2,D2           Compare OP mode to An
         BEQ     BRCMPA          If ==, branch to BRCMPA
-        BSR     ADVBFR          Else, advance the buffer accordingly
+        BSR     ADVBFR          Else, advance the buffer acco\rdingly
         BSR     EXSRC           Extract source mode & register
         * Source EA field: "All addressing modes can be used [...]."
         MOVE.W  #M_ALL,D0       Set all modes as valid
@@ -2580,6 +2594,7 @@ BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
         MOVE.B  D1,(IOSIZE)     Store D1 in size
         MOVE.L  #$0400,D2       Extract direction at 0000010000000000
         BSR     EXTMSK          Get the direction to D1
+        MOVE.B  D1,D2           Move direction to D2
         * Direction 0 = Register-to-memory
         * Direction 1 = Memory-to-register
         BSR     EXSRC           Get the EA mode & reg from source location
@@ -2587,7 +2602,7 @@ BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
         * only control alterable addressing modes
         * or the predecrement addressing mode can be used [...]."
         MOVE.W  #$1F4,D0        Set valid modes for reg-to-mem by default (0000000111110100)
-        CMP.B   #0,D1           Compare direction to reg-to-mem
+        CMP.B   #0,D2           Compare direction to reg-to-mem
         BEQ.S   *+6             If ==, skip the next line
         * EA field: "For memory-to-register transfers,
         * only control addressing modes
@@ -2595,20 +2610,28 @@ BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
         MOVE.W  #$7EC,D0        Else, Set valid modes for mem-to-reg (0000011111101100)
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Else advance the buffer accordingly
+        BSR     ADVBFR          Else advance the buffer accordingly, store displacement in EA
         MOVE.B  #8,(DMD)        Set mode to 3 BEARS CUSTOM
         MOVE.B  #6,(DRG)        Set register to (RLM).W by default
         * "For the predecrement mode addresses, the mask correspondence is reversed."
         CMP.B   #%100,(SMD)     Compare source mode to predecrement mode
         BNE.S   *+8             If !=, skip next line
         MOVE.B  #7,(DRG)        Else if ==, set register to (MLR).W
-        CMP.B   #%111,(SMD)     Compare source mode to special
+        CMP.B   #7,(SMD)        Compare source mode to special
         BNE.S   *+8             If !=, skip next line
-        MOVE.B  #%1001,(SMD)    Else if ==, set mode to special-- next word
-        CMP.B   #0,D1           Compare direction to reg-to-mem again
-        BEQ.S   *+6             If ==, skip the next line
-        BSR     SWAPF           Else, swap the source and destination
-        ADD.L   #2,A1           Advance buffer by word for MLR
+        MOVE.B  #9,(SMD)        Else if ==, set mode to special-- next word
+        ADD.L   #2,A1           Advance buffer by word for RLM
+        BSR     SWAPF           Swap the source and dest values
+        CMP.B   #0,D2           Compare direction to reg-to-mem
+        BEQ     FLAGST          If ==, return successful
+        BSR     SWAPF           Else, swap back values
+        MOVE.B  (DIS),D0        Get displacement of EA in D0
+        CMP.B   #0,D0           Compare displacement to 0
+        BEQ     FLAGST          If ==, return successful
+        MOVE.B  #$B,(DMD)       Else, set mode to 3B special-- previous word
+        CMP.B   #2,D0           Compare displacement to 4
+        BEQ     FLAGST          If ==, return successful
+        MOVE.B  #$C,(DMD)       Else, set mode to 3B special-- previous long        
         BRA     FLAGST          Return successful
 
 * MOVEQ: 0111|REG|0|__DATA__
