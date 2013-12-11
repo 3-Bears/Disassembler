@@ -2628,6 +2628,7 @@ BRMOVEQ MOVE.B  #$8C,(IOOPCD)   Set OP-code name
         MOVE.B  #0,(DMD)        Set destination mode to Dn
         MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
         MOVE.B  #1,(SRG)        Set reg mode to 1 for #<data>.Q
+        MOVE.B  #2,(IOSIZE)     Set size to long
         BRA     FLAGST          Return successful
 
 
@@ -2748,7 +2749,7 @@ BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name
         BSR     EXDST           Extract values in destination location
         BRA     BRARW           Branch to arithmetic word instruction
 
-* ARW: 1100|REG|011|EMD|ERG
+* ARW: XX00|REG|X11|EMD|ERG
 * Syntax: ARW       <ea>,Dn    16x16 -> 32
 
 BRARW   MOVE.B  #$1,(IOSIZE)    Set size to word
