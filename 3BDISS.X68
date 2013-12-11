@@ -87,9 +87,10 @@ OPNAME  DC.B    'MOVE',0        00      00
         DC.B    'RTD',0         225     E1
         DC.B    'RTR',0         229     E5
         DC.B    'NOP',0         233     E9
-        DC.B    'TRAPV',0       237     ED
-        DC.B    'RESET',0       243     F3
-        DC.B    'ILLEGAL',0     249     F9
+        DC.B    'MULS',0        237     ED
+        DC.B    'DIVU',0        242     F2
+        DC.B    'RESET',0       247     F7
+        DC.B    'ILLEGAL',0     253     FD
 
 
 IOOPSZ  DC.B    '.B',0          0       00
@@ -739,6 +740,7 @@ DMDTBL  BRA     DISPM0              Dn
         BRA     DISPM7              (XXX).W/(XXX).L/(d,PC)/(d,PC,Xn)/#data
         BRA     DISPM8              3 BEARS CUSTOM
         BRA     DISPM9              Special (111) next word
+        BRA     DISPMA              3 BEARS CUSTOM (1000) next word
 * Dn	    	0000 XXXX
 DISPM0  MOVE.B  #'D',D1             Read D
         TRAP    #15
@@ -826,6 +828,7 @@ DRGTBL  BRA     DISPR0              (XXX).W
         BRA     DISPR2              (d,PC)
         BRA     DISPR3              (d,PC,Xn)
         BRA     DISPR4              #data
+        BRA     DISPR5              CCR
 * (XXX.W)		0111 0000
 DISPR0  MOVE.B  #'$',D1             Read $
         TRAP    #15
@@ -905,6 +908,13 @@ DISPR4  MOVE.B  #'#',D1             Read #
         ADD.L   D2,A1               Advance A1 by instruction size
         MOVE.L  A1,(IOADDR)         Move A1 to IOADDR
         BRA     DISPRT              Branch to return
+* CCR
+DISPR5  MOVE.B  #'C',D1             Read C
+        TRAP    #15
+        TRAP    #15
+        MOVE.B  #'R',D1             Read R
+        TRAP    #15
+        BRA     DISPRT              Branch to return
 * 3 BEARS CUSTOM MODE
 * Custom sizes:
 *   Q = Quick data
@@ -919,6 +929,8 @@ D3BTBL  BRA     DISPC0              #<1-8>.Q
         BRA     DISPC6              (RLM).L
         BRA     DISPC7              (MLR).L
         BRA     DISPC8              #<bit num>.B
+        BRA     DISPC9              #<0-7>.Q
+
 
 * #<1-8>.Q     1000 0000
 DISPC0  MOVE.B  #'#',D1             Read #
@@ -936,7 +948,16 @@ DISPC0  MOVE.B  #'#',D1             Read #
         TRAP    #15
         BRA     DISPRT              Branch to return
 * #<data>.Q     1000 0001
-DISPC1
+DISPC1  MOVE.B  #'#',D1             Read #
+        TRAP    #15
+        CLR.L   D0
+        CLR.L   D1
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        MOVE.W  -(A1),D0            Pre-decrement location, get instruction to D0
+        MOVE.L  #$000F,D2           Extract data at 0000000000001111
+        BSR     EXTMSK              Get the data to D1
+        MOVE.B  #3,D0               Read number
+        TRAP    #15
         BRA     DISPRT              Branch to return
 * (DIS).Q       1000 0010
 * "1000 BRA -7 *Branch back 7 bytes
@@ -1104,9 +1125,27 @@ DISPC8  MOVE.B  #'#',D1             Read #
         MOVE.B  #3,D0               Display number
         TRAP    #15
         BRA     DISPRT              Branch to return
+* #<0-7>.Q      1000 1000
+DISPC9  MOVE.B  #'#',D1             Read #
+        TRAP    #15
+        CLR.L   D0
+        CLR.L   D1
+        MOVEA.L IOADDR,A1           Point A1 to the instruction address
+        MOVE.W  -(A1),D0            Pre-decrement location, get instruction to D0
+        MOVE.L  #$0E00,D2           Extract data at 000011100000000
+        BSR     EXTMSK              Get the data to D1
+        MOVE.B  #3,D0               Read number
+        TRAP    #15
+        BRA     DISPRT              Branch to return
 * Special-- next word: The mode was 111, but the value is located in the next word
 DISPM9  ADD.L   #2,IOADDR           Advance IOADDR by word
         MOVE.B  #%111,D2            Set mode to 111
+        BSR     DISPOP              Display the special mode
+        SUB.L   #2,IOADDR           Re-align IOADDR
+        BRA     DISPRT              Branch to return
+* 3B Custom-- next word: The mode was 1000, but the value is located in the next word
+DISPMA  ADD.L   #2,IOADDR           Advance IOADDR by word
+        MOVE.B  #%1000,D2           Set mode to 1000
         BSR     DISPOP              Display the special mode
         SUB.L   #2,IOADDR           Re-align IOADDR
         BRA     DISPRT              Branch to return
@@ -1580,18 +1619,6 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.L  #BRILLEGAL,A0
         BSR     JMPMSK
 
-        * MULU:   0100110000XXXXXX
-        MOVE.W  #%0100110000000000,D2
-        MOVE.W  #%1011001111000000,D3
-        MOVE.L  #BRMULU,A0
-        BSR     JMPMSK
-
-        * DIVS:   0100110001XXXXXX
-        MOVE.W  #%0100110001000000,D2
-        MOVE.W  #%1011001110000000,D3
-        MOVE.L  #BRDIVS,A0
-        BSR     JMPMSK
-
         * RESET:  0100111001110000
         MOVE.W  #%0100111001110000,D2
         MOVE.W  #%1011000110001111,D3
@@ -1622,18 +1649,11 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.L  #BRRTS,A0
         BSR     JMPMSK
 
-        * TRAPV:  0100111001110110
-        MOVE.W  #%0100111001110110,D2
-        MOVE.W  #%1011000110001001,D3
-        MOVE.L  #BRTRAPV,A0
-        BSR     JMPMSK
-
         * RTR:    0100111001110111
         MOVE.W  #%0100111001110111,D2
         MOVE.W  #%1011000110001000,D3
         MOVE.L  #BRRTR,A0
         BSR     JMPMSK
-
 
         * JSR:    0100111010XXXXXX
         MOVE.W  #%0100111010000000,D2
@@ -1685,6 +1705,12 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
 *-----
 * 1000
 *-----
+        * DIVU:   1000XXX011XXXXXX
+        MOVE.W  #%1000000011000000,D2
+        MOVE.W  #%0111000100000000,D3
+        MOVE.L  #BRDIVU,A0
+        BSR     JMPMSK
+
         * DIVS:   1000XXX111XXXXXX
         MOVE.W  #%1000000111000000,D2
         MOVE.W  #%0111000000000000,D3
@@ -1728,6 +1754,12 @@ OP      MOVE.L  GBUFF,A0            Set A0 to GBUFF location
         MOVE.W  #%1100000011000000,D2
         MOVE.W  #%0011000100000000,D3
         MOVE.L  #BRMULU,A0
+        BSR     JMPMSK
+
+        * MULS:   1100XXX111XXXXXX
+        MOVE.W  #%1100000111000000,D2
+        MOVE.W  #%0011000000000000,D3
+        MOVE.L  #BRMULS,A0
         BSR     JMPMSK
 *-----
 * 1101
@@ -1799,6 +1831,7 @@ M_CTR   EQU     %0000011111100100   Control modes
 M_ALT   EQU 	%0000000001111111   Alterable modes
 M_MALT  EQU     %0000000111111100   Memory alterable modes
 M_DALT  EQU     %0000000111111101   Data alterable modes
+M_EAALT EQU     %0000000111111111   EA alterable modes
 
 TSTAM   MOVE.B  D2,-(SP)        Push D2 to stack
         CLR.L   D1
@@ -2010,16 +2043,15 @@ BRARMQ  MOVE.W  (A1),D0         Move instruction to D0
         MOVE.B  D1,(IOSIZE)     Else, store size in IOSIZE
 
         * dest EA field: "Only alterable addressing modes can be used [...]."
-        MOVE.W  #M_ALT,D0       Set alterable modes as valid
+        MOVE.W  #M_EAALT,D0     Set EA alterable modes as valid (0000000011111111)
         BSR     EXSRC           Extract destination from source location
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
-        MOVE.B  SMD,(DMD)       Else, move source mode to destination mode
-        MOVE.B  SRG,(DRG)       Move source reg to destination reg
         BSR     ADVBFR          Advance the buffer accordingly
         * manually set the source mode and source register
-        MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
-        MOVE.B  #0,(SRG)        Set reg mode to 0 for #<1-8>
+        MOVE.B  #8,(DMD)        Set source mode to 3 BEARS CUSTOM
+        MOVE.B  #0,(DRG)        Set reg mode to 0 for #<1-8>
+        BSR     SWAPF           Swap the source and destination values
         BRA     FLAGST          Return successful
 
 * IMMEDIATE Instruction: XXXXXXXX|SZ|EMD|ERG
@@ -2035,20 +2067,27 @@ BRIMM   MOVE.W  (A1),D0         Move instruction to D0
         * dest EA field: "Only data alterable addressing modes can be used [...]."
         MOVE.W  #M_DALT,D0      Set data alterable modes as valid
         BSR     EXSRC           Extract destination from source location
+        BSR     SWAPF           Swap the source to dest values
         BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
+        BNE     BRIMCCR         If not valid, check if mode was CCR
         BSR     ADVBFR          Else, advance the buffer accordingly
-        BSR     SWAPF           Move source to destination
         * manually set the source mode and source register
         MOVE.B  #$07,(SMD)      Set source mode to 111
         MOVE.B  #$04,(SRG)      Set reg mode to 100 for immediate data
-        MOVE.B  SRG,D1          Copy SRG to D1 to manipulate
+        MOVE.B  (SRG),D1        Copy SRG to D1 to manipulate
         LSL.B   #3,D1           Shift the reg 3 bits left
         OR.B    (SMD),D1        Add mode after reg 
         MOVE.B  D1,(RGMD)       Store D1 in RGMD
         BSR     ADVBFR          Advance the buffer accordingly
         BRA     FLAGST          Return successful
 
+BRIMCCR CMP.B   #$0B,D1         Compare mode to #<data>
+        BNE     FLAGCL          If not valid, branch to FLAGCL
+        MOVE.B  #5,(DRG)        Else, set mode to CCR
+        MOVE.B  #$A,(SMD)       Set source mode to 3 BEARS CUSTOM next word
+        MOVE.B  #1,(SRG)        Set reg mode to 1 for #<data>.Q
+        ADD.L   #2,A1           Advance buffer by word
+        BRA     FLAGST          Return successful
 
 * ORI: 0000|0000|SZ|EMD|ERG
 * Syntax: ORI       #<data>,<ea>
@@ -2239,7 +2278,6 @@ BRBTST  MOVE.B  #$58,(IOOPCD)   Set OP-code name
         BEQ     BRBTSTD         If ==, branch to BTST DYNAMIC
         BRA     FLAGCL          If neither were found, return unsuccessful
 
-
 * BTST STATIC: 0000100000|EMD|ERG
 *              00000000|_BITNUM_
 * Syntax: BTST      #<data>,<ea>
@@ -2250,12 +2288,12 @@ BRBTSTS BSR     EXSRC           Extract destination from source location
         MOVE.W  #$7FD,D0        Set data modes - #<data> as valid %0000111111111101
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Else, advance buffer accordingly
-        BSR     SWAPF           Swap source to destination
+        BSR     SWAPF           Else, swap source to destination
         MOVE.B  #0,(IOSIZE)     Set size to byte
         CMP.B   #0,(DMD)        Compare destination to Dn
         BNE     *+8             If !=, skip the next line
         MOVE.B  #2,(IOSIZE)     Else, set size to long
+        BSR     ADVBFR          Advance buffer accordingly
         ADD.L   #2,A1           Advance buffer for bit num
         MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
         MOVE.B  #8,(SRG)        Set reg mode to 8 for #<bit num>.B
@@ -2272,12 +2310,12 @@ BRBTSTD BSR     EXSRC           Extract destination from source location
         MOVE.W  #M_DAT,D0       Set data modes as valid
         BSR     TSTAM           Test modes for validity
         BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Else, advance buffer accordingly
-        BSR     SWAPF           Swap source to destination
+        BSR     SWAPF           Else, swap source to destination
         MOVE.B  #0,(IOSIZE)     Set size to byte
         CMP.B   #0,(DMD)        Compare destination to Dn
         BNE     *+8             If !=, skip the next line
         MOVE.B  #2,(IOSIZE)     Else, set size to long
+        BSR     ADVBFR          Advance buffer accordingly
         MOVE.B  #0,(SMD)        Set source mode to Dn
         BRA     FLAGST          Return successful
 
@@ -2549,7 +2587,7 @@ BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
         BSR     EXTMSK          Get the size to D1
         ADD.B   #1,D1           Convert size to W/L
         MOVE.B  D1,(IOSIZE)     Store D1 in size
-        MOVE.L  #$400,D2        Extract direction at 0000010000000000
+        MOVE.L  #$0400,D2       Extract direction at 0000010000000000
         BSR     EXTMSK          Get the direction to D1
         * Direction 0 = Register-to-memory
         * Direction 1 = Memory-to-register
@@ -2557,7 +2595,7 @@ BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
         * EA field: "For register-to-memory transfers,
         * only control alterable addressing modes
         * or the predecrement addressing mode can be used [...]."
-        MOVE.W  #$1F3,D0        Set valid modes for reg-to-mem by default (0000000111110100)
+        MOVE.W  #$1F4,D0        Set valid modes for reg-to-mem by default (0000000111110100)
         CMP.B   #0,D1           Compare direction to reg-to-mem
         BEQ.S   *+6             If ==, skip the next line
         * EA field: "For memory-to-register transfers,
@@ -2586,7 +2624,12 @@ BRMOVEM MOVE.B  #$0B,(IOOPCD)   Set OP-code name
 * Syntax: MOVEQ     #<data>,Dn
 
 BRMOVEQ MOVE.B  #$8C,(IOOPCD)   Set OP-code name
-        BNE     FLAGCL          Return unsuccessful
+        BSR     EXDST           Extract destination
+        MOVE.B  #0,(DMD)        Set destination mode to Dn
+        MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
+        MOVE.B  #1,(SRG)        Set reg mode to 1 for #<data>.Q
+        BRA     FLAGST          Return successful
+
 
 * ASd: 1110000|d|11|EMD|ERG (memory shifts)
 *      1110|CRG|d|SZ|i|00|REG (register shifts)
@@ -2594,90 +2637,20 @@ BRMOVEQ MOVE.B  #$8C,(IOOPCD)   Set OP-code name
 *         ASd       #<data>,Dy
 *         ASd       <ea>
 
-BRASd   MOVE.L  #$00C0,D2       Set mask to return the size
-        BSR     EXTMSK          Extract the size
-        CMP.B   #%00,D1         01 = Byte
-        BNE.S   *+6             Branch to next test
-        MOVE.B  #$0,D0          Set size to byte
-        CMP.B   #%01,D1         11 = Word
-        BNE.S   *+6             Branch to next test
-        MOVE.B  #$1,D0          Set size to word
-        CMP.B   #%10,D1         10 = Long
-        BNE.S   *+6             Branch to next test
-        MOVE.B  #$2,D0          Set size to long
-        CMP.B   #$3,D1          If size == 11 it memory shift
-        BEQ     MEMSHIFT        Branch to memory shift      
-        MOVE.B  D0,(IOSIZE)     If it was found, store size in IOSIZE
-        
-        *Check to see if it's LSd or ASd
-        MOVE.L  #$8,D2          Set mask to see if it's ASd or LSd
-        BSR     EXTMSK          Extract the bits to see what it is
-        CMP.B   #$1,D1          If == 1 it's LSd
-        BEQ     BRLSd           Branch to LSd
-        MOVE.L  #$0100,D2       Set mask to return the direction
-        BSR     EXTMSK          Extract the direction bit
-        CMP.B   #1,D1           If == 1 direction is ASL
-        BEQ     SETASL          Branch to ASL if direction bit is 1        
-        MOVE.B  #$96,(IOOPCD)   ASR OPmode
-        BRA     REGCOUNTSHIFT
-SETASL  MOVE.B  #$50,(IOOPCD)   ASL OPmode
-REGCOUNTSHIFT        
-        * Check to see if it's register or count shift
-        MOVE.W  (A1),D0         Move instruction to D0
-        MOVE.L  #$0020,D2       Set mask to return (Count or Reg shift)
-        BSR     EXTMSK          Extract the i/r bit
-        CMP.B   #$0,D1          If == 0 immediate data
-        BEQ     DATAIMM         Branch to immediate data mode
-        MOVE.B  #$00,(SMD)      Set source mode to 000
-        MOVE.W  (A1),D0         Move instruction to D0
-        MOVE.L  #$0E00,D2       Set mask to extract the source register 
-        BSR     EXTMSK          Extract the source register        
-        MOVE.B  D1,(SRG)        Copy SRG to variable
-        LSL.B   #3,D1           Shift the reg 3 bits left
-        OR.B    (SMD),D1        Add mode after reg 
-        MOVE.B  D1,(RGMD)       Store D1 in RGMD
-        BSR     ADVBFR          Advance the buffer accordingly
-        BRA     COMPLETESHIFT        
-DATAIMM   * manually set the source mode and source register
-        * manually set the source mode and source register
-        MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
-        MOVE.B  #0,(SRG)        Set reg mode to 0 for #<1-8>
-COMPLETESHIFT
-        MOVE.B  #$00,(DMD)      Set destination mode to 000
-        MOVE.W  (A1),D0         Move instruction to D0
-        MOVE.L  #$7,D2          Set mask to get destination reg
-        BSR     EXTMSK          Extract the destination reg
-        MOVE.B  D1,(DRG)        Set the destination Register
-        LSL.B   #3,D1           Shift the reg 3 bits left
-        OR.B    (DMD),D1        Add mode after reg
-        MOVE.B  D1,(RGMD)       Store D1 in RGMD
-        BSR     ADVBFR          Advance the buffer accordingly
-        BRA     FLAGST          Return Successful
-        
-        
+BRASd   MOVE.W  (A1),D0         Move instruction to D0
 
-MEMSHIFT * only memory alterable addressing modes can be used [...]."
-        MOVE.W  (A1),D0         Move instruction to D0
-        *Check to see if it's LSd or ASd
-        MOVE.L  #$0200,D2       Set mask to see if it's ASd or LSd
-        BSR     EXTMSK          Extract the bits to see what it is
-        CMP.B   #$1,D1          If == 1 it's LSd
-        BEQ     BRLSdMEMORY     Branch to LSd
-        MOVE.L  #$0100,D2       Set mask to return the direction
-        BSR     EXTMSK          Extract the direction bit
-        CMP.B   #1,D1           If == 1 direction is ASL
-        BEQ     SETd            Branch to ASL if direction bit is 1        
-        MOVE.B  #$96,(IOOPCD)   ASR OPmode
-        BRA     MEMcon          Continue memory shift
-SETd    MOVE.B  #$50,(IOOPCD)   ASL OPmode
-MEMcon  MOVE.B  #$1,D0          Set size to word
-        MOVE.B  D0,(IOSIZE)
-        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
-        BSR     EXSRC           Extract the <ea> mode/register
-        BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Advance the buffer accordingly
-        BRA     FLAGST          Return Successful
+        MOVE.B  #$96,(IOOPCD)   Set OP-code name to ASR
+        MOVE.L  #$8,D2          Extract direction at 0000000100000000
+        BSR     EXTMSK          Get the direction to D1
+        CMP.B   #0,D1           Compare direction to 0
+        BNE     *+8             If ==, skip the next line
+        MOVE.B  #$50,(IOOPCD)   Else, set OP-code name to ASL
+
+        MOVE.L  #$00C0,D2       Extract size at 0000000011000000
+        BSR     EXTMSK          Get the size to D1
+        CMP.B   #%11,D1         Compare size to 11
+        BEQ     BRMSd           If ==, branch to memory shift
+        BRA     BRRSd           Else, branch to register shift
 
 * LSd: 1110001|d|11|EMD|ERG (memory shifts)
 *      1110|CRG|d|SZ|i|01|REG (register shifts)
@@ -2685,93 +2658,109 @@ MEMcon  MOVE.B  #$1,D0          Set size to word
 *         LSd       #<data>,Dy
 *         LSd       <ea>
 
-BRLSd   *Some LSd memory shift skip over the ASd OPmode
-        *Check to see if it's a memory shift before doing anything else
-        MOVE.L  #$00C0,D2       Set mask to return the size
-        BSR     EXTMSK          Extract the size
-        CMP.B   #$3,D1          If size == 11 it memory shift
-        BEQ     MEMSHIFT        Branch to memory shift
-        
-        MOVE.W  (A1),D0         Move instruction to D0
-        MOVE.L  #$0100,D2       Set mask to return the direction
-        BSR     EXTMSK          Extract the direction bit
-        CMP.B   #1,D1           If == 1 direction is LSL
-        BEQ     SETLSL          Branch to ASL if direction bit is 1        
-        MOVE.B  #$54,(IOOPCD)   LSR OPmode
-        BRA     REGCOUNTSHIFT
-SETLSL  MOVE.B  #$92,(IOOPCD)   LSL OPmode
-        BRA     REGCOUNTSHIFT   Return Successful
-BRLSdMEMORY
-        MOVE.W  (A1),D0         Move instruction to D0
-        MOVE.L  #$0100,D2       Set mask to return the direction
-        BSR     EXTMSK          Extract the direction bit
-        CMP.B   #1,D1           If == 1 direction is LSL
-        BEQ     SETLSd          Branch to ASL if direction bit is 1        
-        MOVE.B  #$54,(IOOPCD)   LSR OPmode
-        BRA     MEMcon          Continue memory shift
-SETLSd  MOVE.B  #$92,(IOOPCD)   LSL OPmode
-        BRA     MEMcon          Continue memory shift
+BRLSd   MOVE.W  (A1),D0         Move instruction to D0
 
-* MULU: 1100|REG|011|EMD|ERG (WORD)
-*       0100110000|EMD|ERG  0|RDI|0|SZ|0000000|RDH (LONG)
+        MOVE.B  #$54,(IOOPCD)   Set OP-code name to LSR
+        MOVE.L  #$8,D2          Extract direction at 0000000100000000
+        BSR     EXTMSK          Get the direction to D1
+        CMP.B   #0,D1           Compare direction to 0
+        BNE     *+8             If ==, skip the next line
+        MOVE.B  #$92,(IOOPCD)   Else, set OP-code name to LSL
+
+        MOVE.L  #$00C0,D2       Extract size at 0000000011000000
+        BSR     EXTMSK          Get the size to D1
+        CMP.B   #%11,D1         Compare size to 11
+        BEQ     BRMSd           If ==, branch to memory shift
+        BRA     BRRSd           Else, branch to register shift
+
+* RSd: 1110|CRG|d|SZ|i|01|REG
+* Syntax: RSd       Dx,Dy
+*         RSd       #<data>,Dy
+
+BRRSd   CMP.B   #%00,D1         01 = Byte
+        BNE.S   *+6             If !=, branch to next line
+        MOVE.B  #$0,D2          Else, set size to byte
+        CMP.B   #%01,D1         11 = Word
+        BNE.S   *+6             If !=, branch to next line
+        MOVE.B  #$1,D2          Else, set size to word
+        CMP.B   #%10,D1         10 = Long
+        BNE.S   *+6             If !=, Branch to next line
+        MOVE.B  #$2,D2          Else, set size to long
+        MOVE.B  D2,(IOSIZE)     Move size to IOSIZE
+        MOVE.L  #$0007,D2       Extract register at 0000000000000111
+        BSR     EXTMSK          Get the reg to D1
+        MOVE.B  D1,(DRG)        Store the reg in the destination register
+        MOVE.B  #$0,(DMD)       Set the destination mode to Dn
+        MOVE.B  #8,(SMD)        Set source mode to 3 BEARS CUSTOM
+        MOVE.B  #0,(SRG)        Set reg mode to 0 for #<1-8>
+        MOVE.L  #$0020,D2       Extract i/r at 0000000000100000
+        BSR     EXTMSK          Get the i/r to D1
+        CMP.B   #0,D1           Compare i/r to 0
+        BEQ     FLAGST          If ==, branch to set flag
+        MOVE.L  #$0E00,D2       Else, extract reg at 0000111000000000
+        BSR     EXTMSK          Get the reg to D1
+        MOVE.B  D1,(SRG)        Store the reg in the source register
+        MOVE.B  #0,(SMD)        Set source mode to Dn
+        BRA     FLAGST          Branch to flag set
+
+* MSd: 111000X|d|11|EMD|ERG
+* Syntax: MSd       <ea>
+
+BRMSd   MOVE.B  #$1,(IOSIZE)    Set size to word
+        * EA field: "Only memory alterable addressing modes can be used [...]."
+        MOVE.W  #M_MALT,D0      Set memory alterable modes as valid
+        BSR     EXSRC           Extract destination from source location
+        BSR     SWAPF           Swap destination and source values
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If invalid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Branch to set flag
+
+* MULU: 1100|REG|011|EMD|ERG
 * Syntax: MULU.W    <ea>,Dn    16x16 -> 32
-*         MULU.L    <ea>,Dl    32x32 -> 32
-*         MULU.L    <ea>,Dh-Dl 32x32 -> 64 
 
 BRMULU  MOVE.B  #$2D,(IOOPCD)   Set OP-code name
-        MOVE.L  #$00C0,D2       Set mask to see if MULU
-        BSR     EXTMSK          Extract Mask
-        CMP.B   #$7,D1          If == 7 it's divs
-        BEQ     BRDIVS          Branch to divs
-        CMP.B   #$3,D1          If != 3 it's not MULU
-        BNE     FLAGCL          Unsuccessful
-        MOVE.B  #$1,D0          Set size to word
-        MOVE.B  D0,(IOSIZE)     Set size variable
-        * Source EA field: "Only data addressing modes can be used [...]."
-        MOVE.W  #M_DAT,D0       Set data modes as valid
-        BSR     EXSRC           Extract destination from source location
-        BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Else, advance the buffer accordingly
-        * Destination MODE: will always be a Dn
-        MOVE.B  #$00,(DMD)      Set destination mode to 000
         MOVE.W  (A1),D0         Move instruction to D0
-        MOVE.L  #$0E00,D2          Set mask to get destination reg
-        BSR     EXTMSK          Extract the destination reg
-        MOVE.B  D1,(DRG)        Set the destination Register
-        LSL.B   #3,D1           Shift the reg 3 bits left
-        OR.B    (DMD),D1        Add mode after reg
-        MOVE.B  D1,(RGMD)       Store D1 in RGMD
-        BSR     ADVBFR          Advance the buffer accordingly        
-        BRA     FLAGST          Return successful
+        BSR     EXDST           Extract values in destination location
+        BRA     BRARW           Branch to arithmetic word instruction
 
-* DIVS: 1000|REG|111|EMD|ERG (WORD)
-*       0100110001|EMD|ERG  0|RDQ|1|S|0000000|RDR (LONG)
-* Synax: DIVS.W     <ea>,Dn     32/16 -> 16r ? 16q
-*        DIVS.L     <ea>,Dq     32/32 -> 32q
-*        DIVS.L     <ea>,Dr:Dq  64/32 -> 32r ? 32q
-*        DIVSL.L    <ea>,Dr:Dq 32/32 -> 32r ? 32q
+* MULS: 1100|REG|111|EMD|ERG
+* Syntax: MULS.W    <ea>,Dn    16x16 -> 32
 
-BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name
-        MOVE.B  #$1,D0          Set size to word
-        MOVE.B  D0,(IOSIZE)     Set size variable
-        * Source EA field: "Only data addressing modes can be used [...]."
-        MOVE.W  #M_DAT,D0       Set data modes as valid
-        BSR     EXSRC           Extract destination from source location
-        BSR     TSTAM           Test modes for validity
-        BNE     FLAGCL          If not valid, return unsuccessful
-        BSR     ADVBFR          Else, advance the buffer accordingly
-        * Destination MODE: will always be a Dn
-        MOVE.B  #$00,(DMD)      Set destination mode to 000
+BRMULS  MOVE.B  #$ED,(IOOPCD)   Set OP-code name
         MOVE.W  (A1),D0         Move instruction to D0
-        MOVE.L  #$0E00,D2          Set mask to get destination reg
-        BSR     EXTMSK          Extract the destination reg
-        MOVE.B  D1,(DRG)        Set the destination Register
-        LSL.B   #3,D1           Shift the reg 3 bits left
-        OR.B    (DMD),D1        Add mode after reg
-        MOVE.B  D1,(RGMD)       Store D1 in RGMD
-        BSR     ADVBFR          Advance the buffer accordingly        
-        BRA     FLAGST          Return successful
+        BSR     EXDST           Extract values in destination location
+        BRA     BRARW           Branch to arithmetic word instruction
+
+* DIVU: 1000|REG|011|EMD|ERG
+* Synax: DIVU.W     <ea>,Dn     32/16 -> 16r-16q
+
+BRDIVU  MOVE.B  #$F2,(IOOPCD)   Set OP-code name     
+        MOVE.W  (A1),D0         Move instruction to D0
+        BSR     EXDST           Extract values in destination location
+        BRA     BRARW           Branch to arithmetic word instruction
+
+* DIVS: 1000|REG|111|EMD|ERG
+* Synax: DIVS.W     <ea>,Dn     32/16 -> 16r-16q
+
+BRDIVS  MOVE.B  #$32,(IOOPCD)   Set OP-code name     
+        MOVE.W  (A1),D0         Move instruction to D0
+        BSR     EXDST           Extract values in destination location
+        BRA     BRARW           Branch to arithmetic word instruction
+
+* ARW: 1100|REG|011|EMD|ERG
+* Syntax: ARW       <ea>,Dn    16x16 -> 32
+
+BRARW   MOVE.B  #$1,(IOSIZE)    Set size to word
+        MOVE.B  #$0,(DMD)       Set destination mode to Dn
+        * EA field: "Only data addressing modes can be used [...]."
+        MOVE.W  #M_DAT,D0       Set data modes as valid
+        BSR     EXSRC           Extract source
+        BSR     TSTAM           Test modes for validity
+        BNE     FLAGCL          If invalid, return unsuccessful
+        BSR     ADVBFR          Else, advance the buffer accordingly
+        BRA     FLAGST          Branch to set flag
+
  
 * NOT: 01000110|SZ|EMD|ERG
 * Syntax:  NOT      <ea>
@@ -2819,13 +2808,6 @@ BRRTD   MOVE.B  #$E1,(IOOPCD)   Set OP-code name
 BRRTR   MOVE.B  #$E5,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
-* ILLEGAL: 0100101011111100
-* Syntax: ILLEGAL
-
-BRILLEGAL
-        MOVE.B  #$F9,(IOOPCD)   Set OP-code name
-        BRA     FLAGST          Return successful
-
 * NOP: 0100111001110001
 * Syntax: NOP
 
@@ -2835,14 +2817,14 @@ BRNOP   MOVE.B  #$E9,(IOOPCD)   Set OP-code name
 * RESET: 0100111001110000
 * Syntax: RESET
 
-BRRESET MOVE.B  #$F3,(IOOPCD)   Set OP-code name
+BRRESET MOVE.B  #$F7,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
-* TRAPV: 0100111001110110
-* Syntax: TRAPV
+* ILLEGAL: 0100101011111100
+* Syntax: ILLEGAL
 
-BRTRAPV MOVE.B  #$ED,(IOOPCD)   Set OP-code name
+BRILLEGAL
+        MOVE.B  #$FD,(IOOPCD)   Set OP-code name
         BRA     FLAGST          Return successful
 
         END     START
-
